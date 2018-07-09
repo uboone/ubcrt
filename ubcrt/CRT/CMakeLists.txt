@@ -22,6 +22,7 @@ art_make( BASENAME_ONLY
 	FlashExt_module.cc	
 	CRTAuxFunctions.cc
   	CRTMerger_module.cc
+	CRTFlashAna_module.cc
 	TimeExtraction_module.cc
 	MergeTest_module.cc
 	CRTRawtoCRTHit_source.cc
@@ -216,6 +217,27 @@ simple_plugin( CRTMerger "module"
   gallery
   ${Boost_DATE_TIME_LIBRARY}
   cetlib cetlib_except	
+)
+
+simple_plugin( CRTFlashAna "module"
+  CRT
+  lardataobj_RecoBase
+  uboone_RawData
+  ${ART_UTILITIES}
+  ${ART_FRAMEWORK_SERVICES_REGISTRY}
+  ${ART_FRAMEWORK_SERVICES_OPTIONAL}
+  ${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
+  ${FHICLCPP}
+  art_Persistency_Common
+  canvas_Persistency_Common
+  art_Persistency_Provenance
+  canvas_Persistency_Provenance
+  art_Utilities
+  canvas_Utilities
+  ${MF_MESSAGELOGGER}
+  ${MF_UTILITIES}
+  cetlib #cetlib_except
+  ${ROOT_BASIC_LIB_LIST}
 )
 
 
