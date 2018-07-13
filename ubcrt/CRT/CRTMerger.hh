@@ -53,7 +53,6 @@ namespace crt
 		
     std::vector< std::vector< artdaq::Fragment > > w;
     ifdh_ns::ifdh* tIFDH=0;
-    ifdh_ns::ifdh* fIFDH=0;
 		
     std::string data_label_DAQHeader_;
     std::string cTag;
