@@ -222,21 +222,21 @@ simple_plugin( CRTMerger "module"
 simple_plugin( CRTFlashAna "module"
   CRT
   lardataobj_RecoBase
-  uboone_RawData
+  ubraw_RawData
+  ubobj_RawData
+  ubobj_Trigger
+  ubobj_CRT
   ${ART_UTILITIES}
   ${ART_FRAMEWORK_SERVICES_REGISTRY}
   ${ART_FRAMEWORK_SERVICES_OPTIONAL}
   ${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
   ${FHICLCPP}
-  art_Persistency_Common
-  canvas_Persistency_Common
-  art_Persistency_Provenance
-  canvas_Persistency_Provenance
-  art_Utilities
-  canvas_Utilities
+  art_Persistency_Common canvas
+  art_Persistency_Provenance canvas
+  art_Utilities canvas
   ${MF_MESSAGELOGGER}
   ${MF_UTILITIES}
-  cetlib #cetlib_except
+  cetlib cetlib_except
   ${ROOT_BASIC_LIB_LIST}
 )
 

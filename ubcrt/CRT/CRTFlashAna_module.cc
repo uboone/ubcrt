@@ -10,9 +10,9 @@
 #include <sstream>
 #include "lardataobj/RawData/TriggerData.h"
 #include "lardataobj/RecoBase/OpFlash.h"
-#include "uboone/RawData/utils/DAQHeaderTimeUBooNE.h"
-#include "uboone/CRT/CRTProducts/CRTHit.hh"
-#include "uboone/RawData/utils/ubdaqSoftwareTriggerData.h"
+#include "ubobj/RawData/DAQHeaderTimeUBooNE.h"
+#include "ubobj/CRT/CRTHit.hh"
+#include "ubobj/Trigger/ubdaqSoftwareTriggerData.h"
 #include "art/Framework/Core/EDAnalyzer.h"
 #include "art/Framework/Core/ModuleMacros.h"
 #include "art/Framework/Principal/Event.h"
