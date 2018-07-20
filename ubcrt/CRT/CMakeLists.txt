@@ -222,7 +222,6 @@ simple_plugin( CRTMerger "module"
 simple_plugin( CRTFlashAna "module"
   CRT
   lardataobj_RecoBase
-  ubraw_RawData
   ubobj_RawData
   ubobj_Trigger
   ubobj_CRT
