@@ -87,9 +87,9 @@ private:
   art::ServiceHandle<art::TFileService> tfs;
   // Declare member data here.                                       
 
-  uint32_t fEvtNum; //Number of current event                       
-  uint32_t frunNum;                //Run Number taken from event     
-  uint32_t fsubRunNum;             //Subrun Number taken from event
+  // unused uint32_t fEvtNum; //Number of current event
+  // unused uint32_t frunNum;                //Run Number taken from event
+  // unused uint32_t fsubRunNum;             //Subrun Number taken from event
                                                                      
   std::string  data_labelCRTtrack_;
   std::string  data_labelCRThit_;
