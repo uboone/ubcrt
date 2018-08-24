@@ -358,7 +358,26 @@ double crt::auxfunctions::CRT_Only_Offset(uint32_t sec){
 }
 
 
+double crt::auxfunctions::CalTheta(double x, double y, double z){
 
+  double PI = 3.14159265;
+  double L = sqrt(pow(x,2) + pow(y,2) + pow(z,2));
+
+  double Theta = acos( sqrt(pow(x,2) + pow(z,2) ) /L ) * (180/PI);
+
+  return Theta;
+  
+}
+
+
+double crt::auxfunctions::CalPhi(double x, double y, double z){
+
+    double PI = 3.14159265;
+
+    double Phi = atan(z/x) * (180/PI);
+
+    return Phi;
+}
 
 
 

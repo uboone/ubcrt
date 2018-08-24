@@ -69,6 +69,10 @@ struct TS0_CORRECTION{
     
     double offset;
     double CRT_Only_Offset(uint32_t sec);
+
+    double CalTheta(double x, double y, double z);//Theta angle w.r.t. Y axis
+    double CalPhi(double x, double y, double z);//Phi angle w.r.t. X axis
+
     
   }
   
