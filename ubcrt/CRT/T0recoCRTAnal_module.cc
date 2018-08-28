@@ -232,40 +232,12 @@ void crt::T0recoCRTAnal::analyze(art::Event const & evt)
   // grab flashes associated with tracks 
   art::FindMany<recob::OpFlash> trk_flash_assn_v(rawHandle_TPCtrack, evt, data_label_T0reco_ );
   
-  for(std::vector<int>::size_type i = 0; i != TPCTrackCollection.size(); i++) {//A                                  
-    
-    recob::Track my_TPCTrack = TPCTrackCollection[i];
+  if( CRTTrackCollection.size()<40) {//A0 cut in showers
 
-    
-      auto TPCTrackLength =  my_TPCTrack.Length();
- 
-      bool cutLen = false;
-      /*  if ( (2.1 < TPCTrackLength)  && (TPCTrackLength < 15.) ) cutLen = true;
-    else if( (16. < TPCTrackLength) && (TPCTrackLength  < 37.) ) cutLen = true;
-    else if( (38. < TPCTrackLength) && (TPCTrackLength  < 65.) ) cutLen = true;
-    else if( (66. < TPCTrackLength) && (TPCTrackLength  < 92.) ) cutLen = true;
-    else if( (93. < TPCTrackLength) && (TPCTrackLength  < 98.) ) cutLen = true;
-    else if( (99. < TPCTrackLength) && (TPCTrackLength  < 138.) ) cutLen = true;
-    else if( (139. < TPCTrackLength) && (TPCTrackLength  < 800.) ) cutLen = true;
-      */
-
-    if ( (4.1 < TPCTrackLength)  && (TPCTrackLength < 7.) ) cutLen = true;
-    else if( (8. < TPCTrackLength) && (TPCTrackLength  < 13.) ) cutLen = true;
-    else if( (14. < TPCTrackLength) && (TPCTrackLength  < 18.) ) cutLen = true;
-    else if( (20. < TPCTrackLength) && (TPCTrackLength  < 30.) ) cutLen = true;
-    else if( (31. < TPCTrackLength) && (TPCTrackLength  < 34.) ) cutLen = true;
-    else if( (35. < TPCTrackLength) && (TPCTrackLength  < 37.) ) cutLen = true;
-    else if( (38. < TPCTrackLength) && (TPCTrackLength  < 45.) ) cutLen = true;
-    else if( (46. < TPCTrackLength) && (TPCTrackLength  < 97.) ) cutLen = true;
-    else if( (98. < TPCTrackLength) && (TPCTrackLength  < 150.) ) cutLen = true;
-    else if( (151. < TPCTrackLength) && (TPCTrackLength  < 178.) ) cutLen = true;
-    else if( (179. < TPCTrackLength) && (TPCTrackLength  < 239.) ) cutLen = true;
-    else if( (240. < TPCTrackLength) && (TPCTrackLength  < 283.) ) cutLen = true;
-    else if( (284. < TPCTrackLength) && (TPCTrackLength  < 800.) ) cutLen = true;
-
-    if(cutLen){//AB Cut in TPC Track Length
-    
-    //if(CRTHitCollection.size()>0 && CRTHitCollection.size()<200){//AB //cut 0 and showers    
+    for(std::vector<int>::size_type i = 0; i != TPCTrackCollection.size(); i++) {//A                                  
+      
+      recob::Track my_TPCTrack = TPCTrackCollection[i];
+      //auto TPCTrackLength =  my_TPCTrack.Length();
       
       std::vector<TVector3> sorted_trk;
       SortTrackPoints(my_TPCTrack,sorted_trk);
@@ -325,7 +297,6 @@ void crt::T0recoCRTAnal::analyze(art::Event const & evt)
 	  
 	}
 	
-	//Comparar los dos vectores directores....                                                                                                                
 	double ThetaDiff = TPCTheta-CRTTheta;
 	double ThetaDiffABS = fabs(ThetaDiff);
 	double PhiDiff = TPCPhi-CRTPhi;
@@ -335,7 +306,6 @@ void crt::T0recoCRTAnal::analyze(art::Event const & evt)
 	  
 	  int CRTTrack_T1_nsec = my_CRTTrack.ts1_ns + fHardDelay_;
 	  
-	  //For these tracks, check if they have a T0, if so, compare with CRTTrack Time...                                                                      
 	  int countFlash = 0;
 	  for(std::vector<int>::size_type j = 0; j != OpFlashCollection.size(); j++) {//D //look for flash in time with CRTTrack                             	  
 	    recob::OpFlash my_OpFlash = OpFlashCollection[j];
@@ -343,7 +313,6 @@ void crt::T0recoCRTAnal::analyze(art::Event const & evt)
 	    auto Timeflash_ns = (Timeflash * 1000);
 	    
 	    int TdiffT1_nsec = Timeflash_ns - CRTTrack_T1_nsec;
-	    //hGeoMatch->Fill(TdiffT1_nsec);
 	    
 	    if( ((TdiffT1_nsec)>310)  &&  ((TdiffT1_nsec)<570) ) countFlash++;
 	    if( ((TdiffT1_nsec)> -8700)  &&  ((TdiffT1_nsec)< -8620) ) countFlash++;
@@ -375,7 +344,6 @@ void crt::T0recoCRTAnal::analyze(art::Event const & evt)
 	      //getchar();
 	    }
 	    
-            //For this Tracks matched in time, is there a T0 and flash associated?                                                                        
             
             const std::vector<const anab::T0*>& T0_v = trk_t0_assn_v.at(i);
 	    
@@ -440,10 +408,10 @@ void crt::T0recoCRTAnal::analyze(art::Event const & evt)
 	}//C                                                                                                                                                     
 	
       }//B                                                                                                                                                       
-    } //AB Cut in TPC Track Length     
-  }//A 
 
+    }//A 
 
+  }//A0 cut in showers
 
 
 

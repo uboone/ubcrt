@@ -311,369 +311,334 @@ void crt::CRTeffStd::analyze(art::Event const & evt)
   // grab calorimetry associated with tracks
   art::FindMany<anab::Calorimetry> trk_calo_assn_v(rawHandle_TPCtrack, evt, data_label_Calorimetry_  );
   
+
+  if(CRTTrackCollection.size()<40){//A0 //cut in shower events
   
-  for(std::vector<int>::size_type i = 0; i != TPCTrackCollection.size(); i++) {//A
+    for(std::vector<int>::size_type i = 0; i != TPCTrackCollection.size(); i++) {//A
     
-    recob::Track my_TPCTrack = TPCTrackCollection[i];
-
-    auto TPCTrackLength =  my_TPCTrack.Length();
-    hTPCTlength->Fill(TPCTrackLength);
-  
+      recob::Track my_TPCTrack = TPCTrackCollection[i];
       
-    bool cutLen = false;
-    
-    /*  if ( (2.1 < TPCTrackLength)  && (TPCTrackLength < 15.) ) cutLen = true;
-    else if( (16. < TPCTrackLength) && (TPCTrackLength  < 37.) ) cutLen = true;
-    else if( (38. < TPCTrackLength) && (TPCTrackLength  < 65.) ) cutLen = true;
-    else if( (66. < TPCTrackLength) && (TPCTrackLength  < 92.) ) cutLen = true;
-    else if( (93. < TPCTrackLength) && (TPCTrackLength  < 98.) ) cutLen = true;
-    else if( (99. < TPCTrackLength) && (TPCTrackLength  < 138.) ) cutLen = true;
-    else if( (139. < TPCTrackLength) && (TPCTrackLength  < 800.) ) cutLen = true;
-    */
-    
-    if ( (4.1 < TPCTrackLength)  && (TPCTrackLength < 7.) ) cutLen = true;
-    else if( (8. < TPCTrackLength) && (TPCTrackLength  < 13.) ) cutLen = true;
-    else if( (14. < TPCTrackLength) && (TPCTrackLength  < 18.) ) cutLen = true;
-    else if( (20. < TPCTrackLength) && (TPCTrackLength  < 30.) ) cutLen = true;
-    else if( (31. < TPCTrackLength) && (TPCTrackLength  < 34.) ) cutLen = true;
-    else if( (35. < TPCTrackLength) && (TPCTrackLength  < 37.) ) cutLen = true;
-    else if( (38. < TPCTrackLength) && (TPCTrackLength  < 45.) ) cutLen = true;
-    else if( (46. < TPCTrackLength) && (TPCTrackLength  < 97.) ) cutLen = true;
-    else if( (98. < TPCTrackLength) && (TPCTrackLength  < 150.) ) cutLen = true;
-    else if( (151. < TPCTrackLength) && (TPCTrackLength  < 178.) ) cutLen = true;
-    else if( (179. < TPCTrackLength) && (TPCTrackLength  < 239.) ) cutLen = true;
-    else if( (240. < TPCTrackLength) && (TPCTrackLength  < 283.) ) cutLen = true;
-    else if( (284. < TPCTrackLength) && (TPCTrackLength  < 800.) ) cutLen = true;
-
-    if(cutLen){//AB Cut in TPC Track Length
+      auto TPCTrackLength =  my_TPCTrack.Length();
+      hTPCTlength->Fill(TPCTrackLength);
       
-      if(CRTHitCollection.size()>0 && CRTHitCollection.size()<200){//ABC //cut 0 and showers
-
-	// Chris::get sorted points for the track object [assuming downwards going]      
-	std::vector<TVector3> sorted_trk;
-	SortTrackPoints(my_TPCTrack,sorted_trk);
-    
-    auto const& top    = sorted_trk.at(0);
-    auto const& bottom = sorted_trk.at(sorted_trk.size() - 1);
-        
-    
-    const std::vector<const anab::T0*>& T0_v = trk_t0_assn_v.at(i);
-    
-    const std::vector<const recob::OpFlash*>& flash_v = trk_flash_assn_v.at(i);
-    
-    const std::vector<const anab::Calorimetry*>& Calo_v = trk_calo_assn_v.at(i);
-    
-    if(verbose_==3){    
-      std::cout<< " Track "<<i<<" for this event has\t"
-	       << flash_v.size() << "\tflash objects associated to this track["<<i<<"]\t"
-	       << T0_v.size() << "\tT0 objects associated to this track["<<i<<"]\t"
-	       << Calo_v.size() << "\tCalorimetry objects associated to this track["<<i<<"]" << std::endl;  
+      // Chris::get sorted points for the track object [assuming downwards going]      
+      std::vector<TVector3> sorted_trk;
+      SortTrackPoints(my_TPCTrack,sorted_trk);
       
-      if( (flash_v.size() != 0) || (T0_v.size() != 0) ) getchar();
-    }
-    
+      auto const& top    = sorted_trk.at(0);
+      auto const& bottom = sorted_trk.at(sorted_trk.size() - 1);
       
       
-    if( (flash_v.size() != 0) && (T0_v.size() != 0)  ){//B
+      const std::vector<const anab::T0*>& T0_v = trk_t0_assn_v.at(i);
       
-      auto t0 = T0_v.at(0);
-      auto TimeT0 = t0->Time();
-      auto TimeT0_ns = (TimeT0 * 1000);      
+      const std::vector<const recob::OpFlash*>& flash_v = trk_flash_assn_v.at(i);
       
-      auto flash = flash_v.at(0);
-      auto Timeflash = flash->Time(); //in us from trigger time 
-      auto Timeflash_ns = (Timeflash * 1000);
-      auto Timeflash_ns_GPS = evt_timeGPS_nsec + (Timeflash * 1000);
-      uint32_t Flash_sec = evt_timeGPS_sec;
-      auto TotalPE = flash->TotalPE();
-      double FlashY = flash->YCenter();
-      double FlashZ = flash->ZCenter();
-            
-      hFlashTimeDis->Fill(Timeflash);
-      hFlashZY->Fill(FlashZ,FlashY);
-      hPES->Fill(TotalPE);
-      hPESvsZ->Fill(FlashZ,TotalPE);      
-
-      //Correct track position by T0
-      double T[] = {top.X() - (TimeT0 * fvdrift_),top.Y(),top.Z()}; //x corrected by T0
-      double B[] = {bottom.X() - (TimeT0 * fvdrift_),bottom.Y(),bottom.Z()};//x corrected by T0
-      double V[] = {B[0] - T[0], B[1] - T[1], B[2] - T[2]};
-      //Correct track position by T0
+      const std::vector<const anab::Calorimetry*>& Calo_v = trk_calo_assn_v.at(i);
       
-      double TrackTheta = CalTheta(V[0],V[1],V[2]);
-      double TrackPhi = CalPhi(V[0],V[1],V[2]);
-
-      //test
-      //TimeT0=Timeflash; //what is the different between T0 and FlashTime?
-      
-      double TotCal= CalorInter(Calo_v);
-      auto TotCalNorm = TotCal/TPCTrackLength;
-      
-      hCalvsLen->Fill(TotCal,TPCTrackLength);
-      hTotCalNorm->Fill(TotCalNorm);
-      
-      if(verbose_==3){
-	std::cout<<"Flash information: this flash is in time with TPC track "<<i<<std::endl;
-	std::cout<<"Flash time: "<<Flash_sec<< " seconds"<<std::endl;
-	std::cout<<"Flash time: "<<Timeflash<< "  us w.r.t to trigger"<<std::endl;
-	std::cout<<"Flash time: "<<Timeflash_ns<< "  ns w.r.t to trigger"<<std::endl;
-	std::cout<<"Flash time: "<<Timeflash_ns_GPS<< "  ns in GPS"<<std::endl;
+      if(verbose_==3){    
+	std::cout<< " Track "<<i<<" for this event has\t"
+		 << flash_v.size() << "\tflash objects associated to this track["<<i<<"]\t"
+		 << T0_v.size() << "\tT0 objects associated to this track["<<i<<"]\t"
+		 << Calo_v.size() << "\tCalorimetry objects associated to this track["<<i<<"]" << std::endl;  
 	
-	std::cout<<"T0::Time:  "<<TimeT0<< " us w.r.t to trigger"<<std::endl;
-	std::cout<<"T0::Time_ns:  "<<TimeT0_ns<< " ns w.r.t to trigger"<<std::endl;
-	
-	std::cout<<"PES: "<<TotalPE<<std::endl;
-	std::cout<<"Calorimetry for this track is: "<<TotCal<<" ion e-"<<std::endl;
-	std::cout<<"TPC Track Length is: "<<TPCTrackLength<<" cm"<<std::endl;
-	std::cout<<"TrackTheta: "<<TrackTheta<<std::endl;
-	std::cout<<"TrackPhi: "<<TrackPhi<<std::endl;
-	getchar();
-	
+	if( (flash_v.size() != 0) || (T0_v.size() != 0) ) getchar();
       }
       
-      int Hitcounter=0;
       
-      for(std::vector<int>::size_type j = 0; j != CRTHitCollection.size(); j++) {//C
+      
+      if( (flash_v.size() != 0) && (T0_v.size() != 0)  ){//B
 	
-	crt::CRTHit my_CRTHit = CRTHitCollection[j];
+	auto t0 = T0_v.at(0);
+	auto TimeT0 = t0->Time();
+	auto TimeT0_ns = (TimeT0 * 1000);      
 	
-	int Hit_sec = my_CRTHit.ts0_s;
+	auto flash = flash_v.at(0);
+	auto Timeflash = flash->Time(); //in us from trigger time 
+	auto Timeflash_ns = (Timeflash * 1000);
+	auto Timeflash_ns_GPS = evt_timeGPS_nsec + (Timeflash * 1000);
+	uint32_t Flash_sec = evt_timeGPS_sec;
+	auto TotalPE = flash->TotalPE();
+	double FlashY = flash->YCenter();
+	double FlashZ = flash->ZCenter();
 	
-	int Hit_T1_nsec = my_CRTHit.ts1_ns + fHardDelay_;
-	int Hit_T0_nsec = my_CRTHit.ts0_ns;
-	  
-	int diff_sec = Flash_sec - Hit_sec;
-	int diff_secABS = std::abs(diff_sec);
+	hFlashTimeDis->Fill(Timeflash);
+	hFlashZY->Fill(FlashZ,FlashY);
+	hPES->Fill(TotalPE);
+	hPESvsZ->Fill(FlashZ,TotalPE);      
 	
-	int diffT1_nsec = Timeflash_ns - Hit_T1_nsec;
-	int diffT1_nsecABS = std::abs(diffT1_nsec);
+	//Correct track position by T0
+	double T[] = {top.X() - (TimeT0 * fvdrift_),top.Y(),top.Z()}; //x corrected by T0
+	double B[] = {bottom.X() - (TimeT0 * fvdrift_),bottom.Y(),bottom.Z()};//x corrected by T0
+	double V[] = {B[0] - T[0], B[1] - T[1], B[2] - T[2]};
+	//Correct track position by T0
 	
-	int diffT0_nsec = Timeflash_ns_GPS - Hit_T0_nsec;
-	int diffT0_nsecABS = std::abs(diffT0_nsec);
+	double TrackTheta = crt::auxfunctions::CalTheta(V[0],V[1],V[2]);
+	double TrackPhi = crt::auxfunctions::CalPhi(V[0],V[1],V[2]);
 	
-	hTFvsTH_t1->Fill(diffT1_nsec);
-	hTFvsTH_t0->Fill(diffT0_nsec);
-	hTFvsTH_t0_t1->Fill(diffT0_nsecABS, diffT1_nsecABS);
+	double TotCal= CalorInter(Calo_v);
+	auto TotCalNorm = TotCal/TPCTrackLength;
 	
-	if( ((diffT1_nsec)>(300))  &&  ((diffT1_nsec)<(600)) ){//D : cut in time, T1 matched with Flash
+	hCalvsLen->Fill(TotCal,TPCTrackLength);
+	hTotCalNorm->Fill(TotCalNorm);
+	
+	if(verbose_==3){
+	  std::cout<<"Flash information: this flash is in time with TPC track "<<i<<std::endl;
+	  std::cout<<"Flash time: "<<Flash_sec<< " seconds"<<std::endl;
+	  std::cout<<"Flash time: "<<Timeflash<< "  us w.r.t to trigger"<<std::endl;
+	  std::cout<<"Flash time: "<<Timeflash_ns<< "  ns w.r.t to trigger"<<std::endl;
+	  std::cout<<"Flash time: "<<Timeflash_ns_GPS<< "  ns in GPS"<<std::endl;
 	  
-	  //Para esta TPC track tengo su time del flash, y tengo al menos un CRTHit.
+	  std::cout<<"T0::Time:  "<<TimeT0<< " us w.r.t to trigger"<<std::endl;
+	  std::cout<<"T0::Time_ns:  "<<TimeT0_ns<< " ns w.r.t to trigger"<<std::endl;
 	  
-	  hTPCXY_bottom -> Fill(bottom.X() - (TimeT0 * fvdrift_), bottom.Y());
-	  hTPCZY_bottom -> Fill(bottom.Z(), bottom.Y());
-
-	  hTPCXY_top -> Fill(top.X() - (TimeT0 * fvdrift_), top.Y());
-	  hTPCZY_top -> Fill(top.Z(), top.Y());
+	  std::cout<<"PES: "<<TotalPE<<std::endl;
+	  std::cout<<"Calorimetry for this track is: "<<TotCal<<" ion e-"<<std::endl;
+	  std::cout<<"TPC Track Length is: "<<TPCTrackLength<<" cm"<<std::endl;
+	  std::cout<<"TrackTheta: "<<TrackTheta<<std::endl;
+	  std::cout<<"TrackPhi: "<<TrackPhi<<std::endl;
+	  getchar();
 	  
-	  hCRTXY->Fill(my_CRTHit.x_pos,my_CRTHit.y_pos);
-	  hCRTZY->Fill(my_CRTHit.z_pos,my_CRTHit.y_pos);
+	}
+	
+	int Hitcounter=0;
+	
+	for(std::vector<int>::size_type j = 0; j != CRTHitCollection.size(); j++) {//C
 	  
+	  crt::CRTHit my_CRTHit = CRTHitCollection[j];
 	  
-	  Hitcounter++;
+	  int Hit_sec = my_CRTHit.ts0_s;
 	  
-	  if(my_CRTHit.plane==0){//Bottom Hits
+	  int Hit_T1_nsec = my_CRTHit.ts1_ns + fHardDelay_;
+	  int Hit_T0_nsec = my_CRTHit.ts0_ns;
+	  
+	  int diff_sec = Flash_sec - Hit_sec;
+	  int diff_secABS = std::abs(diff_sec);
+	  
+	  int diffT1_nsec = Timeflash_ns - Hit_T1_nsec;
+	  int diffT1_nsecABS = std::abs(diffT1_nsec);
+	  
+	  int diffT0_nsec = Timeflash_ns_GPS - Hit_T0_nsec;
+	  int diffT0_nsecABS = std::abs(diffT0_nsec);
+	  
+	  hTFvsTH_t1->Fill(diffT1_nsec);
+	  hTFvsTH_t0->Fill(diffT0_nsec);
+	  hTFvsTH_t0_t1->Fill(diffT0_nsecABS, diffT1_nsecABS);
+	  
+	  if( ((diffT1_nsec)>(300))  &&  ((diffT1_nsec)<(600)) ){//D : cut in time, T1 matched with Flash
 	    
-	    double BotY = -261; //Intersection with Bottom
+	    hTPCXY_bottom -> Fill(bottom.X() - (TimeT0 * fvdrift_), bottom.Y());
+	    hTPCZY_bottom -> Fill(bottom.Z(), bottom.Y());
+	    
+	    hTPCXY_top -> Fill(top.X() - (TimeT0 * fvdrift_), top.Y());
+	    hTPCZY_top -> Fill(top.Z(), top.Y());
+	    
+	    hCRTXY->Fill(my_CRTHit.x_pos,my_CRTHit.y_pos);
+	    hCRTZY->Fill(my_CRTHit.z_pos,my_CRTHit.y_pos);
+	    
+	    
+	    Hitcounter++;
+	    
+	    if(my_CRTHit.plane==0){//Bottom Hits
 	      
-	    double Xcal = ( ( ( BotY - T[1]) / V[1]    ) * V[0] ) + T[0];
-	    double Zcal = ( ( ( BotY - T[1]) / V[1]    ) * V[2] ) + T[2];
+	      double BotY = -261; //Intersection with Bottom
+	      
+	      double Xcal = ( ( ( BotY - T[1]) / V[1]    ) * V[0] ) + T[0];
+	      double Zcal = ( ( ( BotY - T[1]) / V[1]    ) * V[2] ) + T[2];
+	      
+	      hDiffX_bot->Fill(Xcal - my_CRTHit.x_pos);
+	      hDiffZ_bot->Fill(Zcal - my_CRTHit.z_pos);
+	      
+	      hDiffXvsX_bot->Fill(my_CRTHit.x_pos,Xcal - my_CRTHit.x_pos);
+	      hDiffXvsX_bot_prof->Fill(my_CRTHit.x_pos, Xcal - my_CRTHit.x_pos);
+	      
+	      hBot->Fill(Zcal,Xcal);
+	      
+	      hDiffXvsCal_bot->Fill(TotCalNorm, Xcal - my_CRTHit.x_pos);
+	      hDiffXvsCal_bot_prof->Fill(TotCalNorm, Xcal - my_CRTHit.x_pos);
+	      
+	    }//Bottom Hits
 	    
-	    hDiffX_bot->Fill(Xcal - my_CRTHit.x_pos);
-	    hDiffZ_bot->Fill(Zcal - my_CRTHit.z_pos);
 	    
-	    hDiffXvsX_bot->Fill(my_CRTHit.x_pos,Xcal - my_CRTHit.x_pos);
-	    hDiffXvsX_bot_prof->Fill(my_CRTHit.x_pos, Xcal - my_CRTHit.x_pos);
+	    if(my_CRTHit.plane==1){//FT Hits
+	      
+	      double FT_X = -142.484;//Intersection with Feedthrough
+	      
+	      double Ycal = ( ( ( FT_X - T[0]) / V[0]    ) * V[1] ) + T[1];
+	      double Zcal = ( ( ( FT_X - T[0]) / V[0]    ) * V[2] ) + T[2];
+	      
+	      hDiffY_ft->Fill(Ycal - my_CRTHit.y_pos);
+	      hDiffZ_ft->Fill(Zcal - my_CRTHit.z_pos);
+	      
+	      hFT->Fill(Zcal,Ycal);
+	      
+	      
+	    }//Intersection with Feedthrough
 	    
-	    hBot->Fill(Zcal,Xcal);
 	    
-	    hDiffXvsCal_bot->Fill(TotCalNorm, Xcal - my_CRTHit.x_pos);
-	    hDiffXvsCal_bot_prof->Fill(TotCalNorm, Xcal - my_CRTHit.x_pos);
+	    if(my_CRTHit.plane==2){//Pipe Hits
+	      
+	      double Pipe_X = 383.016;//Intersection with Pipe //average->3 layers, 2 intersections
+	      
+	      double Ycal = ( ( ( Pipe_X - T[0]) / V[0]    ) * V[1] ) + T[1];
+	      double Zcal = ( ( ( Pipe_X - T[0]) / V[0]    ) * V[2] ) + T[2];
+	      
+	      
+	      Ycal = Ycal + (0.103531 * my_CRTHit.y_pos); //Ycorr
+	      
+	      hDiffY_pipe->Fill(Ycal - my_CRTHit.y_pos);
+	      hDiffZ_pipe->Fill(Zcal - my_CRTHit.z_pos);
+	      
+	      hDiffY_pipe_vsY->Fill(my_CRTHit.y_pos,Ycal - my_CRTHit.y_pos);
+	      hDiffY_pipe_vsY_prof->Fill(my_CRTHit.y_pos,Ycal - my_CRTHit.y_pos);
+	      
+	      
+	      hPipe->Fill(Zcal,Ycal);
+	      
+	    }//Pipe Hits
 	    
-	  }//Bottom Hits
+	    if(my_CRTHit.plane==3){//Top Hits
+	      
+	      double TopY = 658.25;
+	      
+	      double Xcal = ( ( ( TopY - T[1]) / V[1]    ) * V[0] ) + T[0];
+	      double Zcal = ( ( ( TopY - T[1]) / V[1]    ) * V[2] ) + T[2];
+	      
+	      hDiffX_top->Fill(Xcal - my_CRTHit.x_pos);
+	      hDiffZ_top->Fill(Zcal - my_CRTHit.z_pos);
+	      
+	      hTop->Fill(Zcal,Xcal);
+	      
+	    }//Top Hits
+	    
+	    if(verbose_==3){
+	      std::cout<<"Flash_sec - Hit_sec: "<<diff_sec<<std::endl;
+	      std::cout<<"ABS( Flash_sec - Hit_sec ): "<<diff_secABS<<std::endl;
+	      std::cout<<" "<<std::endl;
+	      std::cout<<"Hit_ns(T1): "<<Hit_T1_nsec<<std::endl;
+	      std::cout<<"Flash_nsec(w.r.t. Trigger): "<<Timeflash_ns<<std::endl;
+	      std::cout<<"     Flash_nsec - Hit_nsec(T1)  : "<<diffT1_nsec<<std::endl;
+	      std::cout<<"ABS( Flash_nsec - Hit_nsec(T1) ): "<<diffT1_nsecABS<<std::endl;
+	      std::cout<<" "<<std::endl;
+	      std::cout<<"Hit_ns(T0): "<<Hit_T0_nsec<<std::endl;
+	      std::cout<<"Flash_nsec(GPS units): "<<Timeflash_ns_GPS<<std::endl;
+	      std::cout<<"     Flash_nsec - Hit_nsec(T0)  : "<<diffT0_nsec<<std::endl;
+	      std::cout<<"ABS( Flash_nsec - Hit_nsec(T0) ): "<<diffT0_nsecABS<<std::endl;
+	      getchar();
+	    }
+	    
+	  }//D : cut in time, T1 matched with Flash  
 	  
-	  
-	  if(my_CRTHit.plane==1){//FT Hits
-	    
-	    double FT_X = -142.484;//Intersection with Feedthrough
-	    
-	    double Ycal = ( ( ( FT_X - T[0]) / V[0]    ) * V[1] ) + T[1];
-	    double Zcal = ( ( ( FT_X - T[0]) / V[0]    ) * V[2] ) + T[2];
-	    
-	    hDiffY_ft->Fill(Ycal - my_CRTHit.y_pos);
-	    hDiffZ_ft->Fill(Zcal - my_CRTHit.z_pos);
-	    
-	    hFT->Fill(Zcal,Ycal);
-	    
-
-	  }//Intersection with Feedthrough
-	    
-	    
-	  if(my_CRTHit.plane==2){//Pipe Hits
-	    
-	    double Pipe_X = 383.016;//Intersection with Pipe //average->3 layers, 2 intersections
-	    
-	    double Ycal = ( ( ( Pipe_X - T[0]) / V[0]    ) * V[1] ) + T[1];
-	    double Zcal = ( ( ( Pipe_X - T[0]) / V[0]    ) * V[2] ) + T[2];
-
-
-	    Ycal = Ycal + (0.103531 * my_CRTHit.y_pos); //Ycorr
-	    
-	    hDiffY_pipe->Fill(Ycal - my_CRTHit.y_pos);
-	    hDiffZ_pipe->Fill(Zcal - my_CRTHit.z_pos);
-
-	    hDiffY_pipe_vsY->Fill(my_CRTHit.y_pos,Ycal - my_CRTHit.y_pos);
-	    hDiffY_pipe_vsY_prof->Fill(my_CRTHit.y_pos,Ycal - my_CRTHit.y_pos);
-
-	    
-	    hPipe->Fill(Zcal,Ycal);
-	    
-	  }//Pipe Hits
-	  
-	  if(my_CRTHit.plane==3){//Top Hits
-	    
-	    double TopY = 658.25;
-	    
-	    double Xcal = ( ( ( TopY - T[1]) / V[1]    ) * V[0] ) + T[0];
-	    double Zcal = ( ( ( TopY - T[1]) / V[1]    ) * V[2] ) + T[2];
-	    
-	    hDiffX_top->Fill(Xcal - my_CRTHit.x_pos);
-	    hDiffZ_top->Fill(Zcal - my_CRTHit.z_pos);
-	    
-	    hTop->Fill(Zcal,Xcal);
-	    
-	  }//Top Hits
-	  
-	  if(verbose_==3){
-	    std::cout<<"Flash_sec - Hit_sec: "<<diff_sec<<std::endl;
-	    std::cout<<"ABS( Flash_sec - Hit_sec ): "<<diff_secABS<<std::endl;
-	    std::cout<<" "<<std::endl;
-	    std::cout<<"Hit_ns(T1): "<<Hit_T1_nsec<<std::endl;
-	    std::cout<<"Flash_nsec(w.r.t. Trigger): "<<Timeflash_ns<<std::endl;
-	    std::cout<<"     Flash_nsec - Hit_nsec(T1)  : "<<diffT1_nsec<<std::endl;
-	    std::cout<<"ABS( Flash_nsec - Hit_nsec(T1) ): "<<diffT1_nsecABS<<std::endl;
-	    std::cout<<" "<<std::endl;
-	    std::cout<<"Hit_ns(T0): "<<Hit_T0_nsec<<std::endl;
-	    std::cout<<"Flash_nsec(GPS units): "<<Timeflash_ns_GPS<<std::endl;
-	    std::cout<<"     Flash_nsec - Hit_nsec(T0)  : "<<diffT0_nsec<<std::endl;
-	    std::cout<<"ABS( Flash_nsec - Hit_nsec(T0) ): "<<diffT0_nsecABS<<std::endl;
-	    getchar();
-	  }
-	  
-	}//D : cut in time, T1 matched with Flash  
+	}//C  //Hits loop
 	
-      }//C  //Hits loop
-      
-      hNCRTHitsperFlash->Fill(Hitcounter);
-      hNCRTHitsperFlashClone->Fill(Hitcounter);
-           
-            
-      int Trackcounter=0;      
-      
-      for(std::vector<int>::size_type k = 0; k != CRTTrackCollection.size(); k++) {//E
+	hNCRTHitsperFlash->Fill(Hitcounter);
+	hNCRTHitsperFlashClone->Fill(Hitcounter);
 	
-	crt::CRTTrack my_CRTTrack = CRTTrackCollection[k];
-	
-	int CRTTrack_sec = my_CRTTrack.ts0_s;                                                                            
-	
-	int CRTTrack_T1_nsec = my_CRTTrack.ts1_ns + fHardDelay_;                                                         
-	int CRTTrack_T0_nsec = my_CRTTrack.ts0_ns;                                                                       
-	
-	int Tdiff_sec = Flash_sec - CRTTrack_sec;                                                                        
-	int Tdiff_secABS = std::abs(Tdiff_sec);                                                                       
-	
-	int TdiffT1_nsec = Timeflash_ns - CRTTrack_T1_nsec;                                                              
-	int TdiffT1_nsecABS = std::abs(TdiffT1_nsec);                                                                 
-	
-	int TdiffT0_nsec = Timeflash_ns_GPS - CRTTrack_T0_nsec;                                                          
-	int TdiffT0_nsecABS = std::abs(TdiffT0_nsec);                                                                 
-
-
-	hTFvsTT_t1->Fill(TdiffT1_nsec);
-	hTFvsTT_t0->Fill(TdiffT0_nsec);
-	hTFvsTT_t0_t1->Fill(TdiffT0_nsecABS, TdiffT1_nsecABS);
-	
-	
-	if( ((TdiffT1_nsec)>300)  &&  ((TdiffT1_nsec)<600) ){//F:: cut in time T1
-	  
-	  Trackcounter++;
-	  hTPCTvsCRTT->Fill(my_CRTTrack.length,TPCTrackLength);
-	  
-	  
-	  //flash and CRTTrack
-	  double Th1[] = {my_CRTTrack.x1_pos,my_CRTTrack.y1_pos,my_CRTTrack.z1_pos};
-	  double Th2[] = {my_CRTTrack.x2_pos,my_CRTTrack.y2_pos,my_CRTTrack.z2_pos};
-	  double TV[]  = {Th2[0] - Th1[0], Th2[1] - Th1[1], Th2[2] - Th1[2]};
-	  
-	  double CRT_Z_atTPC_Y0 = ( ( ( 0 - Th1[1]) / TV[1]    ) * TV[2] ) + Th1[2]; //Z del CRTTrack at TPC Y=0
-	  double CRT_Y_atTPC_Y0 = ( ( ( FlashZ - Th1[2]) / TV[2]    ) * TV[1] ) + Th1[1];
-	  
-	  double CRTTheta = CalTheta(TV[0],TV[1],TV[2]);
-	  double CRTPhi = CalPhi(TV[0],TV[1],TV[2]);
-
-	  hTheta->Fill(CRTTheta);
-	  hPhi->Fill(CRTPhi);
-
-
-	  if(verbose_==7){
-	    std::cout.precision(19);                                                                                  
-	    std::cout<<"Flash_nsec(w.r.t. Trigger): "<<Timeflash_ns<<std::endl;                                       
-	    std::cout<<"CRT_Track_ns(T1): "<<CRTTrack_T1_nsec<<std::endl;
-	    std::cout<<"                                   Time Diff:: "<<Timeflash_ns - CRTTrack_T1_nsec<<std::endl;
-	    std::cout<<"TPC DV-> X: "<<V[0]<<" Y: "<<V[1]<<" Z: "<<V[2]<<std::endl;
-	    std::cout<<"CRT DV-> X: "<<TV[0]<<" Y: "<<TV[1]<<" Z: "<<TV[2]<<std::endl;
-	    std::cout<<"TPCTrack_Theta: "<<TrackTheta<<"  TPCTrack_Phi: "<<TrackPhi<<std::endl;                            
-	    std::cout<<"CRTTrack_Theta: "<<CRTTheta<<"    CRTTrack_Phi: "<<CRTPhi<<std::endl;                                                      
-	    getchar();	  
-	  }
-	  
-	  hDiffTheta->Fill(TrackTheta-CRTTheta);
-	  hDiffPhi->Fill(TrackPhi-CRTPhi);
-	  hDiffTheta2D->Fill(TrackTheta,CRTTheta);
-	  hDiffPhi2D->Fill(TrackPhi,CRTPhi);
-	  hDiffThetaPhi2D->Fill(TrackTheta-CRTTheta,TrackPhi-CRTPhi);
-	  
-	  hDiffThetavsTPCLength->Fill(TrackTheta-CRTTheta,TPCTrackLength);
-	  
-	  hDiffY_FlaTra->Fill(FlashY - CRT_Y_atTPC_Y0);
-	  hDiffY_FlaTra2D->Fill(FlashY,CRT_Y_atTPC_Y0);
-	  hDiffY_FlaTra2D_prof->Fill(FlashY,CRT_Y_atTPC_Y0);
-
-	  hDiffZ_FlaTra->Fill(FlashZ - CRT_Z_atTPC_Y0);
-	  hDiffZ_FlaTra2D->Fill(FlashZ,CRT_Z_atTPC_Y0);
-	  hDiffZ_FlaTra2D_prof->Fill(FlashZ,CRT_Z_atTPC_Y0);
-	  
-	  if(verbose_==1){                                                                                            
-	    std::cout.precision(19);                                                                                  
-	    std::cout<<"Flash_sec - Track_sec: "<<Tdiff_sec<<std::endl;                                               
-	    std::cout<<"ABS( Flash_sec - Track_sec ): "<<Tdiff_secABS<<std::endl;                                     
-	    std::cout<<" "<<std::endl;                                                                                
-	    std::cout<<"Track_ns(T1): "<<CRTTrack_T1_nsec<<std::endl;                                                    
-	    std::cout<<"Flash_nsec(w.r.t. Trigger): "<<Timeflash_ns<<std::endl;                                       
-	    std::cout<<"     Flash_nsec - Track_nsec(T1)  : "<<TdiffT1_nsec<<std::endl;                               
-	    std::cout<<"ABS( Flash_nsec - Track_nsec(T1) ): "<<TdiffT1_nsecABS<<std::endl;                            
-	    std::cout<<" "<<std::endl;                                                                                
-	    std::cout<<"Track_ns(T0): "<<CRTTrack_T0_nsec<<std::endl;                                                    
-	    std::cout<<"Flash_nsec(GPS units): "<<Timeflash_ns_GPS<<std::endl;                                        
-	    std::cout<<"     Flash_nsec - Track_nsec(T0)  : "<<TdiffT0_nsec<<std::endl;                               
-	    std::cout<<"ABS( Flash_nsec - Track_nsec(T0) ): "<<TdiffT0_nsecABS<<std::endl;                            
-	    getchar();                                                                                                
-	  }
-	  
-	}//F  
-	
-	
-	hNCRTTracksperFlash->Fill(Trackcounter);
-	hNCRTTracksperFlashClone->Fill(Trackcounter);
-	
-      }//E
         
-    }//B
-    
-      }//ABC cut in CRT showers
-    }//AB //Cut in TPC Track Length
-
-  }//A
-  
+	int Trackcounter=0;      
+	
+	for(std::vector<int>::size_type k = 0; k != CRTTrackCollection.size(); k++) {//E
+	  
+	  crt::CRTTrack my_CRTTrack = CRTTrackCollection[k];
+	  
+	  int CRTTrack_sec = my_CRTTrack.ts0_s;                                                                            
+	  
+	  int CRTTrack_T1_nsec = my_CRTTrack.ts1_ns + fHardDelay_;                                                         
+	  int CRTTrack_T0_nsec = my_CRTTrack.ts0_ns;                                                                       
+	  
+	  int Tdiff_sec = Flash_sec - CRTTrack_sec;                                                                        
+	  int Tdiff_secABS = std::abs(Tdiff_sec);                                                                       
+	  
+	  int TdiffT1_nsec = Timeflash_ns - CRTTrack_T1_nsec;                                                              
+	  int TdiffT1_nsecABS = std::abs(TdiffT1_nsec);                                                                 
+	  
+	  int TdiffT0_nsec = Timeflash_ns_GPS - CRTTrack_T0_nsec;                                                          
+	  int TdiffT0_nsecABS = std::abs(TdiffT0_nsec);                                                                 
+	  
+	  
+	  hTFvsTT_t1->Fill(TdiffT1_nsec);
+	  hTFvsTT_t0->Fill(TdiffT0_nsec);
+	  hTFvsTT_t0_t1->Fill(TdiffT0_nsecABS, TdiffT1_nsecABS);
+	  
+	  
+	  if( ((TdiffT1_nsec)>300)  &&  ((TdiffT1_nsec)<600) ){//F:: cut in time T1
+	    
+	    Trackcounter++;
+	    hTPCTvsCRTT->Fill(my_CRTTrack.length,TPCTrackLength);
+	    
+	    
+	    //flash and CRTTrack
+	    double Th1[] = {my_CRTTrack.x1_pos,my_CRTTrack.y1_pos,my_CRTTrack.z1_pos};
+	    double Th2[] = {my_CRTTrack.x2_pos,my_CRTTrack.y2_pos,my_CRTTrack.z2_pos};
+	    double TV[]  = {Th2[0] - Th1[0], Th2[1] - Th1[1], Th2[2] - Th1[2]};
+	    
+	    double CRT_Z_atTPC_Y0 = ( ( ( 0 - Th1[1]) / TV[1]    ) * TV[2] ) + Th1[2]; //Z del CRTTrack at TPC Y=0
+	    double CRT_Y_atTPC_Y0 = ( ( ( FlashZ - Th1[2]) / TV[2]    ) * TV[1] ) + Th1[1];
+	    
+	    double CRTTheta = CalTheta(TV[0],TV[1],TV[2]);
+	    double CRTPhi = CalPhi(TV[0],TV[1],TV[2]);
+	    
+	    hTheta->Fill(CRTTheta);
+	    hPhi->Fill(CRTPhi);
+	    
+	    
+	    if(verbose_==7){
+	      std::cout.precision(19);                                                                                  
+	      std::cout<<"Flash_nsec(w.r.t. Trigger): "<<Timeflash_ns<<std::endl;                                       
+	      std::cout<<"CRT_Track_ns(T1): "<<CRTTrack_T1_nsec<<std::endl;
+	      std::cout<<"                                   Time Diff:: "<<Timeflash_ns - CRTTrack_T1_nsec<<std::endl;
+	      std::cout<<"TPC DV-> X: "<<V[0]<<" Y: "<<V[1]<<" Z: "<<V[2]<<std::endl;
+	      std::cout<<"CRT DV-> X: "<<TV[0]<<" Y: "<<TV[1]<<" Z: "<<TV[2]<<std::endl;
+	      std::cout<<"TPCTrack_Theta: "<<TrackTheta<<"  TPCTrack_Phi: "<<TrackPhi<<std::endl;                            
+	      std::cout<<"CRTTrack_Theta: "<<CRTTheta<<"    CRTTrack_Phi: "<<CRTPhi<<std::endl;                                                      
+	      getchar();	  
+	    }
+	    
+	    hDiffTheta->Fill(TrackTheta-CRTTheta);
+	    hDiffPhi->Fill(TrackPhi-CRTPhi);
+	    hDiffTheta2D->Fill(TrackTheta,CRTTheta);
+	    hDiffPhi2D->Fill(TrackPhi,CRTPhi);
+	    hDiffThetaPhi2D->Fill(TrackTheta-CRTTheta,TrackPhi-CRTPhi);
+	    
+	    hDiffThetavsTPCLength->Fill(TrackTheta-CRTTheta,TPCTrackLength);
+	    
+	    hDiffY_FlaTra->Fill(FlashY - CRT_Y_atTPC_Y0);
+	    hDiffY_FlaTra2D->Fill(FlashY,CRT_Y_atTPC_Y0);
+	    hDiffY_FlaTra2D_prof->Fill(FlashY,CRT_Y_atTPC_Y0);
+	    
+	    hDiffZ_FlaTra->Fill(FlashZ - CRT_Z_atTPC_Y0);
+	    hDiffZ_FlaTra2D->Fill(FlashZ,CRT_Z_atTPC_Y0);
+	    hDiffZ_FlaTra2D_prof->Fill(FlashZ,CRT_Z_atTPC_Y0);
+	    
+	    if(verbose_==1){                                                                                            
+	      std::cout.precision(19);                                                                                  
+	      std::cout<<"Flash_sec - Track_sec: "<<Tdiff_sec<<std::endl;                                               
+	      std::cout<<"ABS( Flash_sec - Track_sec ): "<<Tdiff_secABS<<std::endl;                                     
+	      std::cout<<" "<<std::endl;                                                                                
+	      std::cout<<"Track_ns(T1): "<<CRTTrack_T1_nsec<<std::endl;                                                    
+	      std::cout<<"Flash_nsec(w.r.t. Trigger): "<<Timeflash_ns<<std::endl;                                       
+	      std::cout<<"     Flash_nsec - Track_nsec(T1)  : "<<TdiffT1_nsec<<std::endl;                               
+	      std::cout<<"ABS( Flash_nsec - Track_nsec(T1) ): "<<TdiffT1_nsecABS<<std::endl;                            
+	      std::cout<<" "<<std::endl;                                                                                
+	      std::cout<<"Track_ns(T0): "<<CRTTrack_T0_nsec<<std::endl;                                                    
+	      std::cout<<"Flash_nsec(GPS units): "<<Timeflash_ns_GPS<<std::endl;                                        
+	      std::cout<<"     Flash_nsec - Track_nsec(T0)  : "<<TdiffT0_nsec<<std::endl;                               
+	      std::cout<<"ABS( Flash_nsec - Track_nsec(T0) ): "<<TdiffT0_nsecABS<<std::endl;                            
+	      getchar();                                                                                                
+	    }
+	    
+	  }//F  
+	  
+	  
+	  hNCRTTracksperFlash->Fill(Trackcounter);
+	  hNCRTTracksperFlashClone->Fill(Trackcounter);
+	  
+	}//E
+        
+      }//B
+      
+      
+    }//A
+  }//A0 //cut in shower events  
   
 }
 
@@ -1008,9 +973,6 @@ double crt::CRTeffStd::CalTheta(double x, double y, double z){
 double crt::CRTeffStd::CalPhi(double x, double y, double z){
   
   double PI = 3.14159265;
-  
-  // double Phi = acos(z/sqrt(pow(x,2) + pow(z,2)) ) * TMath::Sign(1,z)  * (180/PI); 
-  //double Phi = acos(z/sqrt(pow(x,2) + pow(z,2)) ) * (180/PI); 
 
   double Phi = atan(z/x) * (180/PI);
 
