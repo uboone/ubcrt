@@ -82,28 +82,28 @@ private:
 
 
   //quality plots
-  double track_time_ns = -1e18;
-  double track_time_s = -1e18;
-  double time_diff = 1e24;
-  double length = -1e18;
-  double theta = -1e18;
-  double phi = -1e18;
+  //double track_time_ns = -1e18;
+  //double track_time_s = -1e18;
+  //double time_diff = 1e24;
+  //double length = -1e18;
+  //double theta = -1e18;
+  //double phi = -1e18;
 
-  TH2F* hplavspla;
-  TH1F* hTlength;
-  TH1F* hTtime;
-  TH2F* hTlengthvsTime;
-  TH2F* hTlengthvsTimeAbs;
-  TProfile* hTlengthvsTimeAbs_prof;
-  TH1F* htheta;
-  TH1F* hphi;
-  TH1F* hts0_ns;
-  TH2F* hTvsH;
+  //TH2F* hplavspla;
+  //TH1F* hTlength;
+  //TH1F* hTtime;
+  //TH2F* hTlengthvsTime;
+  //TH2F* hTlengthvsTimeAbs;
+  //TProfile* hTlengthvsTimeAbs_prof;
+  //TH1F* htheta;
+  //TH1F* hphi;
+  //TH1F* hts0_ns;
+  //TH2F* hTvsH;
 
-  TH2F* HitDistBot;
-  TH2F* HitDistFT;
-  TH2F* HitDistPipe;
-  TH2F* HitDistTop;
+  //TH2F* HitDistBot;
+  //TH2F* HitDistFT;
+  //TH2F* HitDistPipe;
+  //TH2F* HitDistTop;
  //quality plots                                                                                                     
  
 
