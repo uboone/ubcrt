@@ -92,6 +92,7 @@ private:
   std::string  data_label_TPCTrack_;
   std::string  data_label_T0reco_;
   int fHardDelay_;
+  int fCRTT0off_;
   double fvdrift_;
   int storeAsn_;
   int verbose_;
@@ -116,6 +117,7 @@ crt::T0recoCRTAnal::T0recoCRTAnal(fhicl::ParameterSet const & p)
   data_label_TPCTrack_(p.get<std::string>("data_label_TPCTrack_")),
   data_label_T0reco_(p.get<std::string>("data_label_T0reco_")),
   fHardDelay_(p.get<int>("fHardDelay",40000)),
+  fCRTT0off_(p.get<int>("fCRTT0off",69000)),
   fvdrift_(p.get<double>("fvdrift",0.111436)),
   storeAsn_(p.get<int>("storeAsn",1)),
   verbose_(p.get<int>("verbose"))  // ,
@@ -305,25 +307,34 @@ void crt::T0recoCRTAnal::analyze(art::Event const & evt)
 	if( (ThetaDiffABS<5.1) && (PhiDiffABS<12.1) ){//C //Angular Cut                                                                                          
 	  
 	  int CRTTrack_T1_nsec = my_CRTTrack.ts1_ns + fHardDelay_;
-	  
+	  int CRTTrack_T0_nsec = my_CRTTrack.ts0_ns + fCRTT0off_;	  
+
 	  int countFlash = 0;
 	  for(std::vector<int>::size_type j = 0; j != OpFlashCollection.size(); j++) {//D //look for flash in time with CRTTrack                             	  
 	    recob::OpFlash my_OpFlash = OpFlashCollection[j];
 	    auto Timeflash = my_OpFlash.Time(); //in us from trigger time                                                                                   
 	    auto Timeflash_ns = (Timeflash * 1000);
+	    auto Timeflash_ns_GPS = evt_timeGPS_nsec + (Timeflash * 1000);
 	    
 	    int TdiffT1_nsec = Timeflash_ns - CRTTrack_T1_nsec;
-	    
-	    if( ((TdiffT1_nsec)>310)  &&  ((TdiffT1_nsec)<570) ) countFlash++;
+	    int TdiffT0_nsec = Timeflash_ns_GPS - CRTTrack_T0_nsec;	    
+	    int TdiffT0_nsecABS = std::abs(TdiffT0_nsec);
+
+
+	    /* if( ((TdiffT1_nsec)>310)  &&  ((TdiffT1_nsec)<570) ) countFlash++;
 	    if( ((TdiffT1_nsec)> -8700)  &&  ((TdiffT1_nsec)< -8620) ) countFlash++;
 	    if( ((TdiffT1_nsec)>8400)  &&  ((TdiffT1_nsec)<8480) ) countFlash++;
 	    if( ((TdiffT1_nsec)>10500)  &&  ((TdiffT1_nsec)<10580) ) countFlash++;
 	    
 	    if(countFlash==1)hGeoMatch->Fill(TdiffT1_nsec);
-
+	    */
   
-	    if( ((TdiffT1_nsec)>300)  &&  ((TdiffT1_nsec)<600) ){//E:: cut in time T1  
-	    
+	    //if( ((TdiffT1_nsec)>300)  &&  ((TdiffT1_nsec)<600) ){//E:: cut in time T1  
+	    if(TdiffT0_nsecABS<250){//E : cut in GPS Match   	    
+
+	      //make associations between TPC Track, CRT Track, Flash and T0.
+
+
 	    if(verbose_!=0){
 	      std::cout.precision(19);
 	      std::cout<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<std::endl;
