@@ -85,11 +85,6 @@ public:
 private:
 
   art::ServiceHandle<art::TFileService> tfs;
-  // Declare member data here.                                       
-
-  // unused uint32_t fEvtNum; //Number of current event
-  // unused uint32_t frunNum;                //Run Number taken from event
-  // unused uint32_t fsubRunNum;             //Subrun Number taken from event
                                                                      
   std::string  data_labelCRTtrack_;
   std::string  data_labelCRThit_;
@@ -99,6 +94,7 @@ private:
   std::string  data_label_T0reco_;
   std::string  data_label_Calorimetry_;
   int fHardDelay_;
+  int fCRTT0off_;
   double fvdrift_;
   int verbose_;
 
@@ -190,6 +186,7 @@ crt::CRTeffStd::CRTeffStd(fhicl::ParameterSet const & p)
   data_label_T0reco_(p.get<std::string>("data_label_T0reco_")),
   data_label_Calorimetry_(p.get<std::string>("data_label_Calorimetry_")),
   fHardDelay_(p.get<int>("fHardDelay",40000)),
+  fCRTT0off_(p.get<int>("fCRTT0off",69000)),
   fvdrift_(p.get<double>("fvdrift",0.111436)),
   verbose_(p.get<int>("verbose"))  // ,
  // More initializers here.
@@ -235,10 +232,8 @@ void crt::CRTeffStd::analyze(art::Event const & evt)
   //get better access to the data                                                                      
   std::vector<crt::CRTHit> const& CRTHitCollection(*rawHandle_CRThit);
   
-  // if(verbose_==1 || verbose_==2){
   if(verbose_!=0){
     std::cout<<"  CRTHitCollection.size()  "<<CRTHitCollection.size()<<std::endl;
-    //  getchar();                                                                 
   }
   //get CRTHits
   
@@ -261,7 +256,6 @@ void crt::CRTeffStd::analyze(art::Event const & evt)
   
   if(verbose_!=0){
     std::cout<<"  CRTTrackCollection.size()  "<<CRTTrackCollection.size()<<std::endl;                                                                                
-    // getchar();                                                                     
   }                                                                                
   //get CRTTracks                                                                  
   
@@ -295,25 +289,20 @@ void crt::CRTeffStd::analyze(art::Event const & evt)
   // if(verbose_==1 || verbose_==2){
   if(verbose_!=0){
     std::cout<<"  TPCTrackCollection.size()  "<<TPCTrackCollection.size()<<std::endl;
-    // getchar();                                                                                                       
   }
   //get TPCTracks 
   
   // grab T0 objects associated with tracks
   art::FindMany<anab::T0> trk_t0_assn_v(rawHandle_TPCtrack, evt, data_label_T0reco_); //objeto, evento, label           
-  //std::cout<<"  trk_t0_assn_v.size()  "<<trk_t0_assn_v.size()<<std::endl;
-
+  
   // grab flashes associated with tracks                                                                                
   art::FindMany<recob::OpFlash> trk_flash_assn_v(rawHandle_TPCtrack, evt, data_label_T0reco_ );
-  //std::cout<<"  trk_flash_assn_v.size()  "<<trk_flash_assn_v.size()<<std::endl;
-  // getchar();
-
+  
   // grab calorimetry associated with tracks
   art::FindMany<anab::Calorimetry> trk_calo_assn_v(rawHandle_TPCtrack, evt, data_label_Calorimetry_  );
   
-
   if(CRTTrackCollection.size()<40){//A0 //cut in shower events
-  
+    
     for(std::vector<int>::size_type i = 0; i != TPCTrackCollection.size(); i++) {//A
     
       recob::Track my_TPCTrack = TPCTrackCollection[i];
@@ -335,7 +324,7 @@ void crt::CRTeffStd::analyze(art::Event const & evt)
       
       const std::vector<const anab::Calorimetry*>& Calo_v = trk_calo_assn_v.at(i);
       
-      if(verbose_==3){    
+      if(verbose_!=0){    
 	std::cout<< " Track "<<i<<" for this event has\t"
 		 << flash_v.size() << "\tflash objects associated to this track["<<i<<"]\t"
 		 << T0_v.size() << "\tT0 objects associated to this track["<<i<<"]\t"
@@ -381,7 +370,7 @@ void crt::CRTeffStd::analyze(art::Event const & evt)
 	hCalvsLen->Fill(TotCal,TPCTrackLength);
 	hTotCalNorm->Fill(TotCalNorm);
 	
-	if(verbose_==3){
+	if(verbose_!=0){
 	  std::cout<<"Flash information: this flash is in time with TPC track "<<i<<std::endl;
 	  std::cout<<"Flash time: "<<Flash_sec<< " seconds"<<std::endl;
 	  std::cout<<"Flash time: "<<Timeflash<< "  us w.r.t to trigger"<<std::endl;
@@ -409,7 +398,7 @@ void crt::CRTeffStd::analyze(art::Event const & evt)
 	  int Hit_sec = my_CRTHit.ts0_s;
 	  
 	  int Hit_T1_nsec = my_CRTHit.ts1_ns + fHardDelay_;
-	  int Hit_T0_nsec = my_CRTHit.ts0_ns;
+	  int Hit_T0_nsec = my_CRTHit.ts0_ns + fCRTT0off_;
 	  
 	  int diff_sec = Flash_sec - Hit_sec;
 	  int diff_secABS = std::abs(diff_sec);
@@ -422,9 +411,11 @@ void crt::CRTeffStd::analyze(art::Event const & evt)
 	  
 	  hTFvsTH_t1->Fill(diffT1_nsec);
 	  hTFvsTH_t0->Fill(diffT0_nsec);
-	  hTFvsTH_t0_t1->Fill(diffT0_nsecABS, diffT1_nsecABS);
+	  //hTFvsTH_t0_t1->Fill(diffT0_nsecABS, diffT1_nsecABS);
+	  hTFvsTH_t0_t1->Fill(diffT0_nsec, diffT1_nsec);
 	  
-	  if( ((diffT1_nsec)>(300))  &&  ((diffT1_nsec)<(600)) ){//D : cut in time, T1 matched with Flash
+	  //if( ((diffT1_nsec)>(300))  &&  ((diffT1_nsec)<(600)) ){//D : cut in time, T1 matched with Flash
+	  if(diffT0_nsecABS<250){//D : cut in GPS Match
 	    
 	    hTPCXY_bottom -> Fill(bottom.X() - (TimeT0 * fvdrift_), bottom.Y());
 	    hTPCZY_bottom -> Fill(bottom.Z(), bottom.Y());
@@ -543,7 +534,7 @@ void crt::CRTeffStd::analyze(art::Event const & evt)
 	  int CRTTrack_sec = my_CRTTrack.ts0_s;                                                                            
 	  
 	  int CRTTrack_T1_nsec = my_CRTTrack.ts1_ns + fHardDelay_;                                                         
-	  int CRTTrack_T0_nsec = my_CRTTrack.ts0_ns;                                                                       
+	  int CRTTrack_T0_nsec = my_CRTTrack.ts0_ns + fCRTT0off_;                                                                       
 	  
 	  int Tdiff_sec = Flash_sec - CRTTrack_sec;                                                                        
 	  int Tdiff_secABS = std::abs(Tdiff_sec);                                                                       
@@ -557,11 +548,13 @@ void crt::CRTeffStd::analyze(art::Event const & evt)
 	  
 	  hTFvsTT_t1->Fill(TdiffT1_nsec);
 	  hTFvsTT_t0->Fill(TdiffT0_nsec);
-	  hTFvsTT_t0_t1->Fill(TdiffT0_nsecABS, TdiffT1_nsecABS);
+	  //hTFvsTT_t0_t1->Fill(TdiffT0_nsecABS, TdiffT1_nsecABS);
+	  hTFvsTT_t0_t1->Fill(TdiffT0_nsec, TdiffT1_nsec);
 	  
 	  
-	  if( ((TdiffT1_nsec)>300)  &&  ((TdiffT1_nsec)<600) ){//F:: cut in time T1
-	    
+	  //if( ((TdiffT1_nsec)>300)  &&  ((TdiffT1_nsec)<600) ){//F:: cut in time T1
+	  if(TdiffT0_nsecABS<250){//F : cut in GPS Match	    
+
 	    Trackcounter++;
 	    hTPCTvsCRTT->Fill(my_CRTTrack.length,TPCTrackLength);
 	    
@@ -635,8 +628,6 @@ void crt::CRTeffStd::analyze(art::Event const & evt)
 	}//E
         
       }//B
-      
-      
     }//A
   }//A0 //cut in shower events  
   
@@ -646,36 +637,33 @@ void crt::CRTeffStd::beginJob()
 {
   // Implementation of optional member function here.
   
-  // hFlashTimeDis = tfs->make<TH1F>("hFlashTimDis","hFlashTimDis",2000,-5,25);                                              
   hFlashTimeDis = tfs->make<TH1F>("hFlashTimDis","hFlashTimDis",8500,-3500,5000);//Cosmic activity
   hFlashTimeDis->GetXaxis()->SetTitle("Flash Time w.r.t. trigger (us)");
   hFlashTimeDis->GetYaxis()->SetTitle("Entries/bin");
-
+  
   hTFvsTH_t1 = tfs->make<TH1F>("hBeamMatching","hBeamMatching",500,-1000,1000);
-  //hTFvsTH_t1 = tfs->make<TH1F>("hBeamMatching","hBeamMatching",15000,-15000,15000);//test multipeaks
   hTFvsTH_t1->GetXaxis()->SetTitle("Flash Time w.r.t. trigger - CRTHit Time_t1 (ns)");
   hTFvsTH_t1->GetYaxis()->SetTitle("Entries/bin");
   
-  hTFvsTH_t0 = tfs->make<TH1F>("hGPSMatching","GPSMatching",500,0,500000);
+  hTFvsTH_t0 = tfs->make<TH1F>("hGPSMatching","GPSMatching",500,-1000,1000);
   hTFvsTH_t0->GetXaxis()->SetTitle("Flash_Time_GPS - CRTHit_Time_T0 (ns)");
   hTFvsTH_t0->GetYaxis()->SetTitle("Entries/bin");
-
-  hTFvsTH_t0_t1 = tfs->make<TH2F>("hGPSBeamMatching","hGPSBeamMatching",500,0,500000,500,0,1000);
+  
+  hTFvsTH_t0_t1 = tfs->make<TH2F>("hGPSBeamMatching","hGPSBeamMatching",500,-500,500,500,0,1000);
   hTFvsTH_t0_t1->GetXaxis()->SetTitle("Flash_Time_GPS - CRTHit_Time_T0 (ns)");
   hTFvsTH_t0_t1->GetYaxis()->SetTitle("Flash Time w.r.t Trigger - CRTHit_Time_t1 (ns)");
   hTFvsTH_t0_t1->SetOption("COLZ");
-
-
-  // hTFvsTT_t1 = tfs->make<TH1F>("hBeamMatchingTrack","hBeamMatchingTrack",500,-1000,1000);
+  
+  
   hTFvsTT_t1 = tfs->make<TH1F>("hBeamMatchingTrack","hBeamMatchingTrack",30000,-25000,25000);
   hTFvsTT_t1->GetXaxis()->SetTitle("Flash Time w.r.t. trigger - CRTTrack Time_t1 (ns)");
   hTFvsTT_t1->GetYaxis()->SetTitle("Entries/bin");
   
-  hTFvsTT_t0 = tfs->make<TH1F>("hGPSMatchingTrack","GPSMatchingTrack",500,0,500000);
+  hTFvsTT_t0 = tfs->make<TH1F>("hGPSMatchingTrack","GPSMatchingTrack",500,-1000,1000);
   hTFvsTT_t0->GetXaxis()->SetTitle("Flash_Time_GPS - CRTTrack_Time_T0 (ns)");
   hTFvsTT_t0->GetYaxis()->SetTitle("Entries/bin");
-
-  hTFvsTT_t0_t1 = tfs->make<TH2F>("hGPSBeamMatchingTrack","hGPSBeamMatchingTrack",500,0,500000,500,0,1000);
+  
+  hTFvsTT_t0_t1 = tfs->make<TH2F>("hGPSBeamMatchingTrack","hGPSBeamMatchingTrack",500,-500,500,500,0,1000);
   hTFvsTT_t0_t1->GetXaxis()->SetTitle("Flash_Time_GPS - CRTTrack_Time_T0 (ns)");
   hTFvsTT_t0_t1->GetYaxis()->SetTitle("Flash Time w.r.t Trigger - CRTTrack_Time_t1 (ns)");
   hTFvsTT_t0_t1->SetOption("COLZ");
@@ -686,7 +674,6 @@ void crt::CRTeffStd::beginJob()
   hTPCTvsCRTT->GetYaxis()->SetTitle("TPC Track Length (cm)");
   hTPCTvsCRTT->SetOption("COLZ");
   
-
   hTPCTlength = tfs->make<TH1F>("hTPCLength","hTPCLength",800,0,800);
   hTPCTlength->GetXaxis()->SetTitle("TPC Track Length (cm)");
   hTPCTlength->GetYaxis()->SetTitle("Entries/bin");
