@@ -1,0 +1,15 @@
+BEGIN_PROLOG
+UBCRTCosmicFilter: {
+ module_type              : "UBCRTCosmicFilter"  
+ BEamFlashProducer        : "simpleFlashBeam"
+ CRTHitProducer           : "merger"
+ DAQHeaderProducer        : "daq"
+ BeamStart                : 5.0  # us
+ BeamEnd                  : 16.0 # us
+ PEMin                    : 50   # PEs
+ DTOffset                 : 68.6 # us
+ Resolution               : 1.0  # us
+ SingleBeamgateFlashOnly  : true  
+ verbose                  : true
+}
+END_PROLOG
