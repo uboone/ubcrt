@@ -181,17 +181,17 @@ bool UBCRTCosmicFilter::filter(art::Event & e)
 
     // If you want a single flash and there is more than one in the beamgate, than return false.
     if ( fSingleBeamgateFlashOnly == true and beamflash_h->size() != 1 ) 
-      return false;
+      return true;
 
     // In all other cases return true.
     else
-      return true;
+      return false;
 
   }
 
   // If it is not within resolution, return false.
   else 
-    return false;
+    return true;
 
 } // End of the filter module
 DEFINE_ART_MODULE(UBCRTCosmicFilter)
