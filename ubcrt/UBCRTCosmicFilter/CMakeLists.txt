@@ -17,11 +17,13 @@ art_make( BASENAME_ONLY
                         ${MF_MESSAGELOGGER}                        
                         ${FHICLCPP}
                         cetlib cetlib_except
+			nusimdata_SimulationBase
                         ${CLHEP}
                         ${ROOT_GEOM}
                         ${ROOT_XMLIO}
                         ${ROOT_GDML}
                         ${ROOT_BASIC_LIB_LIST}
+			#ubana_BasicTool_GeoAlgo
         )
 
 install_headers()

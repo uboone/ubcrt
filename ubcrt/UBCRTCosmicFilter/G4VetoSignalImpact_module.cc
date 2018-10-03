@@ -1,0 +1,209 @@
+////////////////////////////////////////////////////////////////////////
+// Class:       G4VetoSignalImpact
+// Plugin Type: analyzer (art v2_11_03)
+// File:        G4VetoSignalImpact_module.cc
+//
+// Generated at Wed Oct  3 14:42:27 2018 by David Caratelli using cetskelgen
+// from cetlib version v3_03_01.
+////////////////////////////////////////////////////////////////////////
+
+#include "art/Framework/Core/EDAnalyzer.h"
+#include "art/Framework/Core/ModuleMacros.h"
+#include "art/Framework/Principal/Event.h"
+#include "art/Framework/Principal/Handle.h"
+#include "art/Framework/Principal/Run.h"
+#include "art/Framework/Principal/SubRun.h"
+#include "canvas/Utilities/InputTag.h"
+#include "fhiclcpp/ParameterSet.h"
+#include "art/Framework/Services/Optional/TFileService.h"
+#include "messagefacility/MessageLogger/MessageLogger.h"
+
+#include "TLorentzVector.h"
+#include "TVector3.h"
+#include "TTree.h"
+
+#include "nusimdata/SimulationBase/MCTruth.h"
+#include "nusimdata/SimulationBase/MCParticle.h"
+
+//#include "LLBasicTool/GeoAlgo/GeoAlgo.h"
+
+class G4VetoSignalImpact;
+
+
+class G4VetoSignalImpact : public art::EDAnalyzer {
+public:
+  explicit G4VetoSignalImpact(fhicl::ParameterSet const & p);
+  // The compiler-generated destructor is fine for non-base
+  // classes without bare pointers or other resource use.
+
+  // Plugins should not be copied or assigned.
+  G4VetoSignalImpact(G4VetoSignalImpact const &) = delete;
+  G4VetoSignalImpact(G4VetoSignalImpact &&) = delete;
+  G4VetoSignalImpact & operator = (G4VetoSignalImpact const &) = delete;
+  G4VetoSignalImpact & operator = (G4VetoSignalImpact &&) = delete;
+
+  // Required functions.
+  void analyze(art::Event const & e) override;
+
+  // Selected optional functions.
+  void beginJob() override;
+  void endJob() override;
+
+private:
+
+  // Declare member data here.
+
+  std::pair<bool, TVector3> CRTIntersection(const simb::MCTrajectory& traj);
+  std::pair<bool, TVector3> InCRT(const TLorentzVector& p1, const TLorentzVector& p2);
+
+  // set CRT geometry configuration here
+  double fThickness; // CRT panel thickness (assumed the same for all panels...)
+  double fTx1, fTx2, fTy1, fTy2, fTz1, fTz2; // assuming each panel is a rectangle. 6 coordinates is all that is needed to define the geometry.
+  double fBx1, fBx2, fBy1, fBy2, fBz1, fBz2; // assuming each panel is a rectangle. 6 coordinates is all that is needed to define the geometry.
+  double fAx1, fAx2, fAy1, fAy2, fAz1, fAz2; // assuming each panel is a rectangle. 6 coordinates is all that is needed to define the geometry.
+  double fCx1, fCx2, fCy1, fCy2, fCz1, fCz2; // assuming each panel is a rectangle. 6 coordinates is all that is needed to define the geometry.
+
+  // variables for TTree
+  TTree* _tree;
+  int _intersections;
+  double _nu_e;
+  int _nu_ccnc;
+  double _nu_vtx_x;
+  double _nu_vtx_y;
+  double _nu_vtx_z;
+  double _x_cross;
+  double _y_cross;
+  double _z_cross;
+  
+};
+
+
+G4VetoSignalImpact::G4VetoSignalImpact(fhicl::ParameterSet const & p)
+  :
+  EDAnalyzer(p)  // ,
+ // More initializers here.
+{}
+
+void G4VetoSignalImpact::analyze(art::Event const & e)
+{
+
+  // this module assumes all MCParticles are from neutrino interactions (i.e. genie simulation only, no corsika)
+
+  // the goal of the module is to establish if any charged partciles deposit energy in a CRT module and save details about these interactions.
+  // information to be stored:
+  // neutrino energy, interaction type (CC, NC), interaction position (in TPC, in cryo, dirt)
+  // details of particle crossing CRT (e-, muon, etc...)
+  // CRT panel(s) hit
+  
+  _intersections = 0;
+  _nu_e          = 0;
+  _nu_ccnc       = 0;
+  _nu_vtx_x      = 0;
+  _nu_vtx_y      = 0;
+  _nu_vtx_z      = 0;
+  _x_cross       = 0;
+  _y_cross       = 0;
+  _z_cross       = 0;
+
+  // load neutrino mctruth
+  auto const& mct_h = e.getValidHandle<std::vector<simb::MCTruth> >("generator");
+
+  auto mct = mct_h->at(0);
+  auto neutrino = mct.GetNeutrino();
+
+  auto nu     = neutrino.Nu();
+  auto lepton = neutrino.Lepton();
+  auto ccnc   = neutrino.CCNC();
+
+  _nu_e = nu.Trajectory().E(0);
+  _nu_ccnc = ccnc;
+
+  // vertex coordinates from neutrino end point
+  _nu_vtx_x = nu.Trajectory().X( nu.Trajectory().size() - 1 );
+  _nu_vtx_y = nu.Trajectory().Y( nu.Trajectory().size() - 1 );
+  _nu_vtx_z = nu.Trajectory().Z( nu.Trajectory().size() - 1 );
+
+  // load MCParticles
+  art::Handle< std::vector<simb::MCParticle> > MCParticle_h;
+  e.getByLabel( "largeant", MCParticle_h );
+
+  if(!MCParticle_h.isValid()) {
+    std::cerr<<"\033[93m[ERROR]\033[00m ... could not locate MC Particles!"<<std::endl;
+    throw std::exception();
+  }
+
+
+  for (size_t n=0; n < MCParticle_h->size(); n++) {
+
+    auto const& mcpart = MCParticle_h->at(n);
+
+    // is this particle neutral? if so, ignore
+    // specifically, exclude photons and neutrons)
+    if ( (mcpart.PdgCode() == 22) || (mcpart.PdgCode() == 2112) )
+      continue;
+    
+    // ask for whether this particle intersects the CRT
+    auto crtintersection =  CRTIntersection(mcpart.Trajectory());
+
+    if (crtintersection.first == true) {
+      
+      _intersections += 1;
+      _x_cross = crtintersection.second.X();
+      _y_cross = crtintersection.second.Y();
+      _z_cross = crtintersection.second.Z();
+
+    }
+    
+  }// for all MCParticles in the event
+
+  _tree->Fill();
+  
+  return;
+}
+
+std::pair<bool, TVector3> G4VetoSignalImpact::CRTIntersection(const simb::MCTrajectory& traj) {
+  
+  for (size_t t=1; t < traj.size(); t++) {
+
+    auto intersection = InCRT(traj.Position(t-1),traj.Position(t));
+
+    if (intersection.first == false)
+      continue;
+
+    // if we get to this point -> the particle intersects the CRT
+    return std::make_pair(true, intersection.second);
+    
+  }// for all steps along the trajectory
+
+  return std::make_pair(false, TVector3(0.,0.,0.) );
+}
+
+std::pair<bool, TVector3> G4VetoSignalImpact::InCRT(const TLorentzVector& p1, const TLorentzVector& p2) {
+  
+  return std::make_pair(false, TVector3(0.,0.,0.) );
+}
+
+void G4VetoSignalImpact::beginJob()
+{
+  // Implementation of optional member function here.
+
+  art::ServiceHandle<art::TFileService> tfs;
+  _tree = tfs->make<TTree>("_tree","G4 CRT Veto");
+  _tree->Branch("_intersections",&_intersections,"intersections/I");
+  _tree->Branch("_nu_e",&_nu_e,"nu_e/D");
+  _tree->Branch("_nu_ccnc",&_nu_ccnc,"nu_ccnc/I");
+  _tree->Branch("_nu_vtx_x",&_nu_vtx_x,"nu_vtx_x/D");
+  _tree->Branch("_nu_vtx_y",&_nu_vtx_y,"nu_vtx_y/D");
+  _tree->Branch("_nu_vtx_z",&_nu_vtx_z,"nu_vtx_z/D");
+  _tree->Branch("_x_cross",&_x_cross,"x_cross/D");
+  _tree->Branch("_y_cross",&_y_cross,"y_cross/D");
+  _tree->Branch("_z_cross",&_z_cross,"z_cross/D");
+
+}
+
+void G4VetoSignalImpact::endJob()
+{
+  // Implementation of optional member function here.
+}
+
+DEFINE_ART_MODULE(G4VetoSignalImpact)
