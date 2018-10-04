@@ -74,7 +74,10 @@ private:
   double _x_cross;
   double _y_cross;
   double _z_cross;
+  // information on particle crossing the CRT:
+  // PDG code, energy @ production, start and end point
   int    _cross_pdg;
+  double _cross_momentum;
   double _cross_xstart;
   double _cross_ystart;
   double _cross_zstart;
@@ -141,6 +144,7 @@ void G4VetoSignalImpact::analyze(art::Event const & e)
   _z_cross       = 0;
 
   _cross_pdg = 0;
+  _cross_momentum = 0;
   _cross_xstart = 0;
   _cross_ystart = 0;
   _cross_zstart = 0;
@@ -197,6 +201,7 @@ void G4VetoSignalImpact::analyze(art::Event const & e)
 
       _cross_pdg = mcpart.PdgCode();
       int nstep = mcpart.Trajectory().size()-1;
+      _cross_momentum = mcpart.Trajectory().Momentum(0).Vect().Mag();
       _cross_xstart = mcpart.Trajectory().Position(0).X();
       _cross_ystart = mcpart.Trajectory().Position(0).Y();
       _cross_zstart = mcpart.Trajectory().Position(0).Z();
@@ -304,6 +309,7 @@ void G4VetoSignalImpact::beginJob()
   _tree->Branch("_y_cross",&_y_cross,"y_cross/D");
   _tree->Branch("_z_cross",&_z_cross,"z_cross/D");
   _tree->Branch("_cross_pdg",&_cross_pdg,"_cross_pdg/I");
+  _tree->Branch("_cross_momentum",&_cross_momentum,"_cross_momentum/D");
   _tree->Branch("_cross_xstart",&_cross_xstart,"_cross_xstart/D");
   _tree->Branch("_cross_ystart",&_cross_ystart,"_cross_ystart/D");
   _tree->Branch("_cross_zstart",&_cross_zstart,"_cross_zstart/D");
