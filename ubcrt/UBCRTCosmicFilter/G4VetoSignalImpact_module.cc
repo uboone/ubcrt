@@ -74,6 +74,13 @@ private:
   double _x_cross;
   double _y_cross;
   double _z_cross;
+  int    _cross_pdg;
+  double _cross_xstart;
+  double _cross_ystart;
+  double _cross_zstart;
+  double _cross_xend;
+  double _cross_yend;
+  double _cross_zend;
   
 };
 
@@ -133,6 +140,14 @@ void G4VetoSignalImpact::analyze(art::Event const & e)
   _y_cross       = 0;
   _z_cross       = 0;
 
+  _cross_pdg = 0;
+  _cross_xstart = 0;
+  _cross_ystart = 0;
+  _cross_zstart = 0;
+  _cross_xend   = 0;
+  _cross_yend   = 0;
+  _cross_zend   = 0;
+
   // load neutrino mctruth
   auto const& mct_h = e.getValidHandle<std::vector<simb::MCTruth> >("generator");
 
@@ -167,7 +182,7 @@ void G4VetoSignalImpact::analyze(art::Event const & e)
 
     // is this particle neutral? if so, ignore
     // specifically, exclude photons and neutrons)
-    if ( (mcpart.PdgCode() == 22) || (mcpart.PdgCode() == 2112) )
+    if ( (mcpart.PdgCode() == 22) || (mcpart.PdgCode() == 2112) || (fabs(mcpart.PdgCode()) == 14) || (fabs(mcpart.PdgCode()) == 12) )
       continue;
     
     // ask for whether this particle intersects the CRT
@@ -179,6 +194,15 @@ void G4VetoSignalImpact::analyze(art::Event const & e)
       _x_cross = crtintersection.second.X();
       _y_cross = crtintersection.second.Y();
       _z_cross = crtintersection.second.Z();
+
+      _cross_pdg = mcpart.PdgCode();
+      int nstep = mcpart.Trajectory().size()-1;
+      _cross_xstart = mcpart.Trajectory().Position(0).X();
+      _cross_ystart = mcpart.Trajectory().Position(0).Y();
+      _cross_zstart = mcpart.Trajectory().Position(0).Z();
+      _cross_xend = mcpart.Trajectory().Position(nstep).X();
+      _cross_yend = mcpart.Trajectory().Position(nstep).Y();
+      _cross_zend = mcpart.Trajectory().Position(nstep).Z();
 
     }
     
@@ -207,7 +231,60 @@ std::pair<bool, TVector3> G4VetoSignalImpact::CRTIntersection(const simb::MCTraj
 }
 
 std::pair<bool, TVector3> G4VetoSignalImpact::InCRT(const TLorentzVector& p1, const TLorentzVector& p2) {
-  
+
+  // get points associated with the TLorentzVectors:
+
+  auto pt1 = p1.Vect();
+  auto pt2 = p2.Vect();
+
+  // check if the point intersects the top panel
+  double t = (fTy1 - pt1.Y())/(pt2.Y()-pt1.Y());
+  // if t < 0 or > 1 then the intersection is beyond the segment
+  if ( (t > 0) && (t <= 1)) {
+    double ptTx = pt1.X() + (pt2.X()-pt1.X())*t;
+    double ptTz = pt1.Z() + (pt2.Z()-pt1.Z())*t;
+    if ( (ptTx > fTx1) && (ptTx < fTx2) && (ptTz > fTz1) && (ptTz < fTz2) ) {
+      double ptTy = pt1.Y() + (pt2.Y()-pt1.Y())*t;
+      return std::make_pair(true, TVector3(ptTx,ptTy,ptTz) );
+    }// if they intersec
+  }// if t is between 0 and 1
+
+  // check if the point intersects the bottom panel
+  t = (fBy1 - pt1.Y())/(pt2.Y()-pt1.Y());
+  // if t < 0 or > 1 then the intersection is beyond the segment
+  if ( (t > 0) && (t <= 1)) {
+    double ptBx = pt1.X() + (pt2.X()-pt1.X())*t;
+    double ptBz = pt1.Z() + (pt2.Z()-pt1.Z())*t;
+    if ( (ptBx > fBx1) && (ptBx < fBx2) && (ptBz > fBz1) && (ptBz < fBz2) ) {
+      double ptBy = pt1.Y() + (pt2.Y()-pt1.Y())*t;
+      return std::make_pair(true, TVector3(ptBx,ptBy,ptBz) );
+    }// if they intersec
+  }// if t is between 0 and 1
+
+  // check if the point intersects the anode panel
+  t = (fAy1 - pt1.Y())/(pt2.Y()-pt1.Y());
+  // if t < 0 or > 1 then the intersection is beyond the segment
+  if ( (t > 0) && (t <= 1)) {
+    double ptAx = pt1.X() + (pt2.X()-pt1.X())*t;
+    double ptAz = pt1.Z() + (pt2.Z()-pt1.Z())*t;
+    if ( (ptAx > fAx1) && (ptAx < fAx2) && (ptAz > fAz1) && (ptAz < fAz2) ) {
+      double ptAy = pt1.Y() + (pt2.Y()-pt1.Y())*t;
+      return std::make_pair(true, TVector3(ptAx,ptAy,ptAz) );
+    }// if they intersec
+  }// if t is between 0 and 1
+
+  // check if the point intersects the cathode panel
+  t = (fCy1 - pt1.Y())/(pt2.Y()-pt1.Y());
+  // if t < 0 or > 1 then the intersection is beyond the segment
+  if ( (t > 0) && (t <= 1)) {
+    double ptCx = pt1.X() + (pt2.X()-pt1.X())*t;
+    double ptCz = pt1.Z() + (pt2.Z()-pt1.Z())*t;
+    if ( (ptCx > fCx1) && (ptCx < fCx2) && (ptCz > fCz1) && (ptCz < fCz2) ) {
+      double ptCy = pt1.Y() + (pt2.Y()-pt1.Y())*t;
+      return std::make_pair(true, TVector3(ptCx,ptCy,ptCz) );
+    }// if they intersec
+  }// if t is between 0 and 1
+
   return std::make_pair(false, TVector3(0.,0.,0.) );
 }
 
@@ -226,6 +303,13 @@ void G4VetoSignalImpact::beginJob()
   _tree->Branch("_x_cross",&_x_cross,"x_cross/D");
   _tree->Branch("_y_cross",&_y_cross,"y_cross/D");
   _tree->Branch("_z_cross",&_z_cross,"z_cross/D");
+  _tree->Branch("_cross_pdg",&_cross_pdg,"_cross_pdg/I");
+  _tree->Branch("_cross_xstart",&_cross_xstart,"_cross_xstart/D");
+  _tree->Branch("_cross_ystart",&_cross_ystart,"_cross_ystart/D");
+  _tree->Branch("_cross_zstart",&_cross_zstart,"_cross_zstart/D");
+  _tree->Branch("_cross_xend",&_cross_xend,"_cross_xend/D");
+  _tree->Branch("_cross_yend",&_cross_yend,"_cross_yend/D");
+  _tree->Branch("_cross_zend",&_cross_zend,"_cross_zend/D");
 
 }
 
