@@ -82,7 +82,35 @@ G4VetoSignalImpact::G4VetoSignalImpact(fhicl::ParameterSet const & p)
   :
   EDAnalyzer(p)  // ,
  // More initializers here.
-{}
+{
+
+  fThickness = p.get<double>("Thickness");
+  fTx1       = p.get<double>("Tx1");
+  fTy1       = p.get<double>("Ty1");
+  fTz1       = p.get<double>("Tz1");
+  fTx2       = p.get<double>("Tx2");
+  fTy2       = p.get<double>("Ty2");
+  fTz2       = p.get<double>("Tz2");
+  fBx1       = p.get<double>("Bx1");
+  fBy1       = p.get<double>("By1");
+  fBz1       = p.get<double>("Bz1");
+  fBx2       = p.get<double>("Bx2");
+  fBy2       = p.get<double>("By2");
+  fBz2       = p.get<double>("Bz2");
+  fAx1       = p.get<double>("Ax1");
+  fAy1       = p.get<double>("Ay1");
+  fAz1       = p.get<double>("Az1");
+  fAx2       = p.get<double>("Ax2");
+  fAy2       = p.get<double>("Ay2");
+  fAz2       = p.get<double>("Az2");
+  fCx1       = p.get<double>("Cx1");
+  fCy1       = p.get<double>("Cy1");
+  fCz1       = p.get<double>("Cz1");
+  fCx2       = p.get<double>("Cx2");
+  fCy2       = p.get<double>("Cy2");
+  fCz2       = p.get<double>("Cz2");
+
+}
 
 void G4VetoSignalImpact::analyze(art::Event const & e)
 {
