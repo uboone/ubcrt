@@ -17,6 +17,7 @@ art_make( BASENAME_ONLY
                         ${MF_MESSAGELOGGER}                        
                         ${FHICLCPP}
                         cetlib cetlib_except
+			nusimdata_SimulationBase
                         ${CLHEP}
                         ${ROOT_GEOM}
                         ${ROOT_XMLIO}
