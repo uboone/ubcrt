@@ -61,6 +61,7 @@ private:
   double      fPEMin;
   double      fDTOffset;
   double      fResolution;
+  bool        fuseAsFilter;
   bool        verbose;
 
   // TTree Declaration.
@@ -102,15 +103,16 @@ UBCRTCosmicFilter::UBCRTCosmicFilter(fhicl::ParameterSet const & p)
 // Initialize member data here.
 {
   // Call appropriate produces<>() functions here.
-  fBeamFlashProducer       = "simpleFlashBeam";
-  fCRTHitProducer          = "merger";
-  fDAQHeaderProducer       = "daq";
-  fBeamStart               = 5.0;
-  fBeamEnd                 = 16.0;
-  fPEMin                   = 50.0;
-  fDTOffset                = 68600.0;
-  fResolution              = 1.0;
-  verbose                  = true;
+  fBeamFlashProducer       = p.get<std::string>("BeamFlashProducer");
+  fCRTHitProducer          = p.get<std::string>("CRTHitProducer");
+  fDAQHeaderProducer       = p.get<std::string>("DAQHeaderProducer");
+  fBeamStart               = p.get<double>("BeamStart");
+  fBeamEnd                 = p.get<double>("BeamEnd");
+  fPEMin                   = p.get<double>("PEMin");
+  fDTOffset                = p.get<double>("DTOffset");
+  fResolution              = p.get<double>("Resolution");
+  fuseAsFilter             = p.get<bool>("useAsFilter");
+  verbose                  = p.get<bool>("verbose");
 }
 
 void UBCRTCosmicFilter::beginJob() 
@@ -196,7 +198,8 @@ bool UBCRTCosmicFilter::filter(art::Event & e)
   _within_resolution          = 0;
 
   // Set the value for the '_beam_flash_PE' to be negative so that it will be overwritten by the information for the actual flash.
-  _beam_flash_PE = -1.0;
+  _beam_flash_time = -10000.0;
+  _beam_flash_PE   = -1.0;
 
   // Loop over the flashes to find the one greatest in intensity.
   for ( int i = 0; i < _nflashes_in_beamgate; i++ ) {
@@ -218,12 +221,17 @@ bool UBCRTCosmicFilter::filter(art::Event & e)
       _beam_flash_time = beamflash_h->at( i ).Time();
       _beam_flash_PE   = beamflash_h->at( i ).TotalPE();
 
+      std::cout << "beamflash_h->at( i ).TotalPE() = " << beamflash_h->at( i ).TotalPE() << " PEs." << std::endl;
+      std::cout << "beamflash_h->at( i ).Time() = " << beamflash_h->at( i ).Time() << " us." << std::endl;
     }
 
   } // End of the loop over the beam flashes.
 
-  if ( verbose )
+  if ( verbose ) {
     std::cout << "Number of flashes in the event passing the beamspill and PE cuts = " << _nflashes_in_beamgate_passing_beamspill_and_PE_cuts << "." << std::endl;
+    std::cout << "Time of greatest flash = " << _beam_flash_time << " us." << std::endl;
+    std::cout << "PEs of greatest flash = " << _beam_flash_PE << " PEs." << std::endl;
+  }
 
   // Set the variable for the number of CRT hits in the event.
   _nCRThits_in_event = crthit_h->size();
@@ -269,7 +277,7 @@ bool UBCRTCosmicFilter::filter(art::Event & e)
   _tree->Fill();
 
   // Return true if you are within resolution.
-  if ( _within_resolution == 1 )
+  if ( fuseAsFilter && _within_resolution == 1 )
     return false;
 
   // Otherwise return false.
