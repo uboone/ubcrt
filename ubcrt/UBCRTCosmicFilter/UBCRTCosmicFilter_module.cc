@@ -23,6 +23,9 @@
 #include "lardataobj/RecoBase/OpFlash.h"
 #include "ubobj/RawData/DAQHeaderTimeUBooNE.h"
 
+// Declare the file for the associations to be made.
+#include "lardata/Utilities/AssociationUtil.h"
+
 // C++
 #include <memory>
 
@@ -103,6 +106,8 @@ UBCRTCosmicFilter::UBCRTCosmicFilter(fhicl::ParameterSet const & p)
 // Initialize member data here.
 {
   // Call appropriate produces<>() functions here.
+  produces< art::Assns <crt::CRTHit,recob::OpFlash> >();
+
   fBeamFlashProducer       = p.get<std::string>("BeamFlashProducer");
   fCRTHitProducer          = p.get<std::string>("CRTHitProducer");
   fDAQHeaderProducer       = p.get<std::string>("DAQHeaderProducer");
@@ -153,6 +158,9 @@ bool UBCRTCosmicFilter::filter(art::Event & e)
   // Iterate the event counter.
   event_counter++;
 
+  // Save an association for CRT hits/PMT flashes.
+  std::unique_ptr< art::Assns <crt::CRTHit, recob::OpFlash> > crthit_flash_assn_v( new art::Assns<crt::CRTHit, recob::OpFlash> );
+
   // Declare an object for the GPS timestamp of the event so that you can offset the cosmic t0 times.
   art::Handle< raw::DAQHeaderTimeUBooNE > rawHandle_DAQHeader;
   e.getByLabel(fDAQHeaderProducer, rawHandle_DAQHeader);
@@ -191,6 +199,7 @@ bool UBCRTCosmicFilter::filter(art::Event & e)
 
   // Set the variables for the closest CRT hit time.
   double _dt_abs              = 100000.0;
+  size_t flash_idx            = 0;
   _dt                         = 0.;
   _CRT_hit_time               = 0.;
 
@@ -200,6 +209,7 @@ bool UBCRTCosmicFilter::filter(art::Event & e)
   // Set the value for the '_beam_flash_PE' to be negative so that it will be overwritten by the information for the actual flash.
   _beam_flash_time = -10000.0;
   _beam_flash_PE   = -1.0;
+  
 
   // Loop over the flashes to find the one greatest in intensity.
   for ( int i = 0; i < _nflashes_in_beamgate; i++ ) {
@@ -220,6 +230,7 @@ bool UBCRTCosmicFilter::filter(art::Event & e)
     if ( beamflash_h->at( i ).TotalPE() > _beam_flash_PE ) {
       _beam_flash_time = beamflash_h->at( i ).Time();
       _beam_flash_PE   = beamflash_h->at( i ).TotalPE();
+      flash_idx        = size_t( i );
 
       std::cout << "beamflash_h->at( i ).TotalPE() = " << beamflash_h->at( i ).TotalPE() << " PEs." << std::endl;
       std::cout << "beamflash_h->at( i ).Time() = " << beamflash_h->at( i ).Time() << " us." << std::endl;
@@ -258,6 +269,16 @@ bool UBCRTCosmicFilter::filter(art::Event & e)
 	_CRT_hit_y  = crthit_h->at( j ).y_pos;
 	_CRT_hit_z  = crthit_h->at( j ).z_pos;
 
+	// Convert the CRT iterator to type 'size_t'.
+	size_t crt_idx = size_t( j );
+
+	// Make the two pointers.
+	const art::Ptr<crt::CRTHit> crt_ptr( crthit_h, crt_idx );
+	const art::Ptr<recob::OpFlash> flash_ptr( beamflash_h, flash_idx );
+
+	// Make the association between the CRT hit and the OpFlash.
+	crthit_flash_assn_v->addSingle(crt_ptr, flash_ptr);
+
 	if ( verbose ) {
 	  std::cout << "CRT hit PE = " << _CRT_hit_PE << " PEs." << std::endl;
 	  std::cout << "CRT hit x = " << _CRT_hit_x << " cm." << std::endl;
@@ -275,6 +296,9 @@ bool UBCRTCosmicFilter::filter(art::Event & e)
 
   // Fill the tree.
   _tree->Fill();
+
+  // Add the data products to the event.
+  e.put(std::move(crthit_flash_assn_v));
 
   // Return true if you are within resolution.
   if ( fuseAsFilter && _within_resolution == 1 )
