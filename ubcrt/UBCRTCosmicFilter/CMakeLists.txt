@@ -2,6 +2,8 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 cet_add_compiler_flags(CXX -Wno-return-type-c-linkage )
 endif()
 
+link_libraries( ${LIB_NAME} -L$ENV{BOOST_LIB} -lboost_system ${ROOTLIB} )
+
 art_make( BASENAME_ONLY
           MODULE_LIBRARIES 
                         lardataobj_RecoBase			
