@@ -4,9 +4,9 @@ UBCRTCosmicFilter: {
  BeamFlashProducer        : "simpleFlashBeam"
  CRTHitProducer           : "merger"
  DAQHeaderProducer        : "daq"
- BeamStart                : 5.0  # us
- BeamEnd                  : 16.0 # us
- PEMin                    : 50.0   # PEs
+ BeamStart                : 3.19  # us
+ BeamEnd                  : 4.87 # us
+ PEMin                    : 10.0   # PEs
  DTOffset                 : 68600. # us
  Resolution               : 1.0  # us
  useAsFilter              : true
