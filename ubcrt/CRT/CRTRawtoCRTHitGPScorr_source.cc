@@ -820,9 +820,9 @@ void crt::CRTRawInputDetail::receive_data(){
             first_newevent++;
           }
             
-				  int this_ms = (start_ms +(int)(((end_ms-start_ms)*(Ms_poll[febnr])-0.041667)+0.5));
-					//int this_ms = (start_ms +(int)((end_ms-start_ms)*1));
-          this_ms=this_ms ;//+ (int)(scale_NTP*((long)start_NTP-start_sec));
+	  int this_ms = (start_ms +(int)(((end_ms-start_ms)*(Ms_poll[febnr])-0.041667)+0.5));
+	  //int this_ms = (start_ms +(int)((end_ms-start_ms)*1));
+	  //this_ms=this_ms ;//+ (int)(scale_NTP*((long)start_NTP-start_sec));
           unsigned int this_ts0=evbuf_pro[febnr][first_newevent].ts0_corr;
 					
           if(start_sec==end_sec || this_ts0<=500000000) evbuf_pro[febnr][first_newevent].sec=end_sec;
