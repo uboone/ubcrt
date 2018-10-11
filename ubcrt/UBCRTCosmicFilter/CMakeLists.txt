@@ -25,6 +25,8 @@ art_make( BASENAME_ONLY
                         ${ROOT_XMLIO}
                         ${ROOT_GDML}
                         ${ROOT_BASIC_LIB_LIST}
+                        larpandora_LArPandoraInterface
+
         )
 
 install_headers()

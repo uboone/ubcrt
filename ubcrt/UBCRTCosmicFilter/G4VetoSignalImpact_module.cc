@@ -18,6 +18,8 @@
 #include "art/Framework/Services/Optional/TFileService.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
+#include "larpandora/LArPandoraInterface/LArPandoraHelper.h"
+
 #include "TLorentzVector.h"
 #include "TVector3.h"
 #include "TTree.h"
@@ -48,6 +50,8 @@ public:
   // Selected optional functions.
   void beginJob() override;
   void endJob() override;
+
+  art::Ptr<simb::MCTruth> TrackIDToMCTruth(art::Event const &e, std::string _geant_producer, int geant_track_id);
 
 private:
 
@@ -322,6 +326,24 @@ void G4VetoSignalImpact::beginJob()
 void G4VetoSignalImpact::endJob()
 {
   // Implementation of optional member function here.
+}
+
+
+art::Ptr<simb::MCTruth> PandoraInterfaceHelper::TrackIDToMCTruth(art::Event const & e, std::string _geant_producer, int geant_track_id) {
+
+    lar_pandora::MCTruthToMCParticles truthToParticles;
+    lar_pandora::MCParticlesToMCTruth particlesToTruth;
+
+    lar_pandora::LArPandoraHelper::CollectMCParticles(e, _geant_producer, truthToParticles, particlesToTruth);
+
+    for (auto iter : particlesToTruth) {
+      if (iter.first->TrackId() == geant_track_id) {
+        return iter.second;
+      }
+    }
+
+    art::Ptr<simb::MCTruth> null_ptr;
+    return null_ptr;
 }
 
 DEFINE_ART_MODULE(G4VetoSignalImpact)
