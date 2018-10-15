@@ -65,6 +65,7 @@ private:
   double fResolution;
   bool fuseAsFilter;
   bool verbose;
+  bool fAnode, fTop, fBottom, fCathode;
 
   // TTree Declaration.
   TTree *_tree;
@@ -122,6 +123,10 @@ UBCRTCosmicFilter::UBCRTCosmicFilter(fhicl::ParameterSet const &p)
   fResolution = p.get<double>("Resolution");
   fuseAsFilter = p.get<bool>("useAsFilter");
   verbose = p.get<bool>("verbose");
+  fTop     = p.get<bool>("Top");
+  fBottom  = p.get<bool>("Bottom");
+  fAnode   = p.get<bool>("Anode");
+  fCathode = p.get<bool>("Cathode");
 }
 
 void UBCRTCosmicFilter::beginJob()
@@ -269,8 +274,27 @@ bool UBCRTCosmicFilter::filter(art::Event &e)
   for (int j = 0; j < _nCRThits_in_event; j++)
   {
 
-    if (verbose)
-      std::cout << "Time of the CRT Hit wrt the event timestamp = " << ((crthit_h->at(j).ts0_ns - evt_timeGPS_nsec + fDTOffset) / 1000.) << " us." << std::endl;
+    // figure out what plane this hit comes from
+    // 3 -> top
+    // 0 -> bottom
+    // 1 -> anode
+    // 2 -> cathode
+    auto pl = crthit_h->at(j).plane;
+
+    if ( (pl == 3) && !fTop)
+      continue;
+
+    if ( (pl == 2) && !fCathode)
+      continue;
+
+    if ( (pl == 1) && !fAnode)
+      continue;
+
+    if ( (pl == 0) && !fBottom)
+      continue;
+
+    //if (verbose)
+    //std::cout << "Time of the CRT Hit wrt the event timestamp = " << ((crthit_h->at(j).ts0_ns - evt_timeGPS_nsec + fDTOffset) / 1000.) << " us." << std::endl;
 
     double _crt_time_temp = ((crthit_h->at(j).ts0_ns - evt_timeGPS_nsec + fDTOffset) / 1000.);
     // Fill the vector variables.
@@ -336,4 +360,6 @@ bool UBCRTCosmicFilter::filter(art::Event &e)
   return true;
 
 } // End of the filter module
+
+
 DEFINE_ART_MODULE(UBCRTCosmicFilter)

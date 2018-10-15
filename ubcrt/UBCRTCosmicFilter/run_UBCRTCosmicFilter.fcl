@@ -40,7 +40,7 @@ physics:
 
     filters:
  {
- ubcrt : @local::UBCRTCosmicFilter
+ ubcrt : @local::UBCRTCosmicFilterBNBON
  }
  analyzers:
  {
