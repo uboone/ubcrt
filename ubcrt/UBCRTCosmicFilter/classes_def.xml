@@ -1,0 +1,6 @@
+<lcgdict>
+<class name="art::Assns<crt::CRTHit,recob::OpFlash,void>"/>
+<class name="art::Assns<recob::OpFlash,crt::CRTHit,void>"/>
+<class name="art::Wrapper<art::Assns<crt::CRTHit,recob::OpFlash,void> >"/>
+<class name="art::Wrapper<art::Assns<recob::OpFlash,crt::CRTHit,void> >"/>
+</lcgdict>
