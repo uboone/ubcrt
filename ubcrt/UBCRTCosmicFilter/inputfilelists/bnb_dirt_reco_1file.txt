@@ -1,1 +1,0 @@
-/pnfs/uboone/mc/uboone/reconstructed/prod_v06_26_08/prodgenie_bnb_dirt_nu_cosmic_uboone/full_chain/prodgenie_bnb_dirt_nu_uboone_corsika_99_20180726T182433_gen_g4_detsim_reco1_reco2_fullchain4_c0c0db5c-f4fe-4731-ab57-10d872f25e3b.root

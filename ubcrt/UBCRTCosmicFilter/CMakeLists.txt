@@ -5,8 +5,17 @@ endif()
 link_libraries( ${LIB_NAME} -L$ENV{BOOST_LIB} -lboost_system ${ROOTLIB} )
 
 art_make( BASENAME_ONLY
+
+          LIB_LIBRARIES
+                        larpandora_LArPandoraInterface
+                        lardataobj_RecoBase
+                        nusimdata_SimulationBase
+                        
           MODULE_LIBRARIES 
-                        lardataobj_RecoBase			
+                        larpandora_LArPandoraInterface
+                        lardataobj_RecoBase	
+                        lardataobj_RecoBase
+                        nusimdata_SimulationBase		
                         ${ART_FRAMEWORK_CORE}
                         ${ART_FRAMEWORK_PRINCIPAL}
                         ${ART_FRAMEWORK_SERVICES_REGISTRY}
@@ -25,7 +34,6 @@ art_make( BASENAME_ONLY
                         ${ROOT_XMLIO}
                         ${ROOT_GDML}
                         ${ROOT_BASIC_LIB_LIST}
-                        larpandora_LArPandoraInterface
 
         )
 

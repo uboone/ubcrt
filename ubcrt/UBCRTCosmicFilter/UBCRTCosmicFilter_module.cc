@@ -224,6 +224,9 @@ bool UBCRTCosmicFilter::filter(art::Event &e)
   for (int i = 0; i < _nflashes_in_beamgate; i++)
   {
 
+    std::cout << "beamflash_h->at( i ).TotalPE() = " << beamflash_h->at(i).TotalPE() << " PEs." << std::endl;
+    std::cout << "beamflash_h->at( i ).Time() = " << beamflash_h->at(i).Time() << " us." << std::endl;
+
     // Throw the flash out if it is outside of the beamgate or too low in intensity.
     if (beamflash_h->at(i).Time() < fBeamStart || beamflash_h->at(i).Time() > fBeamEnd || beamflash_h->at(i).TotalPE() < fPEMin)
     {
@@ -242,9 +245,6 @@ bool UBCRTCosmicFilter::filter(art::Event &e)
       _beam_flash_time = beamflash_h->at(i).Time();
       _beam_flash_PE = beamflash_h->at(i).TotalPE();
       flash_idx = size_t(i);
-
-      std::cout << "beamflash_h->at( i ).TotalPE() = " << beamflash_h->at(i).TotalPE() << " PEs." << std::endl;
-      std::cout << "beamflash_h->at( i ).Time() = " << beamflash_h->at(i).Time() << " us." << std::endl;
     }
 
   } // End of the loop over the beam flashes.
