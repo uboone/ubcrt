@@ -48,7 +48,8 @@
 #include <map>
 #include <utility>
 #include <typeinfo>
-
+#include <TDirectory.h>
+  
 const int kMaxCRThits = 1000;
 const int kMaxCRTtracks = 1000;
 const int kMaxTPCtracks = 100;
@@ -95,11 +96,15 @@ private:
   std::string  data_label_DAQHeader_;
   int fHardDelay_;
   int verbose_;
+  bool isData;
   
-
+  //art::TFileDirectory fTopDir;
+  art::TFileDirectory dir_strip_top;
+  art::TFileDirectory dir_strip_bottom;
+  art::TFileDirectory dir_strip_pipe;
+  art::TFileDirectory dir_strip_ft;
 
   //art::InputTag opFlashTag("opflashSat");
-
 
   //quality plots
 
@@ -118,8 +123,15 @@ private:
   TH2F* HitDistFT;
   TH2F* HitDistPipe;
   TH2F* HitDistTop;
- //quality plots                                                                                                                                          
 
+  std::map<int, TH1F*> hstrip_x;
+  std::map<int, TH1F*> hstrip_y;
+  std::map<int, TH1F*> hstrip_z;
+
+  std::vector<std::vector<std::map<int, TH1F*>>> hstrip;// <plane, xoryorz, <feb_id, th1f>> 
+  //std::map<int,<std::map<int,<std::map<int, TH1F*> > > > > hstrip;// <plane, xoryorz, <feb_id, th1f>> 
+
+//quality plots                                                                           
   TTree*       fTree;
   // run information
   int run;
@@ -135,7 +147,10 @@ private:
   double hit_charge[kMaxCRThits];
   double hit_posx[kMaxCRThits];
   double hit_posy[kMaxCRThits];
-  double hit_posz[kMaxCRThits]; 
+  double hit_posz[kMaxCRThits];
+  std::vector<uint8_t> feb_id[kMaxCRThits];
+  std::map< uint8_t, std::vector<std::pair<int,float> > > hit_pesmap[kMaxCRThits];
+
   // CRT tracks
   int nCRTtracks;
   double ct_theta[kMaxCRTtracks];
@@ -180,7 +195,13 @@ TrackDump::TrackDump(fhicl::ParameterSet const & p)
     data_label_flash_(p.get<std::string>("data_label_flash_")),
     data_label_DAQHeader_(p.get<std::string>("data_label_DAQHeader_")),
     fHardDelay_(p.get<int>("fHardDelay",40000)),
-    verbose_(p.get<int>("verbose"))
+    verbose_(p.get<int>("verbose")),
+    isData(p.get<bool>("isData",false)),
+    //fTopDir(art::ServiceHandle<art::TFileService>()->mkdir("Strip Check", "Strip_Check")),
+    dir_strip_top(art::ServiceHandle<art::TFileService>()->mkdir("top")),
+    dir_strip_bottom(art::ServiceHandle<art::TFileService>()->mkdir("bottom")),
+    dir_strip_pipe(art::ServiceHandle<art::TFileService>()->mkdir("pipe")),
+    dir_strip_ft(art::ServiceHandle<art::TFileService>()->mkdir("ft"))
     // More initializers here.    
 {
 }
@@ -198,48 +219,62 @@ void TrackDump::analyze(art::Event const & evt)
   auto evt_time_sec = evtTime.timeHigh();
   auto evt_time_nsec = evtTime.timeLow();
 
-   //get DAQ Header                                                                  
-  //Commentar para old swizzler, sin DAQ Header
-  art::Handle< raw::DAQHeaderTimeUBooNE > rawHandle_DAQHeader;  
-  evt.getByLabel(data_label_DAQHeader_, rawHandle_DAQHeader);
-  
+  double evt_timeGPS_sec;
+  double evt_timeGPS_nsec;
+  double evt_timeNTP_sec;
+  double evt_timeNTP_nsec;
+  double timstp_diff;
 
-  //check to make sure the data we asked for is valid 
-  if(!rawHandle_DAQHeader.isValid()){
-    std::cout << "Run " << evt.run() << ", subrun " << evt.subRun()
-	      << ", event " << evt.event() << " has zero"
-	      << " DAQHeaderTimeUBooNE  " << " in with label " << data_label_DAQHeader_ << std::endl;    
-    return;
-  }
-  
-  
-  raw::DAQHeaderTimeUBooNE const& my_DAQHeader(*rawHandle_DAQHeader);
-  art::Timestamp evtTimeGPS = my_DAQHeader.gps_time();  
-  double evt_timeGPS_sec = evtTimeGPS.timeHigh();
-  double evt_timeGPS_nsec = (double)evtTimeGPS.timeLow();
-  art::Timestamp evtTimeNTP = my_DAQHeader.ntp_time();
-  double evt_timeNTP_sec = evtTimeNTP.timeHigh();
-  double evt_timeNTP_nsec = (double)evtTimeNTP.timeLow();
-  double timstp_diff = std::abs(evt_timeGPS_nsec - evt_timeNTP_nsec);
-  
-  if(verbose_==1){
-    std::cout<< "Run:  "<<frunNum << "   subRun: " <<fsubRunNum<<std::endl;
-    std::cout<<"event: "<<fEvtNum <<std::endl;
-    std::cout.precision(19);
-    std::cout<<"  GPS time second:  "<<evt_timeGPS_sec<<std::endl;
-    std::cout<<"  GPS time nano_second:  "<<evt_timeGPS_nsec<<std::endl;
-    std::cout<<"  NTP time second:  "<<evt_timeNTP_sec<<std::endl;    
-    std::cout<<"  NTP time nano_second:  "<<evt_timeNTP_nsec<<std::endl;
-    std::cout<<"  event time second:  "<<evt_time_sec<<std::endl;
-    std::cout<<"  event time nano_second:  "<<evt_time_nsec<<std::endl;
-    std::cout<<"  difference between GPS and NTP:  "<<evt_timeGPS_nsec - evt_timeNTP_nsec<<" ns"<<std::endl;
-    std::cout<<"  ABS difference between GPS and NTP:  "<<timstp_diff<<" ns"<<std::endl;
+  if (isData) {
+    //get DAQ Header                                                                  
+    //Commentar para old swizzler, sin DAQ Header
+    art::Handle< raw::DAQHeaderTimeUBooNE > rawHandle_DAQHeader;  
+    evt.getByLabel(data_label_DAQHeader_, rawHandle_DAQHeader);
     
-    if( (evt_time_sec==evt_timeGPS_sec) && (evt_time_nsec==evt_timeGPS_nsec))  std::cout<<" Event time type is: GPS  "<<std::endl;
-    if( (evt_time_sec==evt_timeNTP_sec) && (evt_time_nsec==evt_timeNTP_nsec))  std::cout<<" Event time type is: NTP  "<<std::endl;
-    //getchar();
-  }  
-  
+    
+    //check to make sure the data we asked for is valid 
+    if(!rawHandle_DAQHeader.isValid()){
+      std::cout << "Run " << evt.run() << ", subrun " << evt.subRun()
+	      << ", event " << evt.event() << " has zero"
+		<< " DAQHeaderTimeUBooNE  " << " in with label " << data_label_DAQHeader_ << std::endl;    
+      return;
+    }
+    
+    
+    raw::DAQHeaderTimeUBooNE const& my_DAQHeader(*rawHandle_DAQHeader);
+    art::Timestamp evtTimeGPS = my_DAQHeader.gps_time();  
+    evt_timeGPS_sec = evtTimeGPS.timeHigh();
+    evt_timeGPS_nsec = (double)evtTimeGPS.timeLow();
+    art::Timestamp evtTimeNTP = my_DAQHeader.ntp_time();
+    evt_timeNTP_sec = evtTimeNTP.timeHigh();
+    evt_timeNTP_nsec = (double)evtTimeNTP.timeLow();
+    timstp_diff = std::abs(evt_timeGPS_nsec - evt_timeNTP_nsec);
+    
+
+    if(verbose_==1){
+      std::cout<< "Run:  "<<frunNum << "   subRun: " <<fsubRunNum<<std::endl;
+      std::cout<<"event: "<<fEvtNum <<std::endl;
+      std::cout.precision(19);
+      std::cout<<"  GPS time second:  "<<evt_timeGPS_sec<<std::endl;
+      std::cout<<"  GPS time nano_second:  "<<evt_timeGPS_nsec<<std::endl;
+      std::cout<<"  NTP time second:  "<<evt_timeNTP_sec<<std::endl;    
+      std::cout<<"  NTP time nano_second:  "<<evt_timeNTP_nsec<<std::endl;
+      std::cout<<"  event time second:  "<<evt_time_sec<<std::endl;
+      std::cout<<"  event time nano_second:  "<<evt_time_nsec<<std::endl;
+      std::cout<<"  difference between GPS and NTP:  "<<evt_timeGPS_nsec - evt_timeNTP_nsec<<" ns"<<std::endl;
+      std::cout<<"  ABS difference between GPS and NTP:  "<<timstp_diff<<" ns"<<std::endl;
+      
+      if( (evt_time_sec==evt_timeGPS_sec) && (evt_time_nsec==evt_timeGPS_nsec))  std::cout<<" Event time type is: GPS  "<<std::endl;
+      if( (evt_time_sec==evt_timeNTP_sec) && (evt_time_nsec==evt_timeNTP_nsec))  std::cout<<" Event time type is: NTP  "<<std::endl;
+      //getchar();
+    }
+  }else{
+    evt_timeGPS_sec = 0;
+    evt_timeGPS_nsec = 0;
+    evt_timeNTP_sec = 0;
+    evt_timeNTP_nsec = 0;
+    timstp_diff = std::abs(evt_timeGPS_nsec - evt_timeNTP_nsec);
+  }
 
   if (fSaveTPCTrackInfo) {
 
@@ -328,8 +363,8 @@ void TrackDump::analyze(art::Event const & evt)
     //  getchar();   
   }    //end get CRTHits
 
-
   nCRThits = CRTHitCollection.size();
+    //std::cout<<"there are "<<nCRThits<<" CRT hits"<<std::endl;
   if (nCRThits>kMaxCRThits) nCRThits=kMaxCRThits;
   for(int j = 0; j < nCRThits; j++) {
     
@@ -343,12 +378,157 @@ void TrackDump::analyze(art::Event const & evt)
     hit_posx[j]=my_CRTHit.x_pos;
     hit_posy[j]=my_CRTHit.y_pos;
     hit_posz[j]=my_CRTHit.z_pos;
+    feb_id[j]=my_CRTHit.feb_id;
+    //hit_pesmap[j]=my_CRTHit.pesmap;
+    
+
+    for (auto id : feb_id[j]) {
+
+      std::ostringstream convert;
+      convert << (int) id;
+      std::string key_string = convert.str();
+      int key_int = std::stoi(key_string);
+      
+      //std::cout<<"id is "<<id<<" key_int    is "<<key_int<<std::endl;
+      //std::cout<<"id is "<<id<<" key_string is "<<key_string<<std::endl;
+      
+      int dir_key = key_int*100;
+            
+      auto pes = hit_pesmap[j].find(id)->second;
+      //std::cout<<"hit has "<<pes.size()<<"flashes"<<std::endl;
+      
+      std::vector<double> strip_pes;
+      strip_pes.clear();
+      strip_pes.resize(16);
+
+      //std::cout<<pes.size()<<std::endl;
+      int loop_size=pes.size()-1;
+      
+      
+      for (int i =0; i<loop_size; ++i){
+	auto pe_this = pes[i];
+	auto pe_next = pes[i+1];
+	
+	//std::cout<<pe_this.first<<" flash has "<<pe_this.second<<" flashes"<<std::endl;
+	if (pe_this.first % 2 ==0) {
+	  strip_pes[pe_this.first/2] = pe_this.second+pe_next.second;
+	}
+      }
+
+      //for (auto shit : strip_pes) std::cout<<shit<<std::endl;
+      
+      //double pe_max   = *std::max_element(strip_pes.begin(),strip_pes.end());
+      int pe_max_iter = std::distance(strip_pes.begin(), std::max_element(strip_pes.begin(), strip_pes.end()));
+      
+      //std::cout<<"max pe is         "<<pe_max<<std::endl;
+      //std::cout<<"max pe loc is     "<<pe_max_iter<<std::endl;
+
+      int strip_id = dir_key+pe_max_iter;
+      std::string strip_name = std::to_string(strip_id);
+      
+      int plane = my_CRTHit.plane;
+
+      //std::cout<<"Start Filling Strip check plots"<<std::endl;
+      
+      if ( hstrip[plane][0].find(strip_id) == hstrip[plane][0].end() ) {
+	//std::cout<<"strip id is "<<strip_id
+	//<<"plane id is "<<plane<<std::endl;
+	for (int ax=0; ax<3; ++ax){
+	  char ax_label[] = "_x";
+	  if(ax==1) ax_label[1] = 'y';
+	  if(ax==2) ax_label[1] = 'z';
+	      
+	  //std::cout<<"axis is "<<ax<<std::endl;
+	  //Bottom
+	  if (plane==0){
+	    std::string s = std::to_string(strip_id);
+	    char const *id_char = s.c_str();
+	    //std::cout<<"title is "<<id_char<<std::endl;
+
+	    char * title = new char[std::strlen(id_char)+std::strlen(ax_label)+1];
+	    std::strcpy(title,id_char);
+	    std::strcat(title,ax_label);
+
+	    hstrip[plane][ax][strip_id]= dir_strip_bottom.make<TH1F>(title,"Distributions",100,-1000,1000); 
+	    hstrip[plane][ax][strip_id]->GetXaxis()->SetTitle("Pos[cm]");
+	    hstrip[plane][ax][strip_id]->GetYaxis()->SetTitle("Entries/bin");
+	  }
+	  //FT
+	  if (plane==1){
+	    std::string s = std::to_string(strip_id);
+	    char const *id_char = s.c_str();
+	    std::cout<<"title is "<<id_char<<std::endl;
+
+	    char * title = new char[std::strlen(id_char)+std::strlen(ax_label)+1];
+	    std::strcpy(title,id_char);
+	    std::strcat(title,ax_label);
+
+	    hstrip[plane][ax][strip_id]= dir_strip_ft.make<TH1F>(title,"Distributions",100,-1000,1000); 
+	    hstrip[plane][ax][strip_id]->GetXaxis()->SetTitle("Pos[cm]");
+	    hstrip[plane][ax][strip_id]->GetYaxis()->SetTitle("Entries/bin");
+	  }
+	  //Pipe
+	  if (plane==2){
+	    std::string s = std::to_string(strip_id);
+	    char const *id_char = s.c_str();
+	    std::cout<<"title is "<<id_char<<std::endl;
+
+	    char * title = new char[std::strlen(id_char)+std::strlen(ax_label)+1];
+	    std::strcpy(title,id_char);
+	    std::strcat(title,ax_label);
+
+	    hstrip[plane][ax][strip_id]= dir_strip_pipe.make<TH1F>(title,"Distributions",100,-1000,1000); 
+	    hstrip[plane][ax][strip_id]->GetXaxis()->SetTitle("Pos[cm]");
+	    hstrip[plane][ax][strip_id]->GetYaxis()->SetTitle("Entries/bin");
+	  }
+	  //Top
+	  if (plane==3){
+	    std::string s = std::to_string(strip_id);
+	    char const *id_char = s.c_str();
+	    std::cout<<"title is "<<id_char<<std::endl;
+
+	    char * title = new char[std::strlen(id_char)+std::strlen(ax_label)+1];
+	    std::strcpy(title,id_char);
+	    std::strcat(title,ax_label);
+
+	    hstrip[plane][ax][strip_id]= dir_strip_top.make<TH1F>(title,"Distributions",100,-1000,1000); 
+	    hstrip[plane][ax][strip_id]->GetXaxis()->SetTitle("Pos[cm]");
+	    hstrip[plane][ax][strip_id]->GetYaxis()->SetTitle("Entries/bin");
+	  }
+	  
+
+	  //h.GetXaxis()->GetXmax();
+
+	  if(ax==0){
+	    //if (my_CRTHit.x_pos > h.GetXaxis()->GetXmax()) 
+	      
+	    hstrip[plane][ax][strip_id]->Fill(my_CRTHit.x_pos);
+	  }
+	  if(ax==1)hstrip[plane][ax][strip_id]->Fill(my_CRTHit.y_pos);
+	  if(ax==2)hstrip[plane][ax][strip_id]->Fill(my_CRTHit.z_pos);
+	}
+      } else {
+	//std::cout<<"found strip_id of "<<strip_id<<std::endl;
+	for (int ax=0; ax<3; ++ax){
+	  /*
+	    std::cout<<" my_CRTHit.x_pos "<<my_CRTHit.x_pos
+		   <<" my_CRTHit.y_pos "<<my_CRTHit.y_pos
+		   <<" my_CRTHit.z_pos "<<my_CRTHit.z_pos<<std::endl;
+	  */
+	  if(ax==0)hstrip[plane][ax][strip_id]->Fill(my_CRTHit.x_pos);
+	  if(ax==1)hstrip[plane][ax][strip_id]->Fill(my_CRTHit.y_pos);
+	  if(ax==2)hstrip[plane][ax][strip_id]->Fill(my_CRTHit.z_pos);
+	}
+      }
+    }
+
+
 
     //fillhistograms
-    if (my_CRTHit.plane==0) HitDistBot->Fill(my_CRTHit.z_pos,my_CRTHit.x_pos);
-    else if (my_CRTHit.plane==1) HitDistFT->Fill(my_CRTHit.z_pos,my_CRTHit.y_pos);
+    if      (my_CRTHit.plane==0) HitDistBot ->Fill(my_CRTHit.z_pos,my_CRTHit.x_pos);
+    else if (my_CRTHit.plane==1) HitDistFT  ->Fill(my_CRTHit.z_pos,my_CRTHit.y_pos);
     else if (my_CRTHit.plane==2) HitDistPipe->Fill(my_CRTHit.z_pos,my_CRTHit.y_pos);
-    else if (my_CRTHit.plane==3) HitDistTop->Fill(my_CRTHit.z_pos,my_CRTHit.x_pos);
+    else if (my_CRTHit.plane==3) HitDistTop ->Fill(my_CRTHit.z_pos,my_CRTHit.x_pos);
 
 
 
@@ -429,6 +609,7 @@ void TrackDump::beginJob()
 {
   // Implementation of optional member function here.
   art::ServiceHandle<art::TFileService> tfs;
+  //fTopDir = tfs->mkdir("Strip_check");
   fTree = tfs->make<TTree>("trackdump","analysis tree");
   fTree->Branch("run",&run,"run/I");
   fTree->Branch("subrun",&subrun,"subrun/I");
@@ -552,8 +733,6 @@ void TrackDump::beginJob()
   HitDistTop->GetZaxis()->SetTitle("Entries/bin");
   HitDistTop->SetOption("COLZ");
 
-
-
 }
 
 void TrackDump::endJob()
@@ -573,6 +752,56 @@ void TrackDump::ResetVars()
   event = -99999;
   evttime = -99999;
   nCRThits = 0;
+  
+  //dir_strip_bottom = fTopDir.mkdir("strip_check_bottom");
+  //dir_strip_top    = fTopDir.mkdir("strip_check_top");
+  //dir_strip_pipe   = fTopDir.mkdir("strip_check_pipe");
+  //dir_strip_ft     = fTopDir.mkdir("strip_check_ft");
+  /*
+  art::TFileDirectory dir_strip_x = fTopDir.mkdir("strip_check_x");
+  art::TFileDirectory dir_strip_y = fTopDir.mkdir("strip_check_y");
+  art::TFileDirectory dir_strip_z = fTopDir.mkdir("strip_check_z");
+  */
+  hstrip.clear();
+  hstrip.resize(4);
+  for (auto & each : hstrip) {
+    each.clear();
+    each.resize(3);
+    }  
+  /*
+  for (int i = 0; i<10; ++i){
+    char array0[] = "hstrip_x_";
+    char array1[] = "hstrip_y_";
+    char array2[] = "hstrip_z_";
+
+    std::string s = std::to_string(i);
+    char const *array3 = s.c_str();
+
+    char * title0 = new char[std::strlen(array0)+std::strlen(array3)+1];
+    std::strcpy(title0,array0);
+    std::strcat(title0,array3);
+
+    char * title1 = new char[std::strlen(array1)+std::strlen(array3)+1];
+    std::strcpy(title1,array1);
+    std::strcat(title1,array3);
+
+    char * title2 = new char[std::strlen(array2)+std::strlen(array3)+1];
+    std::strcpy(title2,array2);
+    std::strcat(title2,array3);
+
+    hstrip_x[i]=dir_strip_x.make<TH1F>(title0,"X distributions",100,-100,1000);
+    hstrip_x[i]->GetXaxis()->SetTitle("cm");
+    hstrip_x[i]->GetYaxis()->SetTitle("Entries/bin");
+
+    hstrip_y[i]=dir_strip_y.make<TH1F>(title1,"Y distributions",100,-100,1000);
+    hstrip_y[i]->GetXaxis()->SetTitle("cm");
+    hstrip_y[i]->GetYaxis()->SetTitle("Entries/bin");
+
+    hstrip_z[i]=dir_strip_z.make<TH1F>(title2,"Z distributions",100,-100,1000);
+    hstrip_z[i]->GetXaxis()->SetTitle("cm");
+    hstrip_z[i]->GetYaxis()->SetTitle("Entries/bin");
+    }*/
+  
   for (int i = 0; i<kMaxCRThits; ++i){
     hit_plane[i] = -999;
     hit_time_s[i] = -99999.;
@@ -620,7 +849,7 @@ void TrackDump::ResetVars()
     trkphi[i]=-9999.;
     trklen[i]=-9999.;
   }
-}
+  }
 
 }
 DEFINE_ART_MODULE(TrackDump)
