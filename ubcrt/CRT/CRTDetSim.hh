@@ -36,29 +36,35 @@
 
 namespace crt{
   class CRTDetSim :  public art:: EDProducer{
-    float fTDelayNorm;  //!< Time delay fit: Gaussian normalization
-    float fTDelayShift;  //!< Time delay fit: Gaussian x shift
-    float fTDelaySigma;  //!< Time delay fit: Gaussian width
-    float fTDelayOffset;  //!< Time delay fit: Gaussian baseline offset
-    float fTDelayRMSGausNorm;  //!< Time delay RMS fit: Gaussian normalization
-    float fTDelayRMSGausShift;  //!< Time delay RMS fit: Gaussian x shift
-    float fTDelayRMSGausSigma;  //!< Time delay RMS fit: Gaussian width
-    float fTDelayRMSExpNorm;  //!< Time delay RMS fit: Exponential normalization
-    float fTDelayRMSExpShift;  //!< Time delay RMS fit: Exponential x shift
-    float fTDelayRMSExpScale;  //!< Time delay RMS fit: Exponential scale
-    float fNpeScaleNorm;  //!< Npe vs. distance: 1/r^2 scale
-    float fNpeScaleShift;  //!< Npe vs. distance: 1/r^2 x shift
-    float fQ0;  // Average energy deposited for mips, for charge scaling [GeV]
-    float fQPed;  // ADC offset for the single-peak peak mean [ADC]
-    float fQSlope;  // Slope in mean ADC / Npe [ADC]
-    float fQRMS;  // ADC single-pe spectrum width [ADC]
-    float fTResInterpolator;  // Interpolator time resolution [ns]
-    float fPropDelay;  // Delay in pulse arrival time [ns/m]
-    float fPropDelayError;  // Delay in pulse arrival time, uncertainty [ns/m]
-    float fAbsLenEff;  // Effective abs. length for transverse Npe scaling [cm]
-
     /// Name of the producer of the IDEs
-    std::string fProducerName;
+    std::string fG4ModuleLabel;
+    double fGlobalT0Offset;  //!< Time delay fit: Gaussian normalization
+    double fTDelayNorm;  //!< Time delay fit: Gaussian normalization
+    double fTDelayShift;  //!< Time delay fit: Gaussian x shift
+    double fTDelaySigma;  //!< Time delay fit: Gaussian width
+    double fTDelayOffset;  //!< Time delay fit: Gaussian baseline offset
+    double fTDelayRMSGausNorm;  //!< Time delay RMS fit: Gaussian normalization
+    double fTDelayRMSGausShift;  //!< Time delay RMS fit: Gaussian x shift
+    double fTDelayRMSGausSigma;  //!< Time delay RMS fit: Gaussian width
+    double fTDelayRMSExpNorm;  //!< Time delay RMS fit: Exponential normalization
+    double fTDelayRMSExpShift;  //!< Time delay RMS fit: Exponential x shift
+    double fTDelayRMSExpScale;  //!< Time delay RMS fit: Exponential scale
+    double fNpeScaleNorm;  //!< Npe vs. distance: 1/r^2 scale
+    double fNpeScaleShift;  //!< Npe vs. distance: 1/r^2 x shift
+    double fQ0;  // Average energy deposited for mips, for charge scaling [GeV]
+    double fQPed;  // ADC offset for the single-peak peak mean [ADC]
+    double fQSlope;  // Slope in mean ADC / Npe [ADC]
+    double fQRMS;  // ADC single-pe spectrum width [ADC]
+    double fQThreshold;  //!< ADC charge threshold [ADC]
+    double fTResInterpolator;  // Interpolator time resolution [ns]
+    double fPropDelay;  // Delay in pulse arrival time [ns/m]
+    double fPropDelayError;  // Delay in pulse arrival time, uncertainty [ns/m]
+    bool fUseEdep;  //!< Use the true G4 energy deposited, assume mip if false.
+    double fAbsLenEff;  // Effective abs. length for transverse Npe scaling [cm]
+    double fStripCoincidenceWindow;
+    double fTaggerPlaneCoincidenceWindow;
+    double fSipmTimeResponse;
+    bool fverbose;
 
     /**
      * Get the channel trigger time relative to the start of the MC event.
