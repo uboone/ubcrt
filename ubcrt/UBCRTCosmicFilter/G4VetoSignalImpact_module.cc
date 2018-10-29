@@ -267,25 +267,25 @@ std::pair<bool, TVector3> G4VetoSignalImpact::InCRT(const TLorentzVector& p1, co
   }// if t is between 0 and 1
 
   // check if the point intersects the anode panel
-  t = (fAy1 - pt1.Y())/(pt2.Y()-pt1.Y());
+  t = (fAx1 - pt1.X())/(pt2.X()-pt1.X());
   // if t < 0 or > 1 then the intersection is beyond the segment
   if ( (t > 0) && (t <= 1)) {
-    double ptAx = pt1.X() + (pt2.X()-pt1.X())*t;
+    double ptAy = pt1.Y() + (pt2.Y()-pt1.Y())*t;
     double ptAz = pt1.Z() + (pt2.Z()-pt1.Z())*t;
-    if ( (ptAx > fAx1) && (ptAx < fAx2) && (ptAz > fAz1) && (ptAz < fAz2) ) {
-      double ptAy = pt1.Y() + (pt2.Y()-pt1.Y())*t;
+    if ( (ptAy > fAy1) && (ptAy < fAy2) && (ptAz > fAz1) && (ptAz < fAz2) ) {
+      double ptAx = pt1.X() + (pt2.X()-pt1.X())*t;
       return std::make_pair(true, TVector3(ptAx,ptAy,ptAz) );
     }// if they intersec
   }// if t is between 0 and 1
 
   // check if the point intersects the cathode panel
-  t = (fCy1 - pt1.Y())/(pt2.Y()-pt1.Y());
+  t = (fCx1 - pt1.X())/(pt2.X()-pt1.X());
   // if t < 0 or > 1 then the intersection is beyond the segment
   if ( (t > 0) && (t <= 1)) {
-    double ptCx = pt1.X() + (pt2.X()-pt1.X())*t;
+    double ptCy = pt1.Y() + (pt2.Y()-pt1.Y())*t;
     double ptCz = pt1.Z() + (pt2.Z()-pt1.Z())*t;
-    if ( (ptCx > fCx1) && (ptCx < fCx2) && (ptCz > fCz1) && (ptCz < fCz2) ) {
-      double ptCy = pt1.Y() + (pt2.Y()-pt1.Y())*t;
+    if ( (ptCy > fCy1) && (ptCy < fCy2) && (ptCz > fCz1) && (ptCz < fCz2) ) {
+      double ptCx = pt1.X() + (pt2.X()-pt1.X())*t;
       return std::make_pair(true, TVector3(ptCx,ptCy,ptCz) );
     }// if they intersec
   }// if t is between 0 and 1
