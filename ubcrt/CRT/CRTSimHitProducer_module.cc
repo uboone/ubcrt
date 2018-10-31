@@ -78,7 +78,7 @@ namespace {
       58,56,32,38,36,35,34,33,37,45,                  //20-29
       44,43,42,41,40,39,55,54,53,51,                  //30-39
       49,47,21,16,50,48,46,20,15,107,                 //40-49
-      106,105,109,108,112,111,115,123,124,126,        //50-59
+      106,105,109,108,112,111,195,123,124,126,        //50-59
       125,129,115,114,113,116,119,120,127,128,        //60-69
       117,121,118};                                   //70-72
     const short mod2orient[73] = {  // 0=x, 1=y, 2=z
@@ -123,7 +123,8 @@ namespace crt{
     double ex; 
     int id1; 
     int id2; 
-    double pes;
+    double pes1;
+    double pes2;
     int module;
     int stripch;
   };
@@ -301,7 +302,7 @@ namespace crt{
       double ex = 1.92380e+00+1.47186e-02*normx-5.29446e-03*normx*normx;
       double ttime = (t1 + t2)/2.;
 
-      CRTStrip stripHit = {ttime, channel, x, ex, id1, id2, npe1+npe2, module, strip};
+      CRTStrip stripHit = {ttime, channel, x, ex, id1, id2, npe1, npe2, module, strip};
 
       if (taggerStrips.count(thistagger)>0) {
 	auto search = taggerStrips.find(thistagger);
@@ -368,10 +369,18 @@ namespace crt{
 	      std::vector<uint8_t> tfeb_id; 
 	      tfeb_id.push_back(mod2feb[thismodule]);
 	      tfeb_id.push_back(mod2feb[thismodule2]);
-	      std::map<uint8_t, std::vector<std::pair<int,float>>> tpesmap;
-	      tpesmap[0] = {std::make_pair(mod2feb[thismodule],thisstrip1.pes)};
-	      tpesmap[1] = {std::make_pair(mod2feb[thismodule2],thisstrip2.pes)};
-	      double petot = thisstrip1.pes+thisstrip2.pes;
+	      std::vector<std::pair<int,float>> myvec1,myvec2;
+	      myvec1.push_back(std::pair<int,float>(thisstrip1.stripch*2,thisstrip1.pes1));
+	      myvec1.push_back(std::pair<int,float>(thisstrip1.stripch*2+1,thisstrip1.pes2));
+	      myvec2.push_back(std::pair<int,float>(thisstrip2.stripch*2,thisstrip2.pes1));
+	      myvec2.push_back(std::pair<int,float>(thisstrip2.stripch*2+1,thisstrip2.pes2));
+	      std::map<uint8_t, std::vector<std::pair<int,float>>> mymap;	      
+	      uint8_t if1 = mod2feb[thismodule];
+	      mymap.insert(std::pair<uint8_t, std::vector<std::pair<int,float>>>(if1,myvec1));
+	      uint8_t if2 = mod2feb[thismodule2];
+	      mymap.insert(std::pair<uint8_t, std::vector<std::pair<int,float>>>(if2,myvec2));
+	      double petot = thisstrip1.pes1+ thisstrip1.pes2 + thisstrip2.pes1+ thisstrip2.pes2;
+
 	      //check for strip overlap
 	      if (fVerbose) std::cout << " checking overlap " << hit_i << " " << hit_j  << std::endl;
 	      std::vector<double> limits2 = ChannelToLimits(thisstrip2);
@@ -387,7 +396,7 @@ namespace crt{
 		if (thisplane==0 || thisplane==3) error.SetY(1.0);
 		else error.SetX(1.0);
 		// Create a CRT hit
-		crt::CRTHit crtHit = FillCrtHit(tfeb_id, tpesmap, petot, time, thisplane, mean.X(),
+		crt::CRTHit crtHit = FillCrtHit(tfeb_id, mymap, petot, time, thisplane, mean.X(),
  						error.X(), mean.Y(), error.Y(), mean.Z(), error.Z());
 		CRTHitcol->push_back(crtHit);
 		nHits++;
@@ -434,7 +443,7 @@ namespace crt{
 		  }
 		}
 		// Create a CRT hit
-		crt::CRTHit crtHit = FillCrtHit(tfeb_id, tpesmap, petot, time, thisplane, mean.X(), 
+		crt::CRTHit crtHit = FillCrtHit(tfeb_id, mymap, petot, time, thisplane, mean.X(), 
 						error.X(), mean.Y(), error.Y(), mean.Z(), error.Z());
 		CRTHitcol->push_back(crtHit);
 		nHits++;
