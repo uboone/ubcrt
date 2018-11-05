@@ -260,6 +260,8 @@ namespace crt{
       uint32_t channel = thisSiPM1->fChannel/2;
       // channel here is really the AuxDetID
       std::string name = fGeometryService->AuxDet(channel).TotalVolume()->GetName();
+      const geo::AuxDetSensitiveGeo stripGeo = (fGeometryService->AuxDet(channel)).SensitiveVolume(0);
+      double width = 2*stripGeo.HalfWidth1();
       int strip=0; int module=0;
       sscanf(name.c_str(),"volAuxDet_Module_%d_strip_%d",&module,&strip);
       if (fVerbose) std::cout << " channel " << channel << " strip " << strip << 
@@ -269,17 +271,12 @@ namespace crt{
 	module=0;
       }
 
-      // width of all strips is 10.8 cm except the strip in the top plane modules, 
-      //         which are 11.2 cm wide
-      //  . . . . hardcoding is ugly.
       int thisplane = mod2plane[module];
-      double width = 10.8;  
-      if (thisplane==3) width = 11.2;
       int this_orient=0;
       if (mod2orient[module]==2) this_orient=1;
       int thistagger=2*thisplane+this_orient;
-      if (fVerbose) std::cout << "plane " << thisplane << " orient " << this_orient << " tagger " << 
-		      thistagger << std::endl;
+      // if (fVerbose) std::cout << "plane " << thisplane << " orient " << this_orient << " tagger " << 
+      // 		      thistagger << std::endl;
 
       // track IDs from geant
       int id1 = thisSiPM1->fTrackID;
@@ -393,8 +390,6 @@ namespace crt{
 		TVector3 error(std::abs((overlap[1] - overlap[0])/2.), 
 			       std::abs((overlap[3] - overlap[2])/2.), 
 			       std::abs((overlap[5] - overlap[4])/2.));
-		if (thisplane==0 || thisplane==3) error.SetY(1.0);
-		else error.SetX(1.0);
 		// Create a CRT hit
 		crt::CRTHit crtHit = FillCrtHit(tfeb_id, mymap, petot, time, thisplane, mean.X(),
  						error.X(), mean.Y(), error.Y(), mean.Z(), error.Z());
@@ -469,94 +464,31 @@ namespace crt{
 
   // Function to calculate the strip position limits in real space from channel
   std::vector<double> CRTSimHitProducer::ChannelToLimits(CRTStrip strHit)  {
-
     
-    // uncommenting this causes it to seg fault, not sure why.
-    // const geo::AuxDetGeo stripGeoL = fGeometryService->AuxDet(strHit.channel);
-    // double mycenter[3];     stripGeoL.GetCenter(mycenter);
-    // if (fVerbose) std::cout << "center " << mycenter[0] << " " << mycenter[1] << " " << 
-    // 		    mycenter[2]<< std::endl;
 
     const geo::AuxDetSensitiveGeo stripGeoL = (fGeometryService->AuxDet(strHit.channel)).SensitiveVolume(0);
     // double mycenter[3];     stripGeoL.GetCenter(mycenter);
     // if (fVerbose) std::cout << "center " << mycenter[0] << " " << mycenter[1] << " " << 
     // 		    mycenter[2]<< std::endl;
 
-
-    double thisx1,thisy1,thisz1,thisx2,thisy2,thisz2;
-
-    double halfheight = stripGeoL.HalfHeight();
-    double halfwidth = stripGeoL.HalfWidth1();
-    double halflength = 0.5*(stripGeoL.Length());
-
-    int stripaxis = mod2orient[strHit.module];    // 0=x, 1=y, 2=z
-    int stripplane = mod2plane[strHit.module];    // 0=bot, 1=anode, 2=cathode, 3=top
-
-    if (fVerbose) {
-     std::cout << " plane " << stripplane << " axis " << stripaxis 
-	       << " width " << halfwidth<< " height " << 
-       halfheight  << " length " << halflength << std::endl;
-     std::cout << strHit.x << " " << strHit.ex << std::endl;
-    }
-    if (stripaxis==0) {
-      thisx1= halfwidth;
-      thisy1= halfheight;
-      thisz1= -1.0*halflength+strHit.x-strHit.ex;
-      thisx2= -1.0*halfwidth;
-      thisy2= -1.0*halfheight;
-      thisz2= -1.0*halflength+strHit.x+strHit.ex;
-    }
-    else if (stripaxis==1) {
-      thisx1= halfwidth;
-      thisy1= halfheight;
-      thisz1= -1.0*halflength+strHit.x-strHit.ex;
-      thisx2= -1.0*halfwidth;
-      thisy2= -1.0*halfheight;
-      thisz2= -1.0*halflength+strHit.x+strHit.ex;
-    }
-    else {  // stripaxis is z
-      if (stripplane==0 || stripplane==3) {
-      thisx1= -1.0*halfwidth+strHit.x-strHit.ex;
-      thisy1= halfheight;
-      thisz1= halflength;
-      thisx2= -1.0*halfwidth+strHit.x+strHit.ex;
-      thisy2= -1.0*halfheight;
-      thisz2= -1.0*halflength;
-      }
-      else {
-      thisy1= -1.0*halfheight+strHit.x-strHit.ex;
-      thisx1= halfwidth;
-      thisz1= halflength;
-      thisy2= -1.0*halfheight+strHit.x+strHit.ex;
-      thisx2= -1.0*halfwidth;
-      thisz2= -1.0*halflength;
-      }
-    }
-    // give more room for two crossing strips to overlap in the axis perpendicular to the plane
-    //  allowed difference will be +/- 10.0 cm now instead of +/- 0.5 cm
-    // hardcoding the geometry is ugly
-    if (stripplane==3 || stripplane==0) { thisy1+=10.0; thisy2-=10.0; }
-    else {thisx1+=10.0; thisx2-=10.0;}
-
+    double halfWidth = stripGeoL.HalfWidth1();
+    double halfHeight = stripGeoL.HalfHeight();
+    double halfLength = stripGeoL.HalfLength();
+    double l1[3] = {-halfWidth+strHit.x+strHit.ex, halfHeight, halfLength};
     double w1[3] = {0,0,0};
-    double w2[3] = {0,0,0};
-    const double l1[3] = {thisx1,thisy1,thisz1};
     stripGeoL.LocalToWorld(l1, w1);
-    const double l2[3] = {thisx2,thisy2,thisz2};
+    double l2[3] = {-halfWidth+strHit.x-strHit.ex, -halfHeight, -halfLength};
+    double w2[3] = {0,0,0};
     stripGeoL.LocalToWorld(l2, w2);
-	if (fVerbose) {
-	  std::cout << " l1 " << l1[0] << " " << l1[1] << " " << l1[2] << std::endl;
-	  std::cout << " w1 " << w1[0] << " " << w1[1] << " " << w1[2] << std::endl;
-	  std::cout << " l2 " << l2[0] << " " << l2[1] << " " << l2[2] << std::endl;
-	  std::cout << " w2 " << w2[0] << " " << w2[1] << " " << w2[2] << std::endl;
-	}
+
 
     // Use this to get the limits in the two variable directions
     std::vector<double> limits = {std::min(w1[0],w2[0]), std::max(w1[0],w2[0]), 
                                   std::min(w1[1],w2[1]), std::max(w1[1],w2[1]), 
                                   std::min(w1[2],w2[2]), std::max(w1[2],w2[2])};
-    if (fVerbose) std::cout << strHit.module << " limits " << limits[0] << " " << limits[1] << " " << limits[2] << " "
-			     << limits[3] << " " << limits[4] << " " << limits[5] << " " << std::endl;
+    if (fVerbose) std::cout << strHit.module << " limits " << limits[0] << " " << limits[1] 
+			    << " " << limits[2] << " "
+			    << limits[3] << " " << limits[4] << " " << limits[5] << " " << std::endl;
 
     return(limits);
   } // ChannelToLimits
@@ -574,6 +506,7 @@ namespace crt{
 
     std::vector<double> null = {-99999, -99999, -99999, -99999, -99999, -99999};
     std::vector<double> overlap = {minX, maxX, minY, maxY, minZ, maxZ};
+    // require overlap in 2 directions but not all 3!
     if ((minX<maxX && minY<maxY) || (minX<maxX && minZ<maxZ) || (minY<maxY && minZ<maxZ)) return(overlap);
 
     return(null);

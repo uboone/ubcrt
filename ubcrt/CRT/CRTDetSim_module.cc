@@ -236,8 +236,8 @@ namespace crt{
         // FIXME: FOR NOW ASSUME ALL THE SAME DIRECTION (SiPM always at smaller coordinate value)
 	// FIXME: the y coordinate is not always along the strip length in uB like it is for SBND.
 	double distToReadout= abs(-adsGeo.HalfHeight() - svHitPosLocal[1]);
-	if (mod2orient[module]==0)   distToReadout = abs(-adsGeo.HalfWidth1() - svHitPosLocal[0]);
-	else if (mod2orient[module]==2)   distToReadout = abs(-adsGeo.HalfLength() - svHitPosLocal[2]);
+	// if (mod2orient[module]==0)   distToReadout = abs(-adsGeo.HalfWidth1() - svHitPosLocal[0]);
+	// else if (mod2orient[module]==2)   distToReadout = abs(-adsGeo.HalfLength() - svHitPosLocal[2]);
       
 	// The expected number of PE, using a quadratic model for the distance
 	// dependence, and scaling linearly with deposited energy.
@@ -249,26 +249,26 @@ namespace crt{
 	// Put PE on channels weighted by distance
 	double d0 = abs(-adsGeo.HalfWidth1() - svHitPosLocal[0]);  // L
 	double d1 = abs( adsGeo.HalfWidth1() - svHitPosLocal[0]);  // R
-	if (mod2orient[module]==0) {
-	  if (mod2plane[module]==0  || mod2plane[module]==3 ) {
-	    d0 = abs(-adsGeo.HalfLength() - svHitPosLocal[2]);  // L
-	    d1 = abs( adsGeo.HalfLength() - svHitPosLocal[2]);  // R
-	  }
-	  else {
-	    d0 = abs(-adsGeo.HalfHeight() - svHitPosLocal[1]);  // L
-	    d1 = abs( adsGeo.HalfHeight() - svHitPosLocal[1]);  // R	    
-	  }
-	}
-	else if (mod2orient[module]==z) {
-	  if (mod2plane[module]==0  || mod2plane[module]==3 ) {
-	    d0 = abs(-adsGeo.HalfWidth1() - svHitPosLocal[0]);  // L
-	    d1 = abs( adsGeo.HalfWidth1() - svHitPosLocal[0]);  // R
-	  }
-	  else {
-	    d0 = abs(-adsGeo.HalfHeight() - svHitPosLocal[1]);  // L
-	    d1 = abs( adsGeo.HalfHeight() - svHitPosLocal[1]);  // R	    
-	  }
-	}
+	// if (mod2orient[module]==0) {
+	//   if (mod2plane[module]==0  || mod2plane[module]==3 ) {
+	//     d0 = abs(-adsGeo.HalfLength() - svHitPosLocal[2]);  // L
+	//     d1 = abs( adsGeo.HalfLength() - svHitPosLocal[2]);  // R
+	//   }
+	//   else {
+	//     d0 = abs(-adsGeo.HalfHeight() - svHitPosLocal[1]);  // L
+	//     d1 = abs( adsGeo.HalfHeight() - svHitPosLocal[1]);  // R	    
+	//   }
+	// }
+	// else if (mod2orient[module]==2) {
+	//   if (mod2plane[module]==0  || mod2plane[module]==3 ) {
+	//     d0 = abs(-adsGeo.HalfWidth1() - svHitPosLocal[0]);  // L
+	//     d1 = abs( adsGeo.HalfWidth1() - svHitPosLocal[0]);  // R
+	//   }
+	//   else {
+	//     d0 = abs(-adsGeo.HalfHeight() - svHitPosLocal[1]);  // L
+	//     d1 = abs( adsGeo.HalfHeight() - svHitPosLocal[1]);  // R	    
+	//   }
+	// }
 	double abs0 = exp(-d0 / fAbsLenEff);
 	double abs1 = exp(-d1 / fAbsLenEff);
 	double npeExp0 = npeExpected * abs0 / (abs0 + abs1);
