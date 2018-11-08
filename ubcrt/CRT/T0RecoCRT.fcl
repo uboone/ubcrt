@@ -1,0 +1,77 @@
+#include "services_microboone.fcl"
+#include "sam_microboone.fcl"
+
+##include "singles_microboone.fcl"
+##include "geometry_microboone.fcl"
+##include "detectorclocks_microboone.fcl"
+##include "pmtconfig_microboone.fcl"
+##include "databaseutil_microboone.fcl"
+##include "sam_microboone.fcl"
+##include "opticaldetectormodules_microboone.fcl"
+##include "flashfilter_microboone.fcl"
+##include "subevent_module.fcl"
+
+events_to_generate: 200
+run_number: 101
+
+services:{
+	 TFileService: { fileName: "T0RecoCRT.root" }
+}
+
+physics:	
+{
+
+  analyzers:	
+  {   
+  }
+
+  producers:
+  {
+   crttrackT0:		
+    {			
+      module_type: T0recoCRT
+      data_labelCRTtrack: "crttrack"
+      data_labelCRThit: "merger"
+      data_label_flash_: "simpleFlashCosmic"   ##cosmic actvity
+      data_label_DAQHeader_: "daq"
+      data_label_TPCTrack_: "pandoraCosmic"
+      fHardDelay: 40000
+      fCRTT0off: 69000  
+      fShowerCut: 40
+      fThetaCut: 5.12
+      fPhiCut: 12.12
+      fGPSMatchW: 500
+      fvdrift: 0.111436 ###cm/s
+      storeAsn: 1 # 1=true #store into event
+      verbose: 0 # 1=true
+     }
+  }
+
+  a1: [ crttrackT0 ]
+  p1: [ ]
+  e1: [ rootout ]
+  #end_paths: [ a1 ]
+}
+
+outputs:
+{
+
+ rootout:
+  {
+    module_type: RootOutput
+    fileName: "%ifb_%tc_%#_T0recoCRT.root"
+    compressionLevel: 1
+    dataTier        : "swizzled"
+  }
+
+}
+
+source:
+{
+  module_type: RootInput
+}
+
+process_name: T0RecoCRT
+
+
+

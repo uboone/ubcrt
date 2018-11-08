@@ -45,6 +45,7 @@ art_make( BASENAME_ONLY
         art_Persistency_Provenance canvas
         art_Utilities canvas
 	lardataobj_RecoBase
+	lardataobj_AnalysisBase
         ${ART_FRAMEWORK_SERVICES_REGISTRY}
         ${MF_MESSAGELOGGER}
         

@@ -2,7 +2,7 @@
 // Class:       T0recoCRT
 // Module Type: producer
 // File:        T0recoCRT_module.cc
-// Description: It generates and associates T0 object to TPC Tracks ussing CRT
+// Description: It generates and associates a T0 object to TPC Tracks ussing CRT
 // Generated at Fri Jun 29 09:34:08 2018 by David Lorca Galindo using artmod
 // from cetpkgsupport v1_14_01.
 ////////////////////////////////////////////////////////////////////////
@@ -18,6 +18,15 @@
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "art/Framework/Services/Optional/TFileService.h"
+
+#include "canvas/Persistency/Common/Ptr.h"
+#include "canvas/Persistency/Common/Assns.h"
+#include "canvas/Persistency/Provenance/ProductID.h"
+#include "art/Persistency/Common/PtrMaker.h"
+#include "canvas/Utilities/InputTag.h"
+#include "fhiclcpp/ParameterSet.h"
+#include "messagefacility/MessageLogger/MessageLogger.h"
+
 
 // data-products                                                                         
 #include "lardataobj/RecoBase/Track.h"
@@ -91,11 +100,18 @@ private:
   std::string  data_label_flash_;
   std::string  data_label_DAQHeader_;
   std::string  data_label_TPCTrack_;
-  std::string  data_label_T0reco_;  
   int fHardDelay_;
+  int fCRTT0off_;
+  unsigned int fShowerCut_;
+  double fThetaCut_;
+  double fPhiCut_;
+  int fGPSMatchW_;
   double fvdrift_;
   int storeAsn_;
   int verbose_;
+
+
+  
 };
 
 
@@ -107,37 +123,29 @@ crt::T0recoCRT::T0recoCRT(fhicl::ParameterSet const & p)
   data_label_flash_(p.get<std::string>("data_label_flash_")),
   data_label_DAQHeader_(p.get<std::string>("data_label_DAQHeader_")),
   data_label_TPCTrack_(p.get<std::string>("data_label_TPCTrack_")),
-  data_label_T0reco_(p.get<std::string>("data_label_T0reco_")),
   fHardDelay_(p.get<int>("fHardDelay",40000)),
+  fCRTT0off_(p.get<int>("fCRTT0off",69000)),
+  fShowerCut_(p.get<int>("fShowerCut",40)),
+  fThetaCut_(p.get<double>("fThetaCut",5.12)),
+  fPhiCut_(p.get<double>("fPhiCut",12.12)),
+  fGPSMatchW_(p.get<int>("fGPSMatchW",500)),
   fvdrift_(p.get<double>("fvdrift",0.111436)),
   storeAsn_(p.get<int>("storeAsn",1)),
   verbose_(p.get<int>("verbose"))  // ,
 {
   // Call appropriate produces<>() functions here.
 
-  if(storeAsn_ == 0){
-    produces< std::vector< anab::T0 > >();
-    //produces< art::Assns <recob::Track, anab::T0> >();
-    //produces< art::Assns <recob::Track, recob::OpFlash> >();
-    produces< art::Assns <recob::Track, std::vector<crt::CRTHit> > >();
-    produces< art::Assns <recob::Track, crt::CRTTrack > >();
-  }
-  
+  produces< std::vector< anab::T0 > >();
+  produces<art::Assns<recob::Track, recob::OpFlash> >();
+  produces< art::Assns <recob::Track, anab::T0> >();
+  produces< art::Assns <recob::Track, crt::CRTTrack > >();
   
 }
 
 void crt::T0recoCRT::produce(art::Event & evt)
 {
   // Implementation of required member function here.
-  
-  // produce data-product to be filled within module
-  std::unique_ptr< std::vector<anab::T0> > T0_v(new std::vector<anab::T0>);
-  // std::unique_ptr< art::Assns <recob::Track, anab::T0> >       trk_t0_assn_v   ( new art::Assns<recob::Track, anab::T0>       );
-  // std::unique_ptr< art::Assns <recob::Track, recob::OpFlash> > trk_flash_assn_v( new art::Assns<recob::Track, recob::OpFlash> );
-  std::unique_ptr< art::Assns <recob::Track, std::vector<crt::CRTHit> > > trk_crthit_assn_v( new art::Assns<recob::Track, std::vector<crt::CRTHit> > );
-  std::unique_ptr< art::Assns <recob::Track, crt::CRTTrack > > trk_crttrack_assn_v( new art::Assns<recob::Track, crt::CRTTrack > );
 
-  
   //get DAQHeader for GPS time                                                                                             
   art::Handle< raw::DAQHeaderTimeUBooNE > rawHandle_DAQHeader;
   evt.getByLabel(data_label_DAQHeader_, rawHandle_DAQHeader);
@@ -222,20 +230,25 @@ void crt::T0recoCRT::produce(art::Event & evt)
   std::vector<crt::CRTTrack> const& CRTTrackCollection(*rawHandle_CRTtrack);
   if(verbose_!=0){
     std::cout<<"  CRTTrackCollection.size()  "<<CRTTrackCollection.size()<<std::endl;
-    // getchar();
+    getchar();
   }                                                                                                                                        
   //get CRTTracks 
+
+
+  // produce data-product to be filled within module
+  std::unique_ptr< std::vector<anab::T0> > T0_v(new std::vector<anab::T0>);
+  std::unique_ptr< art::Assns <recob::Track, anab::T0> >       trk_t0_assn_v   ( new art::Assns<recob::Track, anab::T0>);
+  std::unique_ptr< art::Assns<recob::Track, recob::OpFlash> > trk_flash_assn_v (new art::Assns<recob::Track, recob::OpFlash>);
+  std::unique_ptr< art::Assns <recob::Track, crt::CRTTrack > > trk_crttrack_assn_v( new art::Assns<recob::Track, crt::CRTTrack > );
+
+  art::PtrMaker<recob::Track> trackPtrMaker(evt, rawHandle_TPCtrack.id());
+  art::PtrMaker<recob::OpFlash> flashPtrMaker(evt, rawHandle_OpFlash.id());
+  art::PtrMaker<crt::CRTTrack> crttrackPtrMaker(evt, rawHandle_CRTtrack.id());
+  art::PtrMaker<anab::T0> t0PtrMaker(evt, *this);  
+
   
-
-  // grab T0 objects associated with tracks                            
-  art::FindMany<anab::T0> trk_t0_assn_v(rawHandle_TPCtrack, evt, data_label_T0reco_); //objeto, evento, label
-
-  // grab flashes associated with tracks                               
-  art::FindMany<recob::OpFlash> trk_flash_assn_v(rawHandle_TPCtrack, evt, data_label_T0reco_ );
-   
-  //do magic
-  //for every TPC Track, construct director vector, calculate theta and phi for tracks and look similar CRTTrack
-
+  if( CRTTrackCollection.size()<fShowerCut_) {//A0 cut in showers
+    
   for(std::vector<int>::size_type i = 0; i != TPCTrackCollection.size(); i++) {//A 
     
     recob::Track my_TPCTrack = TPCTrackCollection[i];
@@ -298,101 +311,83 @@ void crt::T0recoCRT::produce(art::Event & evt)
 	getchar();
 	
       }
-      //Comparar los dos vectores directores....
       
       double ThetaDiff = TPCTheta-CRTTheta;
       double ThetaDiffABS = fabs(ThetaDiff);
       double PhiDiff = TPCPhi-CRTPhi;
       double PhiDiffABS = fabs(PhiDiff);
       
-      if( (ThetaDiffABS<5.1) && (PhiDiffABS<12.1) ){//C //Angular Cut
+      if( (ThetaDiffABS<fThetaCut_) && (PhiDiffABS<fPhiCut_) ){//C //Angular Cut
 	
 	int CRTTrack_T1_nsec = my_CRTTrack.ts1_ns + fHardDelay_; 
-
+	int CRTTrack_T0_nsec = my_CRTTrack.ts0_ns + fCRTT0off_;
 	
-	//For these tracks, check if they have a T0, if so, compare with CRTTrack Time...
 	for(std::vector<int>::size_type j = 0; j != OpFlashCollection.size(); j++) {//D //look for flash in time with CRTTrack
 	  
 	  recob::OpFlash my_OpFlash = OpFlashCollection[j];
 	  auto Timeflash = my_OpFlash.Time(); //in us from trigger time                 
 	  auto Timeflash_ns = (Timeflash * 1000);
+	  auto Timeflash_ns_GPS = evt_timeGPS_nsec + (Timeflash * 1000);
 	  
 	  int TdiffT1_nsec = Timeflash_ns - CRTTrack_T1_nsec;	
-  
-	  if( ((TdiffT1_nsec)>300)  &&  ((TdiffT1_nsec)<600) ){//E:: cut in time T1	  
+  	  int TdiffT0_nsec = Timeflash_ns_GPS - CRTTrack_T0_nsec;
+	  int TdiffT0_nsecABS = std::abs(TdiffT0_nsec);
+	  
+	  if(TdiffT0_nsecABS<fGPSMatchW_){//E : cut in GPS Match <1us
+	  
+	    //for this flash, make T0 object and associations
+	    double crtT = CRTTrack_T0_nsec;
+	    double dT = CRTTrack_T0_nsec - Timeflash_ns_GPS;	   
 	    
-	    std::cout.precision(19);  
-	    std::cout<<"CRT & TPC Tracks match in angular and time"<<std::endl;
-	    std::cout<<"TPC Track: "<<i<<" out of "<<CRTTrackCollection.size()<<std::endl;
-	    std::cout<<"     "<<std::endl;
-	    std::cout<<"Matched Flash["<<j<<"]: "<<Timeflash_ns<<" ns w.r.t. trigger"<<std::endl; 
-	    std::cout<<"CRTTrack Time(T1corr["<<k<<"]: "<<CRTTrack_T1_nsec<<" ns w.r.t. trigger"<<std::endl;
-	    std::cout<<"CRTTrack Time T1["<<k<<"]: "<<my_CRTTrack.ts1_ns<<" ns w.r.t. trigger"<<std::endl;
-	    std::cout<<"hardDelay: "<<fHardDelay_<<std::endl;
-	    std::cout<<"     "<<std::endl;
-	    std::cout<<"Time Difference: "<<TdiffT1_nsec<<" ns"<<std::endl;
-	    std::cout<<"     "<<std::endl;
-	    std::cout<<"TPCTrack_Theta: "<<TPCTheta<<"    TPCTrack_Phi: "<<TPCPhi<<std::endl;
-	    std::cout<<"CRTTrack_Theta: "<<CRTTheta<<"    CRTTrack_Phi: "<<CRTPhi<<std::endl;
-	    std::cout<<"ThetaDiffABS: "<<ThetaDiffABS<<std::endl;
-	    std::cout<<"PhiDiffABS: "<<PhiDiffABS<<std::endl;
-	    getchar();    
-
-
-	    //For this Tracks matched in time, is there a T0 and flash associated?
-
-	    const std::vector<const anab::T0*>& T0_v = trk_t0_assn_v.at(i);
+	    anab::T0 t0(crtT, 0, 1, 1, dT);
+	    T0_v->emplace_back(t0);
 	    
-	    const std::vector<const recob::OpFlash*>& flash_v = trk_flash_assn_v.at(i);
+	    //make pointers and associations
+	    art::Ptr<recob::Track> trackptr = trackPtrMaker(i);
+	    art::Ptr<recob::OpFlash> flashptr = flashPtrMaker(j);
+	    art::Ptr<crt::CRTTrack> crttrackptr = crttrackPtrMaker(k);
+	    art::Ptr<anab::T0> t0ptr = t0PtrMaker(T0_v->size()-1);
 	    
-	    if( (flash_v.size() != 0) && (T0_v.size() != 0)  ){//F
-	      
-	      auto t0 = T0_v.at(0);
-	      auto TimeT0 = t0->Time();
-	      auto TimeT0_ns = (TimeT0 * 1000);
-
-	      auto T0flash = flash_v.at(0);
-	      auto T0Timeflash = T0flash->Time(); //in us from trigger time 
-	      auto T0Timeflash_ns = (T0Timeflash * 1000);
-
-	      int T0diff = TimeT0_ns - CRTTrack_T1_nsec;
-	      int T0Flashdiff = T0Timeflash_ns - CRTTrack_T1_nsec;
-
+	    trk_flash_assn_v->addSingle(trackptr,flashptr);
+	    trk_crttrack_assn_v->addSingle(trackptr,crttrackptr);
+	    trk_t0_assn_v->addSingle(trackptr,t0ptr);
+	    
+	    
+	    if(verbose_!=0 ){
+	      std::cout.precision(19);  
+	      std::cout<<"CRT & TPC Tracks match in angular cuts"<<std::endl;
+	      std::cout<<"TPC Track: "<<i<<" out of "<<CRTTrackCollection.size()<<std::endl;
 	      std::cout<<"     "<<std::endl;
-	      std::cout<<"AND for this ONE I also have a T0 and a Flash"<<std::endl;
+	      std::cout<<"Matched Flash["<<j<<"]: "<<Timeflash_ns<<" ns w.r.t. trigger"<<std::endl; 
+	      std::cout<<"CRTTrack Time(T1corr["<<k<<"]: "<<CRTTrack_T1_nsec<<" ns w.r.t. trigger"<<std::endl;
+	      std::cout<<"CRTTrack Time T1["<<k<<"]: "<<my_CRTTrack.ts1_ns<<" ns w.r.t. trigger"<<std::endl;
+	      std::cout<<"hardDelay: "<<fHardDelay_<<std::endl;
 	      std::cout<<"     "<<std::endl;
-	      std::cout<<"T0 time is: "          <<TimeT0_ns<<" ns"<<std::endl;
-	      std::cout<<"T0 associated flash: " <<T0Timeflash_ns<<" ns"<<std::endl;
-
-
-	      std::cout<<"Tdiff T0-CRTtrack:      " <<T0diff<<" ns"<<std::endl;
-	      std::cout<<"Tdiff T0Flash-CRTtrack: " <<T0Flashdiff<<" ns"<<std::endl;
+	      std::cout<<"Time Difference: "<<TdiffT1_nsec<<" ns"<<std::endl;
 	      std::cout<<"     "<<std::endl;
-	      std::cout<<"AND for this ONE I also have a T0 and a Flash"<<std::endl;
-
-	      std::cout<<"     "<<std::endl;
-	      std::cout<<"     "<<std::endl;
-	      std::cout<<"     "<<std::endl;
-	      getchar();	      
-
-	    }//F
-
+	      std::cout<<"TPCTrack_Theta: "<<TPCTheta<<"    TPCTrack_Phi: "<<TPCPhi<<std::endl;
+	      std::cout<<"CRTTrack_Theta: "<<CRTTheta<<"    CRTTrack_Phi: "<<CRTPhi<<std::endl;
+	      std::cout<<"ThetaDiffABS: "<<ThetaDiffABS<<std::endl;
+	      std::cout<<"PhiDiffABS: "<<PhiDiffABS<<std::endl;
+	      getchar();    
+	    }
+	    
 	  }//E
 	  
 	}//D
-
+	
       }//C
       
     }//B
     
   }//A
   
-
-  if(storeAsn_ == 0){
+  }//A0 cut in showers 
+  
+  if(storeAsn_ == 1){
     evt.put(std::move(T0_v));
-    //evt.put(std::move(trk_t0_assn_v));
-    //evt.put(std::move(trk_flash_assn_v));
-    evt.put(std::move(trk_crthit_assn_v));
+    evt.put(std::move(trk_t0_assn_v));
+    evt.put(std::move(trk_flash_assn_v));
     evt.put(std::move(trk_crttrack_assn_v));
   }
   
