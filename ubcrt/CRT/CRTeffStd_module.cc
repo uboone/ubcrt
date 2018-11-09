@@ -180,11 +180,11 @@ crt::CRTeffStd::CRTeffStd(fhicl::ParameterSet const & p)
   EDAnalyzer(p),
   data_labelCRTtrack_(p.get<std::string>("data_labelCRTtrack")),
   data_labelCRThit_(p.get<std::string>("data_labelCRThit")),
-  data_label_flash_(p.get<std::string>("data_label_flash_")),
-  data_label_DAQHeader_(p.get<std::string>("data_label_DAQHeader_")),
-  data_label_TPCTrack_(p.get<std::string>("data_label_TPCTrack_")),
-  data_label_T0reco_(p.get<std::string>("data_label_T0reco_")),
-  data_label_Calorimetry_(p.get<std::string>("data_label_Calorimetry_")),
+  data_label_flash_(p.get<std::string>("data_label_flash")),
+  data_label_DAQHeader_(p.get<std::string>("data_label_DAQHeader")),
+  data_label_TPCTrack_(p.get<std::string>("data_label_TPCTrack")),
+  data_label_T0reco_(p.get<std::string>("data_label_T0reco")),
+  data_label_Calorimetry_(p.get<std::string>("data_label_Calorimetry")),
   fHardDelay_(p.get<int>("fHardDelay",40000)),
   fCRTT0off_(p.get<int>("fCRTT0off",69000)),
   fvdrift_(p.get<double>("fvdrift",0.111436)),
@@ -415,7 +415,7 @@ void crt::CRTeffStd::analyze(art::Event const & evt)
 	  hTFvsTH_t0_t1->Fill(diffT0_nsec, diffT1_nsec);
 	  
 	  //if( ((diffT1_nsec)>(300))  &&  ((diffT1_nsec)<(600)) ){//D : cut in time, T1 matched with Flash
-	  if(diffT0_nsecABS<250){//D : cut in GPS Match
+	  if(diffT0_nsecABS<500){//D : cut in GPS Match
 	    
 	    hTPCXY_bottom -> Fill(bottom.X() - (TimeT0 * fvdrift_), bottom.Y());
 	    hTPCZY_bottom -> Fill(bottom.Z(), bottom.Y());
@@ -553,7 +553,7 @@ void crt::CRTeffStd::analyze(art::Event const & evt)
 	  
 	  
 	  //if( ((TdiffT1_nsec)>300)  &&  ((TdiffT1_nsec)<600) ){//F:: cut in time T1
-	  if(TdiffT0_nsecABS<250){//F : cut in GPS Match	    
+	  if(TdiffT0_nsecABS<500){//F : cut in GPS Match	    
 
 	    Trackcounter++;
 	    hTPCTvsCRTT->Fill(my_CRTTrack.length,TPCTrackLength);
