@@ -60,11 +60,15 @@ namespace crt{
     double fPropDelay;  // Delay in pulse arrival time [ns/m]
     double fPropDelayError;  // Delay in pulse arrival time, uncertainty [ns/m]
     bool fUseEdep;  //!< Use the true G4 energy deposited, assume mip if false.
+    bool fModelTransAtten;  //!< simplify electronics response
+    bool fModelLongAtten;  //!< simplify electronics response
     double fAbsLenEff;  // Effective abs. length for transverse Npe scaling [cm]
     double fStripCoincidenceWindow;
     double fTaggerPlaneCoincidenceWindow;
     double fSipmTimeResponse;
+    double fCRTClockFreq;
     bool fverbose;
+    bool fSumThresh;
 
     /**
      * Get the channel trigger time relative to the start of the MC event.

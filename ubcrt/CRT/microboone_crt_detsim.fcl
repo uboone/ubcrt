@@ -1,5 +1,81 @@
 BEGIN_PROLOG
 
+microboone_crtdetsim_binary: 
+{
+  module_type: "CRTDetSim"
+#  ProducerName: "largeant"
+  G4ModuleLabel: "largeant" 
+  // Global timing offset [ns]
+  // For Corsika cosmics, needs to be non-zero!
+  GlobalT0Offset: 0.0
+  // Shape parameters for mean time delay vs. Npe
+#  TDelayNorm: 4125.74
+  TDelayNorm: 0.0
+#  TDelayOffset: -1.525
+  TDelayOffset: 0.0
+  TDelayShift: -300.31
+  TDelaySigma: 90.392
+  // Shape parameters for time delay RMS vs. Npe  
+  TDelayRMSGausShift: 7.23993
+#  TDelayRMSGausNorm: 2.09138
+  TDelayRMSGausNorm: 0.0
+  TDelayRMSGausSigma: 170.027
+#  TDelayRMSExpNorm: 1.6544
+  TDelayRMSExpNorm: 0.0
+  TDelayRMSExpShift: 75.6183
+  TDelayRMSExpScale: 79.3543
+  // Propagation delay [ns/cm]
+#  PropDelay: 0.0061
+#  PropDelayError: 0.007
+  PropDelay: 0.0
+  PropDelayError: 0.0
+  // Interpolator time resolution [ns]
+# temporary change for binary detector response 
+#  TResInterpolator: 1.268
+  TResInterpolator: 0.0
+  // Model parameters for Npe vs. distance along strip
+  NpeScaleNorm: 5.261e7
+  NpeScaleShift: -1085.0
+  // Mean deposited charge for mips [GeV]
+  Q0: 1.75e-3
+  // ADC model: Pedestal offset [ADC], slope [ADC/photon], RMS [ADC]
+#  QPed: 63.6
+  QPed: 0
+  QSlope: 132
+#  QRMS: 15.0
+  QRMS: 0.0
+# SiPM hit threshold - is ~1.5 pe in hardware on an individual sipm
+#  QThreshold: 200.0  # includes pedestal value QPed
+  QThreshold: 132.0  # includes pedestal value QPed
+  // Coincidence window for two fibers on a strip [ticks]
+  StripCoincidenceWindow: 30.0
+  // Coincidence for hits in a tagger [ticks]
+# temporary change for binary detector response 
+  TaggerPlaneCoincidenceWindow: 60.0
+  // Effective absorption length (for transverse response) [cm]
+  AbsLenEff: 8.5
+  // Minimum time between energy deposits that SiPMs can resolve [ns]
+  SipmTimeResponse: 2.0
+  verbose: false
+  CRTClockFreq: 1.0  # GHz (1 tick = 1 ns)
+   
+# flags for quasi-binary detector response
+  UseEdep: true         # default is true
+
+# default is true.  If false, attenuation of light between production and the SiPM is ignored
+#            when calculating pes.  Time delays are turned off differently
+  ModelTransAtten: false
+  ModelLongAtten: false
+
+# default is false.  If true, the threshold is applied to the sum of the pe in the two sips.  
+#       If false, it is applied to each SiPM individually, and both are required to be above threshold
+  SumThresh: true  
+
+
+
+}
+
+
 microboone_crtdetsim: 
 {
   module_type: "CRTDetSim"
@@ -11,16 +87,12 @@ microboone_crtdetsim:
   // Shape parameters for mean time delay vs. Npe
   TDelayNorm: 4125.74
   TDelayShift: -300.31
-# temporary change for binary detector response 
-#  TDelaySigma: 90.392
-  TDelaySigma: 0.0
+  TDelaySigma: 90.392
   TDelayOffset: -1.525
   // Shape parameters for time delay RMS vs. Npe  
-  TDelayRMSGausNorm: 2.09138
   TDelayRMSGausShift: 7.23993
-# temporary change for binary detector response 
-#  TDelayRMSGausSigma: 170.027
-  TDelayRMSGausSigma: 0.0
+  TDelayRMSGausNorm: 2.09138
+  TDelayRMSGausSigma: 170.027
   TDelayRMSExpNorm: 1.6544
   TDelayRMSExpShift: 75.6183
   TDelayRMSExpScale: 79.3543
@@ -28,35 +100,45 @@ microboone_crtdetsim:
   PropDelay: 0.0061
   PropDelayError: 0.007
   // Interpolator time resolution [ns]
+# temporary change for binary detector response 
   TResInterpolator: 1.268
   // Model parameters for Npe vs. distance along strip
   NpeScaleNorm: 5.261e7
   NpeScaleShift: -1085.0
   // Mean deposited charge for mips [GeV]
-# temporary change for binary detector response 
-#  UseEdep: true
-  UseEdep: false
   Q0: 1.75e-3
   // ADC model: Pedestal offset [ADC], slope [ADC/photon], RMS [ADC]
-  QPed: 63.6
-  QSlope: 131.9
+  QPed: 64
+  QSlope: 132
+# temporary change for binary detector response 
   QRMS: 15.0
-# temporary change for binary detector response 
-#  QThreshold: 100.0
-  QThreshold: 70.0
-  // Coincidence window for two fibers on a strip [ns]
-# temporary change for binary detector response 
-#  StripCoincidenceWindow: 30.0
-  StripCoincidenceWindow: 200.0
+# SiPM hit threshold - is ~1.5 pe in hardware (100-63 = 37 ADC = 0.3 pe)
+  QThreshold: 100.0  # includes pedestal value QPed
+  // Coincidence window for two fibers on a strip [ticks]
+  StripCoincidenceWindow: 30.0
   // Coincidence for hits in a tagger [ticks]
 # temporary change for binary detector response 
-#  TaggerPlaneCoincidenceWindow: 60.0
-  TaggerPlaneCoincidenceWindow: 200.0
+  TaggerPlaneCoincidenceWindow: 60.0
   // Effective absorption length (for transverse response) [cm]
   AbsLenEff: 8.5
   // Minimum time between energy deposits that SiPMs can resolve [ns]
   SipmTimeResponse: 2.0
   verbose: false
+  CRTClockFreq: 1.0  # GHz (1 tick = 1 ns)
+   
+# flags for binary detector response
+  UseEdep: true         # default is true
+
+# default is true.  If false, attenuation of light between production and the SiPM is ignored
+#            when calculating pes.  Time delays are turned off differently
+  ModelLongAtten: true     
+  ModelTransAtten: true     
+
+# default is false.  If true, the threshold is applied to the sum of the pe in the two sips.  
+#       If false, it is applied to each SiPM individually, and both are required to be above threshold
+  SumThresh: false      
+
+
 }
 
 END_PROLOG

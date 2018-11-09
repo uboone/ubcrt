@@ -6,6 +6,7 @@
 #include "lardataobj/RawData/RawDigit.h"
 #include "lardataobj/Simulation/AuxDetSimChannel.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
+#include "larcore/Geometry/Geometry.h"
 #include "larcore/Geometry/AuxDetGeometry.h"
 #include "larcorealg/CoreUtils/NumericUtils.h" // util::absDiff()
 #include "nutools/RandomUtils/NuRandomService.h"
@@ -100,10 +101,14 @@ namespace crt{
     fQThreshold = pSet.get<double>("QThreshold",100.0);
     fAbsLenEff = pSet.get<double>("AbsLenEff",8.5);
     fStripCoincidenceWindow = pSet.get<double>("StripCoincidenceWindow", 30.);
-    fTaggerPlaneCoincidenceWindow = pSet.get<double>("TaggerPlaneCoincidenceWindow", 5.);
+    fTaggerPlaneCoincidenceWindow = pSet.get<double>("TaggerPlaneCoincidenceWindow", 100.);
     fSipmTimeResponse = pSet.get<double>("SipmTimeResponse",2.);
     fUseEdep = pSet.get<bool>("UseEdep",true);
     fverbose = pSet.get<bool>("verbose",0);
+    fSumThresh = pSet.get<bool>("SumThresh",false);
+    fModelTransAtten = pSet.get<bool>("ModelTransAtten",true);
+    fModelLongAtten = pSet.get<bool>("ModelLongAtten",true);
+    fCRTClockFreq = pSet.get<double>("CRTClockFreq",1.0);
 
     if (fQThreshold<fQPed) { 
       fQThreshold=fQPed;  
@@ -114,6 +119,8 @@ namespace crt{
   double CRTDetSim::getChannelTriggerTicks(CLHEP::HepRandomEngine* engine,
                                            detinfo::ElecClock& clock,
                                            float t0, float npeMean, float r) {
+
+      
     // Hit timing, with smearing and NPE dependence
     double tDelayMean = \
       fTDelayNorm *
@@ -133,19 +140,26 @@ namespace crt{
 
     // Propagation time
     double tProp = CLHEP::RandGauss::shoot(fPropDelay, fPropDelayError) * r;
+
     double t = t0 + tProp + tDelay;
 
     // Get clock ticks
     clock.SetTime(t/1000.);  // SetTime takes microseconds
+    // convert to CRT clock ticks instead (1 tick = 1 ns)    
+    double cticks = uint(t/fCRTClockFreq);
+    
+
 
     mf::LogInfo("CRT")
     << "CRT TIMING: t0=" << t0
     << ", tDelayMean=" << tDelayMean << ", tDelayRMS=" << tDelayRMS
     << ", tDelay=" << tDelay << ", tDelay(interp)="
-    << tDelay << ", tProp=" << tProp << ", t=" << t << ", ticks=" << clock.Ticks() << "\n";
+    << tDelay << ", tProp=" << tProp << ", t=" << t << ", ticks=" << cticks << "\n";
 
 
-    return clock.Ticks();
+    //    return clock.Ticks();
+    return cticks;
+
   }
 
 
@@ -162,6 +176,7 @@ namespace crt{
     std::unique_ptr<std::vector<crt::CRTSimData> > crtHits(
         new std::vector<crt::CRTSimData>);
 
+    // not used
     art::ServiceHandle<detinfo::DetectorClocksService> detClocks;
     detinfo::ElecClock trigClock = detClocks->provider()->TriggerClock();
 
@@ -173,13 +188,18 @@ namespace crt{
     evt.getByLabel(fG4ModuleLabel, channels);
 
     //access geometry
-    art::ServiceHandle<geo::AuxDetGeometry> geoService;
-    const geo::AuxDetGeometry* geometry = &*geoService;
-    const geo::AuxDetGeometryCore* geoServiceProvider = geometry->GetProviderPtr();
+    geo::GeometryCore const* fGeometryService;            
+    fGeometryService = lar::providerFrom<geo::Geometry>();
+   
+  ///< pointer to Geometry provider   
+    //    art::ServiceHandle<geo::AuxDetGeometry> geoService;
+    //    const geo::AuxDetGeometry* geometry = &*geoService;
+    // const geo::AuxDetGeometryCore* geoServiceProvider = geometry->GetProviderPtr();
 
     // Loop through truth AD channels
     for (auto& adsc : *channels) {
-      const geo::AuxDetGeo& adGeo = geoServiceProvider->AuxDet(adsc.AuxDetID());
+      //      const geo::AuxDetGeo& adGeo = geoServiceProvider->AuxDet(adsc.AuxDetID());
+      const geo::AuxDetGeo& adGeo = fGeometryService->AuxDet(adsc.AuxDetID());
       const geo::AuxDetSensitiveGeo& adsGeo = adGeo.SensitiveVolume(adsc.AuxDetSensitiveID());
  
     // Return the vector of IDEs
@@ -192,6 +212,9 @@ namespace crt{
       // Simulate the CRT response for each hit
       for (size_t ide_i = 0; ide_i < ides.size(); ide_i++) {
 	sim::AuxDetIDE ide = ides[ide_i];
+        double eDep = ide.energyDeposited;	
+	if (eDep<0.001) std::cout << "zero energy " << eDep << std::endl;
+	double maxEdep = eDep;	
    	int trackID = ide.trackID;
            // Get the hit position in strip's local coordinates
         double x = (ide.entryX + ide.exitX) / 2;
@@ -199,8 +222,6 @@ namespace crt{
         double z = (ide.entryZ + ide.exitZ) / 2;
 
         double tTrue = (ide.entryT + ide.exitT) / 2 + fGlobalT0Offset;
-        double eDep = ide.energyDeposited;	
-	double maxEdep = eDep;	
 
 
 	//ADD UP HITS AT THE SAME TIME - 2NS DIFF IS A GUESS -VERY APPROXIMATE
@@ -223,6 +244,7 @@ namespace crt{
 	  }
 	}
 
+	const geo::AuxDetGeo& adGeo = fGeometryService->AuxDet(adsc.AuxDetID());
 	std::string name = adGeo.TotalVolume()->GetName();
 	int module,strip;
 	sscanf(name.c_str(),"volAuxDet_Module_%d_strip_%d",&module,&strip);
@@ -235,77 +257,101 @@ namespace crt{
         // Distance to the readout end 
         // FIXME: FOR NOW ASSUME ALL THE SAME DIRECTION (SiPM always at smaller coordinate value)
 	// FIXME: the y coordinate is not always along the strip length in uB like it is for SBND.
-	double distToReadout= abs(-adsGeo.HalfHeight() - svHitPosLocal[1]);
-	// if (mod2orient[module]==0)   distToReadout = abs(-adsGeo.HalfWidth1() - svHitPosLocal[0]);
-	// else if (mod2orient[module]==2)   distToReadout = abs(-adsGeo.HalfLength() - svHitPosLocal[2]);
-      
+	double distToReadout=0;
+	if (fModelLongAtten) {
+	  if (mod2orient[module]==1) distToReadout= abs(-adsGeo.HalfHeight() - svHitPosLocal[1]);
+	  else if (mod2orient[module]==0)   distToReadout = abs(-adsGeo.HalfWidth1() - svHitPosLocal[0]);
+	  else if (mod2orient[module]==2)   distToReadout = abs(-adsGeo.HalfLength() - svHitPosLocal[2]);
+	}
+	
 	// The expected number of PE, using a quadratic model for the distance
 	// dependence, and scaling linearly with deposited energy.
 	//  UseEdep flag let's us do a binary response
 	double qr = fUseEdep ? 1.0 * eDep / fQ0 : 1.0;
-	
 	double npeExpected = (fNpeScaleNorm / pow(distToReadout - fNpeScaleShift, 2) * qr);
-	
+	std::cout << "eDep/fQ0=" << eDep/fQ0 << " npe exp =" << npeExpected << std::endl;
+
 	// Put PE on channels weighted by distance
-	double d0 = abs(-adsGeo.HalfWidth1() - svHitPosLocal[0]);  // L
-	double d1 = abs( adsGeo.HalfWidth1() - svHitPosLocal[0]);  // R
-	// if (mod2orient[module]==0) {
-	//   if (mod2plane[module]==0  || mod2plane[module]==3 ) {
-	//     d0 = abs(-adsGeo.HalfLength() - svHitPosLocal[2]);  // L
-	//     d1 = abs( adsGeo.HalfLength() - svHitPosLocal[2]);  // R
-	//   }
-	//   else {
-	//     d0 = abs(-adsGeo.HalfHeight() - svHitPosLocal[1]);  // L
-	//     d1 = abs( adsGeo.HalfHeight() - svHitPosLocal[1]);  // R	    
-	//   }
-	// }
-	// else if (mod2orient[module]==2) {
-	//   if (mod2plane[module]==0  || mod2plane[module]==3 ) {
-	//     d0 = abs(-adsGeo.HalfWidth1() - svHitPosLocal[0]);  // L
-	//     d1 = abs( adsGeo.HalfWidth1() - svHitPosLocal[0]);  // R
-	//   }
-	//   else {
-	//     d0 = abs(-adsGeo.HalfHeight() - svHitPosLocal[1]);  // L
-	//     d1 = abs( adsGeo.HalfHeight() - svHitPosLocal[1]);  // R	    
-	//   }
-	// }
-	double abs0 = exp(-d0 / fAbsLenEff);
-	double abs1 = exp(-d1 / fAbsLenEff);
-	double npeExp0 = npeExpected * abs0 / (abs0 + abs1);
-	double npeExp1 = npeExpected * abs1 / (abs0 + abs1);
-	
-        // Observed PE
-        long npe0 = CLHEP::RandPoisson::shoot(engine, npeExp0);
-        long npe1 = CLHEP::RandPoisson::shoot(engine, npeExp1);
+	double d0 = abs(-adsGeo.HalfLength() - svHitPosLocal[2]);  // L
+	double d1 = abs( adsGeo.HalfLength() - svHitPosLocal[2]);  // R	    
+	if (mod2orient[module]==2) {
+	  if (mod2plane[module]==0  || mod2plane[module]==3 ) {
+	    d0 = abs(-adsGeo.HalfWidth1() - svHitPosLocal[0]);  // L
+	    d1 = abs( adsGeo.HalfWidth1() - svHitPosLocal[0]);  // R
+	  }
+	  else {
+	    d0 = abs(-adsGeo.HalfHeight() - svHitPosLocal[1]);  // L
+	    d1 = abs( adsGeo.HalfHeight() - svHitPosLocal[1]);  // R	    
+	  }
+	}
 
-        // Time relative to trigger
-        uint32_t t0 = getChannelTriggerTicks(engine, trigClock, tTrue, npe0, distToReadout);
-        uint32_t t1 = getChannelTriggerTicks(engine, trigClock, tTrue, npe1, distToReadout);
+	short q0,q1;
+	double npeExp0=0;
+	double npeExp1=0;
+	long npe0 =0; 
+	long npe1 =0;
+        // Time relative to PPS: set to zero instead of random
+	//        uint32_t ppsTicks = CLHEP::RandFlat::shootInt(engine, trigClock.Frequency() * 1e6);
+        uint32_t ppsTicks = 0;
+		
+	if (fModelTransAtten) {
+	  double abs0 = exp(-d0 / fAbsLenEff);	
+	  double abs1 = exp(-d1 / fAbsLenEff);
+	  npeExp0 = npeExpected * abs0 / (abs0 + abs1);
+	  npeExp1 = npeExpected * abs1 / (abs0 + abs1);
+	}
+	else {
+	  npeExp0 = npeExpected*d0/(d1+d0);
+	  npeExp1 = npeExpected*d1/(d1+d0);
+	}
+	if (fModelTransAtten) {  // should be a different flag to turn on/off smearing
+	// Observed PE
+	  npe0 = CLHEP::RandPoisson::shoot(engine, npeExp0);
+	  npe1 = CLHEP::RandPoisson::shoot(engine, npeExp1);
+	  // SiPM and ADC response: Npe to ADC counts
+	  q0 = CLHEP::RandGauss::shoot(engine, fQPed + fQSlope * npe0, fQRMS * sqrt(npe0));
+	  q1 = CLHEP::RandGauss::shoot(engine, fQPed + fQSlope * npe1, fQRMS * sqrt(npe1));	  
+	}
+	else {
+	  npe0=npeExp0;
+	  npe1=npeExp1;
+	  q0=fQPed + fQSlope * npe0;
+	  q1=fQPed + fQSlope * npe1;
+	}
 
-        // Time relative to PPS: Random for now
-        uint32_t ppsTicks = CLHEP::RandFlat::shootInt(engine, trigClock.Frequency() * 1e6);
-
-        // SiPM and ADC response: Npe to ADC counts
-        short q0 = CLHEP::RandGauss::shoot(engine, fQPed + fQSlope * npe0, fQRMS * sqrt(npe0));
-        short q1 = CLHEP::RandGauss::shoot(engine, fQPed + fQSlope * npe1, fQRMS * sqrt(npe1));
+	std::cout << "npe exp = " << npeExpected << " q0,q1 " << q0 << " " << q1 << 
+	  " d0,d1 " << d0 << " " << d1 << std::endl;
+      
+	// NOT The time relative to trigger in trigger ticks 
+	//  trigClock not used
+	//  Instead time relative to event time=0 (will include time offset of particles not 
+	//       generated at time=0) in CRT ticks (=1 ns)
+	uint32_t t0 = getChannelTriggerTicks(engine, trigClock, tTrue, npe0, distToReadout);
+	uint32_t t1 = getChannelTriggerTicks(engine, trigClock, tTrue, npe1, distToReadout);
 
         uint32_t channel0ID = adsc.AuxDetID()*2;
         uint32_t channel1ID = adsc.AuxDetID()*2+1;
-
+	
 	if (fverbose) 
 	  std::cout << adsc.AuxDetID() << " " << ide_i << " " << channel0ID << " " << q0 << 
 	    " " << t0 <<
 	    " " << channel1ID << " " << q1 << " " << t1 <<  std::endl;
 
       // Apply ADC threshold and strip-level coincidence (both fibers fire)
-	if (q0 > fQThreshold &&
-	    q1 > fQThreshold &&
-	    util::absDiff(t0, t1) < fStripCoincidenceWindow) {
-	   crtHits->push_back(CRTSimData(channel0ID, t0, ppsTicks, q0, trackID));
-	   crtHits->push_back(CRTSimData(channel1ID, t1, ppsTicks, q1, trackID));
-	   if (fverbose) std::cout << "both written to event q0: " << q0 << " q1 " << q1 <<std::endl;
-	}
-      } //loop over ides
+	if (util::absDiff(t0, t1) < fStripCoincidenceWindow) {
+	  if ( (q0 > fQThreshold && q1 > fQThreshold) || ((fSumThresh) && (q0+q1)>fQThreshold)) {
+	    crtHits->push_back(CRTSimData(channel0ID, t0, ppsTicks, q0, trackID));
+	    crtHits->push_back(CRTSimData(channel1ID, t1, ppsTicks, q1, trackID));
+	    if (fverbose) std::cout << "both written to event q0: " << q0 << " q1 " << q1 <<std::endl;
+	  }
+	  else {
+	    if (fverbose) std::cout << "below threshold: q0 "  << q0 << " q1 " << q1 <<std::endl;
+	  }
+	} // if coincidence
+	else {
+	  if (fverbose) std::cout << "failed time coincidence requirement: t0  " << t0 << " t1 " << t1 << std::endl;
+	}  // else coincidence
+    } //loop over ides
     }// loop over channels
 
     // trigger commented out because it is duplicated in the hit reconstruction code CRTSimHit_module.cc
@@ -318,7 +364,7 @@ namespace crt{
       std::unique_ptr<std::vector<sbnd::crt::CRTData> > triggeredCRTHits(
       new std::vector<sbnd::crt::CRTData>);
       // Logic: For normal taggers, require at least one hit in each perpendicular
-      // plane. For the bottom tagger, any hit triggers read out.
+      // Plane. For the bottom tagger, any hit triggers read out.
       for (auto trg : taggers) {
       bool trigger = false;
       // Loop over pairs of hits

@@ -142,6 +142,8 @@ private:
   int hit_strip1[kMaxCRThits]; 
   int hit_feb2[kMaxCRThits]; 
   int hit_strip2[kMaxCRThits]; 
+  double hit_pe1[kMaxCRThits]; 
+  double hit_pe2[kMaxCRThits]; 
   // CRT tracks
   int nCRTtracks;
   double ct_theta[kMaxCRTtracks];
@@ -373,9 +375,11 @@ void TrackDump::analyze(art::Event const & evt)
     //   int(0.5*(ind_pes1.first)) << std::endl;
 
     hit_strip1[j]=int(0.5*(ind_pes1.first));
+    hit_pe1[j]=ind_pes1.second;
     pes = my_CRTHit.pesmap.find(hit_feb2[j])->second;
     ind_pes1 = pes[0]; ind_pes2 = pes[1];
     hit_strip2[j]=int(0.5*ind_pes2.first);
+    hit_pe2[j]=ind_pes2.second;
 
     // std::cout << "second strip: feb " << hit_feb2[j] << " map index feb " <<
     //   int(my_CRTHit.pesmap.find(hit_feb2[j])->first) << " sipm no " <<

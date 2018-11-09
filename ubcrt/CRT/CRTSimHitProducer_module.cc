@@ -90,6 +90,7 @@ namespace {
       0,0,0,0,0,0,0,0,0,0,  //50-59
       0,2,2,2,2,2,2,2,2,0,  //60-69
       2,2,2};               //70-72
+
     /*  not currently used
     const short mod2channelorder[73] = {  //=0 if MCstrip ordering is increasing with coordinate, =1 if decreasing
       0,0,0,0,0,0,0,0,0,0,
@@ -172,6 +173,9 @@ namespace crt{
     double        fQSlope;              ///< Pedestal slope of SiPMs [ADC/photon]
     bool          fUseReadoutWindow;    ///< Only reconstruct hits within readout window
     bool          fRequireStripOverlap;    ///< Make hits only if strips overlap
+    double        fCRTClockFreq; // in GHz
+    bool fTransAttenCorr;     // correct pes and position for transverse attenuation
+    bool fLongAttenCorr;     // correct pes and time for longitudinal attenuation
    
     // Other variables shared between different methods.
     geo::GeometryCore const* fGeometryService;                 ///< pointer to Geometry provider
@@ -207,6 +211,10 @@ namespace crt{
     fQSlope               = (p.get<double> ("QSlope"));
     fUseReadoutWindow     = (p.get<bool> ("UseReadoutWindow"),false);
     fRequireStripOverlap  = (p.get<bool> ("RequireStripOverlap"),false);
+    fCRTClockFreq         = (p.get<double> ("CRTClockFreq"),1.0);  
+    fTransAttenCorr       = (p.get<bool> ("TransAttenCorr"),true);
+    fLongAttenCorr        = (p.get<bool> ("LongAttenCorr"),true);
+
   }
 
   void CRTSimHitProducer::beginJob()
@@ -253,15 +261,13 @@ namespace crt{
       art::Ptr<crt::CRTSimData> thisSiPM2 = crtList[i+1];      
 
       // Get the time, channel, center and width
-      double t1 = (double)((int)(thisSiPM1->fT0)/8.);
+      double t1 = (double)((int)(thisSiPM1->fT0))*fCRTClockFreq*1e-3;
       if(fUseReadoutWindow){
         if(!(t1 >= -driftTimeTicks && t1 <= readoutWindow)) continue;
       }
       uint32_t channel = thisSiPM1->fChannel/2;
       // channel here is really the AuxDetID
       std::string name = fGeometryService->AuxDet(channel).TotalVolume()->GetName();
-      const geo::AuxDetSensitiveGeo stripGeo = (fGeometryService->AuxDet(channel)).SensitiveVolume(0);
-      double width = 2*stripGeo.HalfWidth1();
       int strip=0; int module=0;
       sscanf(name.c_str(),"volAuxDet_Module_%d_strip_%d",&module,&strip);
       if (fVerbose) std::cout << " channel " << channel << " strip " << strip << 
@@ -271,32 +277,40 @@ namespace crt{
 	module=0;
       }
 
+      // width of all strips is 10.8 cm except the strip in the top plane modules, 
+      //         which are 11.2 cm wide
+      //  . . . . hardcoding is ugly.
       int thisplane = mod2plane[module];
+      double width = 10.8;  
+      if (thisplane==3) width = 11.2;
       int this_orient=0;
       if (mod2orient[module]==2) this_orient=1;
       int thistagger=2*thisplane+this_orient;
-      // if (fVerbose) std::cout << "plane " << thisplane << " orient " << this_orient << " tagger " << 
-      // 		      thistagger << std::endl;
+      if (fVerbose) std::cout << "plane " << thisplane << " orient " << this_orient << " tagger " << 
+		      thistagger << std::endl;
 
       // track IDs from geant
       int id1 = thisSiPM1->fTrackID;
       int id2 = thisSiPM2->fTrackID; 
 
-      // Get the time of hit on the second SiPM
-      double t2 = (double)(int)thisSiPM2->fT0/8.;
+      // Get the time of hit on the second SiPM in us
+      double t2 = (double)(int)thisSiPM2->fT0*fCRTClockFreq*1e-3;
       // Calculate the number of photoelectrons at each SiPM
       double npe1 = ((double)thisSiPM1->fADC - fQPed)/fQSlope;
       double npe2 = ((double)thisSiPM2->fADC - fQPed)/fQSlope;
-      // Calculate the distance between the SiPMs
-      double x = (width/2.)*atan(log(1.*npe2/npe1)) + (width/2.);
+      // Calculate the hit position across the width of the strip (between two sipms)
+      double x,ex;
+      if (fTransAttenCorr) {
+	x = (width/2.)*atan(log(1.*npe2/npe1)) + (width/2.);
+	double normx = x + 0.344677*x - 1.92045;
+	ex = 1.92380e+00+1.47186e-02*normx-5.29446e-03*normx*normx;
+      }
+      else {x = (width)*(npe2/(npe1+npe2)); ex=1.0;}
 
-      if(fVerbose) std::cout << "strip hit: time "<< t1 << " channel " <<  channel <<
+      if(fVerbose) std::cout << "strip hit: time (us) "<< t1 << " channel " <<  channel <<
       		     " tran pos " << x <<  "  id1 " << id1 << " id2 " <<
       		     id2 << " total pe " <<  npe1+npe2  << std::endl;
 
-      // Calculate the error
-      double normx = x + 0.344677*x - 1.92045;
-      double ex = 1.92380e+00+1.47186e-02*normx-5.29446e-03*normx*normx;
       double ttime = (t1 + t2)/2.;
 
       CRTStrip stripHit = {ttime, channel, x, ex, id1, id2, npe1, npe2, module, strip};
@@ -374,121 +388,186 @@ namespace crt{
 	      std::map<uint8_t, std::vector<std::pair<int,float>>> mymap;	      
 	      uint8_t if1 = mod2feb[thismodule];
 	      mymap.insert(std::pair<uint8_t, std::vector<std::pair<int,float>>>(if1,myvec1));
-	      uint8_t if2 = mod2feb[thismodule2];
-	      mymap.insert(std::pair<uint8_t, std::vector<std::pair<int,float>>>(if2,myvec2));
-	      double petot = thisstrip1.pes1+ thisstrip1.pes2 + thisstrip2.pes1+ thisstrip2.pes2;
+			   uint8_t if2 = mod2feb[thismodule2];
+			   mymap.insert(std::pair<uint8_t, std::vector<std::pair<int,float>>>(if2,myvec2));
+					double petot = thisstrip1.pes1+ thisstrip1.pes2 + thisstrip2.pes1+ thisstrip2.pes2;
 
-	      //check for strip overlap
-	      if (fVerbose) std::cout << " checking overlap " << hit_i << " " << hit_j  << std::endl;
-	      std::vector<double> limits2 = ChannelToLimits(thisstrip2);
-	      std::vector<double> overlap = CrtOverlap(limits1, limits2);
-	      if (overlap[0] != -99999)  {
-		// Calculate the mean and error in x, y, z
-		TVector3 mean((overlap[0] + overlap[1])/2., 
-			      (overlap[2] + overlap[3])/2., 
-			      (overlap[4] + overlap[5])/2.);
-		TVector3 error(std::abs((overlap[1] - overlap[0])/2.), 
-			       std::abs((overlap[3] - overlap[2])/2.), 
-			       std::abs((overlap[5] - overlap[4])/2.));
-		// Create a CRT hit
-		crt::CRTHit crtHit = FillCrtHit(tfeb_id, mymap, petot, time, thisplane, mean.X(),
- 						error.X(), mean.Y(), error.Y(), mean.Z(), error.Z());
-		CRTHitcol->push_back(crtHit);
-		nHits++;
-		if (fVerbose) std::cout << "hit created: time " << time << " x " <<  mean.X() << " y " << 
-				mean.Y() << " z " <<  mean.Z() << std::endl;
+					//check for strip overlap
+					if (fVerbose) std::cout << " checking overlap " << hit_i << " " << hit_j  << std::endl;
+					std::vector<double> limits2 = ChannelToLimits(thisstrip2);
+					std::vector<double> overlap = CrtOverlap(limits1, limits2);
+					if (overlap[0] != -99999)  {
+					  // Calculate the mean and error in x, y, z
+					  TVector3 mean((overlap[0] + overlap[1])/2., 
+							(overlap[2] + overlap[3])/2., 
+							(overlap[4] + overlap[5])/2.);
+					  TVector3 error(std::abs((overlap[1] - overlap[0])/2.), 
+							 std::abs((overlap[3] - overlap[2])/2.), 
+							 std::abs((overlap[5] - overlap[4])/2.));
+					  if (thisplane==0 || thisplane==3) error.SetY(1.0);
+					  else error.SetX(1.0);
+					  // Create a CRT hit
+					  crt::CRTHit crtHit = FillCrtHit(tfeb_id, mymap, petot, time, thisplane, mean.X(),
+									  error.X(), mean.Y(), error.Y(), mean.Z(), error.Z());
+					  CRTHitcol->push_back(crtHit);
+					  nHits++;
+					  if (fVerbose) std::cout << "hit created: time " << time << " x " <<  mean.X() << " y " << 
+							  mean.Y() << " z " <<  mean.Z() << std::endl;
 		
-	      }
-	      else if (!fRequireStripOverlap) {	     
-		TVector3 mean,error;
-		if (thisplane==0 || thisplane==3) { // top or bot planes at constant y
-		  if (stripdir==0) {
-		    mean.SetZ(0.5*(limits1[4]+limits1[5]));
-		    error.SetZ(0.5*std::abs(limits1[5]-limits1[4]));
-		    mean.SetX(0.5*(limits2[0]+limits2[1]));
-		    error.SetX(0.5*std::abs(limits2[1]-limits2[0]));
-		    mean.SetY(0.25*(limits1[2]+limits1[3]+limits2[2]+limits2[3]));
-		    error.SetY(0.5);
-		  }
-		  else {
-		    mean.SetZ(0.5*(limits2[4]+limits2[5]));
-		    error.SetZ(0.5*std::abs(limits2[5]-limits2[4]));
-		    mean.SetX(0.5*(limits1[0]+limits1[1]));
-		    error.SetX(0.5*std::abs(limits1[1]-limits1[0]));
-		    mean.SetY(0.25*(limits1[2]+limits1[3]+limits2[2]+limits2[3]));
-		    error.SetY(0.5);
-		  }
-		}
-		else {  // side planes at constant x
-		  if (stripdir==1) {
-		    mean.SetZ(0.5*(limits1[4]+limits1[5]));
-		    error.SetZ(0.5*std::abs(limits1[5]-limits1[4]));
-		    mean.SetY(0.5*(limits2[3]+limits2[2]));
-		    error.SetY(0.5*std::abs(limits2[3]-limits2[2]));
-		    mean.SetX(0.25*(limits1[0]+limits1[1]+limits2[0]+limits2[1]));
-		    error.SetX(0.5);
-		  }		  
-		  else {
-		    mean.SetZ(0.5*(limits2[4]+limits2[5]));
-		    error.SetZ(0.5*std::abs(limits2[5]-limits2[4]));
-		    mean.SetY(0.5*(limits1[3]+limits1[2]));
-		    error.SetY(0.5*std::abs(limits1[3]-limits1[2]));
-		    mean.SetX(0.25*(limits1[0]+limits1[1]+limits2[0]+limits2[1]));
-		    error.SetX(0.5);
-		  }
-		}
-		// Create a CRT hit
-		crt::CRTHit crtHit = FillCrtHit(tfeb_id, mymap, petot, time, thisplane, mean.X(), 
-						error.X(), mean.Y(), error.Y(), mean.Z(), error.Z());
-		CRTHitcol->push_back(crtHit);
-		nHits++;
-		if (fVerbose) std::cout << "hit created: time " << time << " x " <<  mean.X() << " y " << 
-				mean.Y() << " z " <<  mean.Z() << std::endl;
-	      }// end create hit if strip overlap requirement is met (or not set)
-	    }// if coincidence in time
-	  }  //end loop over pairing
-	}  // end loop over strip hits in that sub-plane
-      }// end if there are hits
-    }  // end loop over planes
+					}
+					else if (!fRequireStripOverlap) {	     
+					  TVector3 mean,error;
+					  if (thisplane==0 || thisplane==3) { // top or bot planes at constant y
+					    if (stripdir==0) {
+					      mean.SetZ(0.5*(limits1[4]+limits1[5]));
+					      error.SetZ(0.5*std::abs(limits1[5]-limits1[4]));
+					      mean.SetX(0.5*(limits2[0]+limits2[1]));
+					      error.SetX(0.5*std::abs(limits2[1]-limits2[0]));
+					      mean.SetY(0.25*(limits1[2]+limits1[3]+limits2[2]+limits2[3]));
+					      error.SetY(0.5);
+					    }
+					    else {
+					      mean.SetZ(0.5*(limits2[4]+limits2[5]));
+					      error.SetZ(0.5*std::abs(limits2[5]-limits2[4]));
+					      mean.SetX(0.5*(limits1[0]+limits1[1]));
+					      error.SetX(0.5*std::abs(limits1[1]-limits1[0]));
+					      mean.SetY(0.25*(limits1[2]+limits1[3]+limits2[2]+limits2[3]));
+					      error.SetY(0.5);
+					    }
+					  }
+					  else {  // side planes at constant x
+					    if (stripdir==1) {
+					      mean.SetZ(0.5*(limits1[4]+limits1[5]));
+					      error.SetZ(0.5*std::abs(limits1[5]-limits1[4]));
+					      mean.SetY(0.5*(limits2[3]+limits2[2]));
+					      error.SetY(0.5*std::abs(limits2[3]-limits2[2]));
+					      mean.SetX(0.25*(limits1[0]+limits1[1]+limits2[0]+limits2[1]));
+					      error.SetX(0.5);
+					    }		  
+					    else {
+					      mean.SetZ(0.5*(limits2[4]+limits2[5]));
+					      error.SetZ(0.5*std::abs(limits2[5]-limits2[4]));
+					      mean.SetY(0.5*(limits1[3]+limits1[2]));
+					      error.SetY(0.5*std::abs(limits1[3]-limits1[2]));
+					      mean.SetX(0.25*(limits1[0]+limits1[1]+limits2[0]+limits2[1]));
+					      error.SetX(0.5);
+					    }
+					  }
+					  // Create a CRT hit
+					  crt::CRTHit crtHit = FillCrtHit(tfeb_id, mymap, petot, time, thisplane, mean.X(), 
+									  error.X(), mean.Y(), error.Y(), mean.Z(), error.Z());
+					  CRTHitcol->push_back(crtHit);
+					  nHits++;
+					  if (fVerbose) std::cout << "hit created: time " << time << " x " <<  mean.X() << " y " << 
+							  mean.Y() << " z " <<  mean.Z() << std::endl;
+					}// end create hit if strip overlap requirement is met (or not set)
+					}// if coincidence in time
+			   }  //end loop over pairing
+	    }  // end loop over strip hits in that sub-plane
+	  }// end if there are hits
+	}  // end loop over planes
     
-    event.put(std::move(CRTHitcol));
+	event.put(std::move(CRTHitcol));
     
-    if(fVerbose) std::cout<<"Number of CRT hits produced = "<<nHits<<std::endl;
+	if(fVerbose) std::cout<<"Number of CRT hits produced = "<<nHits<<std::endl;
     
-  } // produce()
+      } // produce()
     
-    void CRTSimHitProducer::endJob()
-    {
+      void CRTSimHitProducer::endJob()
+      {
     
-  }
+      }
 
-  // Function to calculate the strip position limits in real space from channel
-  std::vector<double> CRTSimHitProducer::ChannelToLimits(CRTStrip strHit)  {
+      // Function to calculate the strip position limits in real space from channel
+      std::vector<double> CRTSimHitProducer::ChannelToLimits(CRTStrip strHit)  {
+
     
+	// uncommenting this causes it to seg fault, not sure why.
+	// const geo::AuxDetGeo stripGeoL = fGeometryService->AuxDet(strHit.channel);
+	// double mycenter[3];     stripGeoL.GetCenter(mycenter);
+	// if (fVerbose) std::cout << "center " << mycenter[0] << " " << mycenter[1] << " " << 
+	// 		    mycenter[2]<< std::endl;
 
-    const geo::AuxDetSensitiveGeo stripGeoL = (fGeometryService->AuxDet(strHit.channel)).SensitiveVolume(0);
-    // double mycenter[3];     stripGeoL.GetCenter(mycenter);
-    // if (fVerbose) std::cout << "center " << mycenter[0] << " " << mycenter[1] << " " << 
-    // 		    mycenter[2]<< std::endl;
+	const geo::AuxDetSensitiveGeo stripGeoL = (fGeometryService->AuxDet(strHit.channel)).SensitiveVolume(0);
+	// double mycenter[3];     stripGeoL.GetCenter(mycenter);
+	// if (fVerbose) std::cout << "center " << mycenter[0] << " " << mycenter[1] << " " << 
+	// 		    mycenter[2]<< std::endl;
 
-    double halfWidth = stripGeoL.HalfWidth1();
-    double halfHeight = stripGeoL.HalfHeight();
-    double halfLength = stripGeoL.HalfLength();
-    double l1[3] = {-halfWidth+strHit.x+strHit.ex, halfHeight, halfLength};
-    double w1[3] = {0,0,0};
-    stripGeoL.LocalToWorld(l1, w1);
-    double l2[3] = {-halfWidth+strHit.x-strHit.ex, -halfHeight, -halfLength};
-    double w2[3] = {0,0,0};
-    stripGeoL.LocalToWorld(l2, w2);
 
+	double thisx1,thisy1,thisz1,thisx2,thisy2,thisz2;
+
+	double halfheight = stripGeoL.HalfHeight();
+	double halfwidth = stripGeoL.HalfWidth1();
+	double halflength = 0.5*(stripGeoL.Length());
+
+	int stripaxis = mod2orient[strHit.module];    // 0=x, 1=y, 2=z
+	int stripplane = mod2plane[strHit.module];    // 0=bot, 1=anode, 2=cathode, 3=top
+
+	if (fVerbose) {
+	  std::cout << " plane " << stripplane << " axis " << stripaxis 
+		    << " width " << halfwidth<< " height " << 
+	    halfheight  << " length " << halflength << std::endl;
+	  std::cout << strHit.x << " " << strHit.ex << std::endl;
+	}
+	if (stripaxis==0) {
+	  thisx1= halfwidth;
+	  thisy1= halfheight;
+	  thisz1= -1.0*halflength+strHit.x-strHit.ex;
+	  thisx2= -1.0*halfwidth;
+	  thisy2= -1.0*halfheight;
+	  thisz2= -1.0*halflength+strHit.x+strHit.ex;
+	}
+	else if (stripaxis==1) {
+	  thisx1= halfwidth;
+	  thisy1= halfheight;
+	  thisz1= -1.0*halflength+strHit.x-strHit.ex;
+	  thisx2= -1.0*halfwidth;
+	  thisy2= -1.0*halfheight;
+	  thisz2= -1.0*halflength+strHit.x+strHit.ex;
+	}
+	else {  // stripaxis is z
+	  if (stripplane==0 || stripplane==3) {
+	    thisx1= -1.0*halfwidth+strHit.x-strHit.ex;
+	    thisy1= halfheight;
+	    thisz1= halflength;
+	    thisx2= -1.0*halfwidth+strHit.x+strHit.ex;
+	    thisy2= -1.0*halfheight;
+	    thisz2= -1.0*halflength;
+	  }
+	  else {
+	    thisy1= -1.0*halfheight+strHit.x-strHit.ex;
+	    thisx1= halfwidth;
+	    thisz1= halflength;
+	    thisy2= -1.0*halfheight+strHit.x+strHit.ex;
+	    thisx2= -1.0*halfwidth;
+	    thisz2= -1.0*halflength;
+	  }
+	}
+	// give more room for two crossing strips to overlap in the axis perpendicular to the plane
+	//  allowed difference will be +/- 10.0 cm now instead of +/- 0.5 cm
+	// hardcoding the geometry is ugly
+	if (stripplane==3 || stripplane==0) { thisy1+=10.0; thisy2-=10.0; }
+	else {thisx1+=10.0; thisx2-=10.0;}
+
+	double w1[3] = {0,0,0};
+	double w2[3] = {0,0,0};
+	const double l1[3] = {thisx1,thisy1,thisz1};
+	stripGeoL.LocalToWorld(l1, w1);
+	const double l2[3] = {thisx2,thisy2,thisz2};
+	stripGeoL.LocalToWorld(l2, w2);
+	// if (fVerbose) {
+	//   std::cout << " l1 " << l1[0] << " " << l1[1] << " " << l1[2] << std::endl;
+	//   std::cout << " w1 " << w1[0] << " " << w1[1] << " " << w1[2] << std::endl;
+	//   std::cout << " l2 " << l2[0] << " " << l2[1] << " " << l2[2] << std::endl;
+	//   std::cout << " w2 " << w2[0] << " " << w2[1] << " " << w2[2] << std::endl;
+	// }
 
     // Use this to get the limits in the two variable directions
     std::vector<double> limits = {std::min(w1[0],w2[0]), std::max(w1[0],w2[0]), 
                                   std::min(w1[1],w2[1]), std::max(w1[1],w2[1]), 
                                   std::min(w1[2],w2[2]), std::max(w1[2],w2[2])};
-    if (fVerbose) std::cout << strHit.module << " limits " << limits[0] << " " << limits[1] 
-			    << " " << limits[2] << " "
-			    << limits[3] << " " << limits[4] << " " << limits[5] << " " << std::endl;
+    // if (fVerbose) std::cout << strHit.module << " limits " << limits[0] << " " << limits[1] << " " << limits[2] << " "
+    // 			     << limits[3] << " " << limits[4] << " " << limits[5] << " " << std::endl;
 
     return(limits);
   } // ChannelToLimits
@@ -506,7 +585,6 @@ namespace crt{
 
     std::vector<double> null = {-99999, -99999, -99999, -99999, -99999, -99999};
     std::vector<double> overlap = {minX, maxX, minY, maxY, minZ, maxZ};
-    // require overlap in 2 directions but not all 3!
     if ((minX<maxX && minY<maxY) || (minX<maxX && minZ<maxZ) || (minY<maxY && minZ<maxZ)) return(overlap);
 
     return(null);
@@ -522,7 +600,7 @@ namespace crt{
     crtHit.pesmap = tpesmap;
     crtHit.peshit = peshit;
     crtHit.ts0_s_corr = 0;
-    crtHit.ts0_ns = time * 0.5 * 10e3;
+    crtHit.ts0_ns = 0;
     crtHit.ts0_ns_corr = 0;
     crtHit.ts1_ns = time * 0.5 * 10e3;
     crtHit.ts0_s = time * 0.5 * 10e-6; 
