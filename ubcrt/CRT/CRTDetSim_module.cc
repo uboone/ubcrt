@@ -190,7 +190,8 @@ namespace crt{
     //access geometry
     geo::GeometryCore const* fGeometryService;            
     fGeometryService = lar::providerFrom<geo::Geometry>();
-   
+
+
   ///< pointer to Geometry provider   
     //    art::ServiceHandle<geo::AuxDetGeometry> geoService;
     //    const geo::AuxDetGeometry* geometry = &*geoService;
@@ -212,8 +213,8 @@ namespace crt{
       // Simulate the CRT response for each hit
       for (size_t ide_i = 0; ide_i < ides.size(); ide_i++) {
 	sim::AuxDetIDE ide = ides[ide_i];
-        double eDep = ide.energyDeposited;	
-	if (eDep<0.001) std::cout << "zero energy " << eDep << std::endl;
+        double eDep = ide.energyDeposited;
+	if (eDep>0.0000001) {  // require ~0.01 pe or more to proceed
 	double maxEdep = eDep;	
    	int trackID = ide.trackID;
            // Get the hit position in strip's local coordinates
@@ -269,7 +270,7 @@ namespace crt{
 	//  UseEdep flag let's us do a binary response
 	double qr = fUseEdep ? 1.0 * eDep / fQ0 : 1.0;
 	double npeExpected = (fNpeScaleNorm / pow(distToReadout - fNpeScaleShift, 2) * qr);
-	std::cout << "eDep/fQ0=" << eDep/fQ0 << " npe exp =" << npeExpected << std::endl;
+	//	if (fverbose) std::cout << " eDep " << eDep << " eDep/fQ0=" << eDep/fQ0 << " npe exp =" << npeExpected << std::endl;
 
 	// Put PE on channels weighted by distance
 	double d0 = abs(-adsGeo.HalfLength() - svHitPosLocal[2]);  // L
@@ -319,7 +320,7 @@ namespace crt{
 	  q1=fQPed + fQSlope * npe1;
 	}
 
-	std::cout << "npe exp = " << npeExpected << " q0,q1 " << q0 << " " << q1 << 
+	if (fverbose) std::cout << "npe exp = " << npeExpected << " q0,q1 " << q0 << " " << q1 << 
 	  " d0,d1 " << d0 << " " << d1 << std::endl;
       
 	// NOT The time relative to trigger in trigger ticks 
@@ -332,10 +333,10 @@ namespace crt{
         uint32_t channel0ID = adsc.AuxDetID()*2;
         uint32_t channel1ID = adsc.AuxDetID()*2+1;
 	
-	if (fverbose) 
-	  std::cout << adsc.AuxDetID() << " " << ide_i << " " << channel0ID << " " << q0 << 
-	    " " << t0 <<
-	    " " << channel1ID << " " << q1 << " " << t1 <<  std::endl;
+	// if (fverbose) 
+	//   std::cout << adsc.AuxDetID() << " " << ide_i << " " << channel0ID << " " << q0 << 
+	//     " " << t0 <<
+	//     " " << channel1ID << " " << q1 << " " << t1 <<  std::endl;
 
       // Apply ADC threshold and strip-level coincidence (both fibers fire)
 	if (util::absDiff(t0, t1) < fStripCoincidenceWindow) {
@@ -351,6 +352,7 @@ namespace crt{
 	else {
 	  if (fverbose) std::cout << "failed time coincidence requirement: t0  " << t0 << " t1 " << t1 << std::endl;
 	}  // else coincidence
+	} //zero energy threshold
     } //loop over ides
     }// loop over channels
 

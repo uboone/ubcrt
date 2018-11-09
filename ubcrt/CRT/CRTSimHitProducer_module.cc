@@ -305,7 +305,7 @@ namespace crt{
 	double normx = x + 0.344677*x - 1.92045;
 	ex = 1.92380e+00+1.47186e-02*normx-5.29446e-03*normx*normx;
       }
-      else {x = (width)*(npe2/(npe1+npe2)); ex=1.0;}
+      else {x = -0.5*width+ (width)*(npe2/(npe1+npe2)); ex=1.0;}
 
       if(fVerbose) std::cout << "strip hit: time (us) "<< t1 << " channel " <<  channel <<
       		     " tran pos " << x <<  "  id1 " << id1 << " id2 " <<
