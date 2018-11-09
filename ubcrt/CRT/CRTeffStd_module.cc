@@ -77,7 +77,7 @@ public:
 
   double CalorInter(const std::vector<const anab::Calorimetry*>& Calo_v);
   //from Chris
-  void SortTrackPoints (const recob::Track& track, std::vector<TVector3>& sorted_trk);
+  void SortTrackPoints (const recob::Track& track, std::vector<recob::Track::Point_t>& sorted_trk);
 
   double CalTheta(double x, double y, double z);
   double CalPhi(double x, double y, double z);
@@ -311,7 +311,7 @@ void crt::CRTeffStd::analyze(art::Event const & evt)
       hTPCTlength->Fill(TPCTrackLength);
       
       // Chris::get sorted points for the track object [assuming downwards going]      
-      std::vector<TVector3> sorted_trk;
+      std::vector<recob::Track::Point_t> sorted_trk;
       SortTrackPoints(my_TPCTrack,sorted_trk);
       
       auto const& top    = sorted_trk.at(0);
@@ -924,7 +924,7 @@ double crt::CRTeffStd::CalorInter(const std::vector<const anab::Calorimetry*>& C
 }
 
 
-void crt::CRTeffStd::SortTrackPoints(const recob::Track& track, std::vector<TVector3>& sorted_trk)
+void crt::CRTeffStd::SortTrackPoints(const recob::Track& track, std::vector<recob::Track::Point_t>& sorted_trk)
 {
 
   sorted_trk.clear();

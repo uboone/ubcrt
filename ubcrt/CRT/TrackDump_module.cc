@@ -262,14 +262,13 @@ void TrackDump::analyze(art::Event const & evt)
     if (nTPCtracks>kMaxTPCtracks) nTPCtracks=kMaxTPCtracks;
     for(int j = 0; j < nTPCtracks; j++) {
       
-      TVector3 pos, dir_start, dir_end, end;              
       art::Ptr<recob::Track> ptrack(trackListHandle, j);
       const recob::Track& track = *ptrack;
       
-      pos       = track.Vertex();
-      dir_start = track.VertexDirection();
-      dir_end   = track.EndDirection();
-      end       = track.End();
+      auto pos       = track.Vertex();
+      auto dir_start = track.VertexDirection();
+      auto dir_end   = track.EndDirection();
+      auto end       = track.End();
       //
       trklen[j]= track.Length(); //length(track);
       trkstartx[j]=pos.X();

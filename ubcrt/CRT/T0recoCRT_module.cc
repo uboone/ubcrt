@@ -78,7 +78,7 @@ public:
   void endJob() override;
 
   //from Chris                                                                                                                                            
-  void SortTrackPoints (const recob::Track& track, std::vector<TVector3>& sorted_trk);
+  void SortTrackPoints (const recob::Track& track, std::vector<recob::Track::Point_t>& sorted_trk);
 
 
 private:
@@ -240,7 +240,7 @@ void crt::T0recoCRT::produce(art::Event & evt)
     
     recob::Track my_TPCTrack = TPCTrackCollection[i];
 
-    std::vector<TVector3> sorted_trk;
+    std::vector<recob::Track::Point_t> sorted_trk;
     SortTrackPoints(my_TPCTrack,sorted_trk);
 
     auto const& top    = sorted_trk.at(0);
@@ -408,7 +408,7 @@ void crt::T0recoCRT::endJob()
   // Implementation of optional member function here.
 }
 
-void crt::T0recoCRT::SortTrackPoints(const recob::Track& track, std::vector<TVector3>& sorted_trk)
+void crt::T0recoCRT::SortTrackPoints(const recob::Track& track, std::vector<recob::Track::Point_t>& sorted_trk)
 {
 
   sorted_trk.clear();
