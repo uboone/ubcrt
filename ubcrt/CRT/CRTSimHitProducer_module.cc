@@ -373,7 +373,6 @@ namespace crt{
 	    //	    int stripdir2 = mod2orient[thismodule2];
 	    double t0_2 = thisstrip2.t0;
 	    if (std::abs(t0_1 - t0_2)<fTimeCoincidenceLimit) {
-	      //	    if (thisplane2==thisplane && stripdir2!=stripdir && std::abs(t0_1 - t0_2)<fTimeCoincidenceLimit) {
 	      // Average the time
 	      double time = (t0_1 + t0_2)/2;
 	      //get FEB IDs
@@ -388,89 +387,89 @@ namespace crt{
 	      std::map<uint8_t, std::vector<std::pair<int,float>>> mymap;	      
 	      uint8_t if1 = mod2feb[thismodule];
 	      mymap.insert(std::pair<uint8_t, std::vector<std::pair<int,float>>>(if1,myvec1));
-			   uint8_t if2 = mod2feb[thismodule2];
-			   mymap.insert(std::pair<uint8_t, std::vector<std::pair<int,float>>>(if2,myvec2));
-					double petot = thisstrip1.pes1+ thisstrip1.pes2 + thisstrip2.pes1+ thisstrip2.pes2;
+	      uint8_t if2 = mod2feb[thismodule2];
+	      mymap.insert(std::pair<uint8_t, std::vector<std::pair<int,float>>>(if2,myvec2));
+	      double petot = thisstrip1.pes1+ thisstrip1.pes2 + thisstrip2.pes1+ thisstrip2.pes2;
 
-					//check for strip overlap
-					if (fVerbose) std::cout << " checking overlap " << hit_i << " " << hit_j  << std::endl;
-					std::vector<double> limits2 = ChannelToLimits(thisstrip2);
-					std::vector<double> overlap = CrtOverlap(limits1, limits2);
-					if (overlap[0] != -99999)  {
-					  // Calculate the mean and error in x, y, z
-					  TVector3 mean((overlap[0] + overlap[1])/2., 
-							(overlap[2] + overlap[3])/2., 
-							(overlap[4] + overlap[5])/2.);
-					  TVector3 error(std::abs((overlap[1] - overlap[0])/2.), 
-							 std::abs((overlap[3] - overlap[2])/2.), 
-							 std::abs((overlap[5] - overlap[4])/2.));
-					  if (thisplane==0 || thisplane==3) error.SetY(1.0);
-					  else error.SetX(1.0);
-					  // Create a CRT hit
-					  crt::CRTHit crtHit = FillCrtHit(tfeb_id, mymap, petot, time, thisplane, mean.X(),
-									  error.X(), mean.Y(), error.Y(), mean.Z(), error.Z());
-					  CRTHitcol->push_back(crtHit);
-					  nHits++;
-					  if (fVerbose) std::cout << "hit created: time " << time << " x " <<  mean.X() << " y " << 
-							  mean.Y() << " z " <<  mean.Z() << std::endl;
+	      //check for strip overlap
+	      if (fVerbose) std::cout << " checking overlap " << hit_i << " " << hit_j  << std::endl;
+	      std::vector<double> limits2 = ChannelToLimits(thisstrip2);
+	      std::vector<double> overlap = CrtOverlap(limits1, limits2);
+	      if (overlap[0] != -99999)  {
+		// Calculate the mean and error in x, y, z
+		TVector3 mean((overlap[0] + overlap[1])/2., 
+			      (overlap[2] + overlap[3])/2., 
+			      (overlap[4] + overlap[5])/2.);
+		TVector3 error(std::abs((overlap[1] - overlap[0])/2.), 
+			       std::abs((overlap[3] - overlap[2])/2.), 
+			       std::abs((overlap[5] - overlap[4])/2.));
+		if (thisplane==0 || thisplane==3) error.SetY(1.0);
+		else error.SetX(1.0);
+		// Create a CRT hit
+		crt::CRTHit crtHit = FillCrtHit(tfeb_id, mymap, petot, time, thisplane, mean.X(),
+						error.X(), mean.Y(), error.Y(), mean.Z(), error.Z());
+		CRTHitcol->push_back(crtHit);
+		nHits++;
+		if (fVerbose) std::cout << "hit created: time " << time << " x " <<  mean.X() << 
+				" y " << mean.Y() << " z " <<  mean.Z() << std::endl;
 		
-					}
-					else if (!fRequireStripOverlap) {	     
-					  TVector3 mean,error;
-					  if (thisplane==0 || thisplane==3) { // top or bot planes at constant y
-					    if (stripdir==0) {
-					      mean.SetZ(0.5*(limits1[4]+limits1[5]));
-					      error.SetZ(0.5*std::abs(limits1[5]-limits1[4]));
-					      mean.SetX(0.5*(limits2[0]+limits2[1]));
-					      error.SetX(0.5*std::abs(limits2[1]-limits2[0]));
-					      mean.SetY(0.25*(limits1[2]+limits1[3]+limits2[2]+limits2[3]));
-					      error.SetY(0.5);
-					    }
-					    else {
-					      mean.SetZ(0.5*(limits2[4]+limits2[5]));
-					      error.SetZ(0.5*std::abs(limits2[5]-limits2[4]));
-					      mean.SetX(0.5*(limits1[0]+limits1[1]));
-					      error.SetX(0.5*std::abs(limits1[1]-limits1[0]));
-					      mean.SetY(0.25*(limits1[2]+limits1[3]+limits2[2]+limits2[3]));
-					      error.SetY(0.5);
-					    }
-					  }
-					  else {  // side planes at constant x
-					    if (stripdir==1) {
-					      mean.SetZ(0.5*(limits1[4]+limits1[5]));
-					      error.SetZ(0.5*std::abs(limits1[5]-limits1[4]));
-					      mean.SetY(0.5*(limits2[3]+limits2[2]));
-					      error.SetY(0.5*std::abs(limits2[3]-limits2[2]));
-					      mean.SetX(0.25*(limits1[0]+limits1[1]+limits2[0]+limits2[1]));
-					      error.SetX(0.5);
-					    }		  
-					    else {
-					      mean.SetZ(0.5*(limits2[4]+limits2[5]));
-					      error.SetZ(0.5*std::abs(limits2[5]-limits2[4]));
-					      mean.SetY(0.5*(limits1[3]+limits1[2]));
-					      error.SetY(0.5*std::abs(limits1[3]-limits1[2]));
-					      mean.SetX(0.25*(limits1[0]+limits1[1]+limits2[0]+limits2[1]));
-					      error.SetX(0.5);
-					    }
-					  }
-					  // Create a CRT hit
-					  crt::CRTHit crtHit = FillCrtHit(tfeb_id, mymap, petot, time, thisplane, mean.X(), 
-									  error.X(), mean.Y(), error.Y(), mean.Z(), error.Z());
-					  CRTHitcol->push_back(crtHit);
-					  nHits++;
-					  if (fVerbose) std::cout << "hit created: time " << time << " x " <<  mean.X() << " y " << 
-							  mean.Y() << " z " <<  mean.Z() << std::endl;
-					}// end create hit if strip overlap requirement is met (or not set)
-					}// if coincidence in time
-			   }  //end loop over pairing
+	      }
+	      else if (!fRequireStripOverlap) {	     
+		TVector3 mean,error;
+		if (thisplane==0 || thisplane==3) { // top or bot planes at constant y
+		  if (stripdir==0) {
+		    mean.SetZ(0.5*(limits1[4]+limits1[5]));
+		    error.SetZ(0.5*std::abs(limits1[5]-limits1[4]));
+		    mean.SetX(0.5*(limits2[0]+limits2[1]));
+		    error.SetX(0.5*std::abs(limits2[1]-limits2[0]));
+		    mean.SetY(0.25*(limits1[2]+limits1[3]+limits2[2]+limits2[3]));
+		    error.SetY(0.5);
+		  }
+		  else {
+		    mean.SetZ(0.5*(limits2[4]+limits2[5]));
+		    error.SetZ(0.5*std::abs(limits2[5]-limits2[4]));
+		    mean.SetX(0.5*(limits1[0]+limits1[1]));
+		    error.SetX(0.5*std::abs(limits1[1]-limits1[0]));
+		    mean.SetY(0.25*(limits1[2]+limits1[3]+limits2[2]+limits2[3]));
+		    error.SetY(0.5);
+		  }
+		}
+		else {  // side planes at constant x
+		  if (stripdir==1) {
+		    mean.SetZ(0.5*(limits1[4]+limits1[5]));
+		    error.SetZ(0.5*std::abs(limits1[5]-limits1[4]));
+		    mean.SetY(0.5*(limits2[3]+limits2[2]));
+		    error.SetY(0.5*std::abs(limits2[3]-limits2[2]));
+		    mean.SetX(0.25*(limits1[0]+limits1[1]+limits2[0]+limits2[1]));
+		    error.SetX(0.5);
+		  }		  
+		  else {
+		    mean.SetZ(0.5*(limits2[4]+limits2[5]));
+		    error.SetZ(0.5*std::abs(limits2[5]-limits2[4]));
+		    mean.SetY(0.5*(limits1[3]+limits1[2]));
+		    error.SetY(0.5*std::abs(limits1[3]-limits1[2]));
+		    mean.SetX(0.25*(limits1[0]+limits1[1]+limits2[0]+limits2[1]));
+		    error.SetX(0.5);
+		  }
+		}
+		// Create a CRT hit
+		crt::CRTHit crtHit = FillCrtHit(tfeb_id, mymap, petot, time, thisplane, mean.X(), 
+						error.X(), mean.Y(), error.Y(), mean.Z(), error.Z());
+		CRTHitcol->push_back(crtHit);
+		nHits++;
+		if (fVerbose) std::cout << "hit created: time " << time << " x " <<  mean.X() << 
+				" y " << mean.Y() << " z " <<  mean.Z() << std::endl;
+	      }// end create hit if strip overlap requirement is met (or not set)
+	      }// if coincidence in time
+	      }  //end loop over pairing
 	    }  // end loop over strip hits in that sub-plane
 	  }// end if there are hits
 	}  // end loop over planes
-    
+	
 	event.put(std::move(CRTHitcol));
-    
+	
 	if(fVerbose) std::cout<<"Number of CRT hits produced = "<<nHits<<std::endl;
-    
+	
       } // produce()
     
       void CRTSimHitProducer::endJob()

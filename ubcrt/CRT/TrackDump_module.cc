@@ -367,6 +367,7 @@ void TrackDump::analyze(art::Event const & evt)
     std::vector<std::pair<int,float>> pes = my_CRTHit.pesmap.find(hit_feb1[j])->second;  //vector of pairs  
     std::pair<int,float> ind_pes1 = pes[0];
     std::pair<int,float> ind_pes2 = pes[1];
+    std::cout << "MC size of pes " << pes.size() << std::endl;
 
     // std::cout << "first strip: feb  " << hit_feb1[j] << " map index feb " <<
     //   int(my_CRTHit.pesmap.find(hit_feb1[j])->first) << " sipm no " <<
@@ -388,22 +389,58 @@ void TrackDump::analyze(art::Event const & evt)
     //   int(0.5*ind_pes1.first) << std::endl;
     }
     else {
-    //  Data has info from all 32 sipms with no indication
-    //   which ones were used to make this particular hit
-      // deal with it later
-      hit_strip1[j]=-1;
-      hit_strip2[j]=-1;
-    }
+      //  Data has info from all 32 sipms with no indication
+      //   which ones were used to make this particular hit
+      //
+      // use the largest pe deposit on the feb, not necessarily correct
+      
+    //    std::map<uint8_t, std::vector<std::pair<int,float>>> pesmap;	       //vector of pairs  
+      std::vector<std::pair<int,float>> pes1 = my_CRTHit.pesmap.find(hit_feb1[j])->second; 
+      float hitpe1 = 0; int hitsipm1=-1;
+      for (uint isp=0;isp<pes1.size();isp+=2) {
+	std::pair<int,float> ind_pes1=pes1[isp];
+	std::pair<int,float> ind_pes2=pes1[isp+1];
+	// std::cout << isp << " " << ind_pes1.first << " " << ind_pes1.second << std::endl;
+	// std::cout << isp+1 << " " << ind_pes2.first << " " << ind_pes2.second << std::endl;
+	float tot = ind_pes1.second+ind_pes2.second;
+	if (tot>hitpe1) {
+	  hitpe1=tot;
+	  hitsipm1=0.5*ind_pes1.first;
+	}
+      }
+      hit_strip1[j]=-1;hit_pe1[j]=-1;
+      if (hitsipm1>=0) {hit_strip1[j]=hitsipm1;       hit_pe1[j]=hitpe1;}
+      //
+      std::vector<std::pair<int,float>> pes2 = my_CRTHit.pesmap.find(hit_feb2[j])->second; 
+      float hitpe2 = 0; int hitsipm2=-1;
+      for (uint isp=0;isp<pes2.size();isp+=2) {
+	std::pair<int,float> ind_pes1=pes2[isp];
+	std::pair<int,float> ind_pes2=pes2[isp+1];
+	float tot = ind_pes1.second+ind_pes2.second;
+	if (tot>hitpe2) {
+	  hitpe2=tot;
+	  hitsipm2=0.5*ind_pes1.first;
+	}
+      }
+      hit_strip2[j]=-1; hit_pe2[j]=-1;
+      if (hitsipm2>=0) {hit_strip2[j]=hitsipm2;      hit_pe2[j]=hitpe2;}
+      //
+	// std::cout << " feb1 strip1 pe1 " << hit_feb1[j] << " " << hit_strip1[j] << " " << 
+	//   hit_pe1[j] << std::endl;
+	// std::cout << " feb2 strip2 pe2 " << hit_feb2[j] << " " << hit_strip2[j] << " " << 
+	//   hit_pe2[j] << std::endl;
+      //
+    } // if data
+    
 
     //fillhistograms
     if (my_CRTHit.plane==0) HitDistBot->Fill(my_CRTHit.z_pos,my_CRTHit.x_pos);
     else if (my_CRTHit.plane==1) HitDistFT->Fill(my_CRTHit.z_pos,my_CRTHit.y_pos);
     else if (my_CRTHit.plane==2) HitDistPipe->Fill(my_CRTHit.z_pos,my_CRTHit.y_pos);
     else if (my_CRTHit.plane==3) HitDistTop->Fill(my_CRTHit.z_pos,my_CRTHit.x_pos);
+  }// loop over hits
 
 
-
-  }
 
   //get CRTTracks
   art::Handle< std::vector<crt::CRTTrack> > rawHandle_track;
@@ -496,6 +533,10 @@ void TrackDump::beginJob()
   fTree->Branch("hit_posz",hit_posz,"hit_posz[nCRThits]/D");
   fTree->Branch("hit_feb1",hit_feb1,"hit_feb1[nCRThits]/I");
   fTree->Branch("hit_feb2",hit_feb2,"hit_feb2[nCRThits]/I");
+  fTree->Branch("hit_strip1",hit_strip1,"hit_strip1[nCRThits]/I");
+  fTree->Branch("hit_strip2",hit_strip2,"hit_strip2[nCRThits]/I");
+  fTree->Branch("hit_pe1",hit_pe1,"hit_pe1[nCRThits]/D");
+  fTree->Branch("hit_pe2",hit_pe2,"hit_pe2[nCRThits]/D");
   // CRT tracks
   fTree->Branch("nCRTtracks",&nCRTtracks,"nCRTtracks/I");
   fTree->Branch("ct_theta",ct_theta,"ct_theta[nCRTtracks]/D");
@@ -637,6 +678,10 @@ void TrackDump::ResetVars()
     hit_posz[i] = -99999.;
     hit_feb1[i] = -999;
     hit_feb2[i] = -999;
+    hit_strip1[i] = -1;
+    hit_strip2[i] = -1;
+    hit_pe1[i] = -999;
+    hit_pe2[i] = -999;
   }
 
 
