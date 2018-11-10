@@ -367,7 +367,6 @@ void TrackDump::analyze(art::Event const & evt)
     std::vector<std::pair<int,float>> pes = my_CRTHit.pesmap.find(hit_feb1[j])->second;  //vector of pairs  
     std::pair<int,float> ind_pes1 = pes[0];
     std::pair<int,float> ind_pes2 = pes[1];
-    std::cout << "MC size of pes " << pes.size() << std::endl;
 
     // std::cout << "first strip: feb  " << hit_feb1[j] << " map index feb " <<
     //   int(my_CRTHit.pesmap.find(hit_feb1[j])->first) << " sipm no " <<
@@ -376,11 +375,11 @@ void TrackDump::analyze(art::Event const & evt)
     //   int(0.5*(ind_pes1.first)) << std::endl;
 
     hit_strip1[j]=int(0.5*(ind_pes1.first));
-    hit_pe1[j]=ind_pes1.second;
+    hit_pe1[j]=ind_pes1.second+ind_pes2.second;
     pes = my_CRTHit.pesmap.find(hit_feb2[j])->second;
     ind_pes1 = pes[0]; ind_pes2 = pes[1];
-    hit_strip2[j]=int(0.5*ind_pes2.first);
-    hit_pe2[j]=ind_pes2.second;
+    hit_strip2[j]=int(0.5*ind_pes1.first);
+    hit_pe2[j]=ind_pes1.second+ind_pes2.second;
 
     // std::cout << "second strip: feb " << hit_feb2[j] << " map index feb " <<
     //   int(my_CRTHit.pesmap.find(hit_feb2[j])->first) << " sipm no " <<

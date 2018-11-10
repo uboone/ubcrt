@@ -417,7 +417,7 @@ namespace crt{
 	      else if (!fRequireStripOverlap) {	     
 		TVector3 mean,error;
 		if (thisplane==0 || thisplane==3) { // top or bot planes at constant y
-		  if (stripdir==0) {
+		  if (stripdir==0) {  //strip1 length along x
 		    mean.SetZ(0.5*(limits1[4]+limits1[5]));
 		    error.SetZ(0.5*std::abs(limits1[5]-limits1[4]));
 		    mean.SetX(0.5*(limits2[0]+limits2[1]));
@@ -435,14 +435,14 @@ namespace crt{
 		  }
 		}
 		else {  // side planes at constant x
-		  if (stripdir==1) {
+		  if (stripdir==1) { //strip1 length along y
 		    mean.SetZ(0.5*(limits1[4]+limits1[5]));
 		    error.SetZ(0.5*std::abs(limits1[5]-limits1[4]));
 		    mean.SetY(0.5*(limits2[3]+limits2[2]));
 		    error.SetY(0.5*std::abs(limits2[3]-limits2[2]));
 		    mean.SetX(0.25*(limits1[0]+limits1[1]+limits2[0]+limits2[1]));
 		    error.SetX(0.5);
-		  }		  
+		  }
 		  else {
 		    mean.SetZ(0.5*(limits2[4]+limits2[5]));
 		    error.SetZ(0.5*std::abs(limits2[5]-limits2[4]));
@@ -534,11 +534,11 @@ namespace crt{
 	    thisz2= -1.0*halflength;
 	  }
 	  else {
-	    thisy1= -1.0*halfheight+strHit.x-strHit.ex;
 	    thisx1= halfwidth;
+	    thisy1= -1.0*halfheight+strHit.x-strHit.ex;
 	    thisz1= halflength;
-	    thisy2= -1.0*halfheight+strHit.x+strHit.ex;
 	    thisx2= -1.0*halfwidth;
+	    thisy2= -1.0*halfheight+strHit.x+strHit.ex;
 	    thisz2= -1.0*halflength;
 	  }
 	}
