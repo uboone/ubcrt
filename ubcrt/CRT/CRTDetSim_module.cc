@@ -140,7 +140,6 @@ namespace crt{
 
     // Propagation time
     double tProp = CLHEP::RandGauss::shoot(fPropDelay, fPropDelayError) * r;
-
     double t = t0 + tProp + tDelay;
 
     // Get clock ticks
@@ -148,7 +147,6 @@ namespace crt{
     // convert to CRT clock ticks instead (1 tick = 1 ns)    
     double cticks = uint(t/fCRTClockFreq);
     
-
 
     mf::LogInfo("CRT")
     << "CRT TIMING: t0=" << t0
@@ -245,7 +243,7 @@ namespace crt{
 	  }
 	}
 
-	const geo::AuxDetGeo& adGeo = fGeometryService->AuxDet(adsc.AuxDetID());
+	//	const geo::AuxDetGeo& adGeo = fGeometryService->AuxDet(adsc.AuxDetID());
 	std::string name = adGeo.TotalVolume()->GetName();
 	int module,strip;
 	sscanf(name.c_str(),"volAuxDet_Module_%d_strip_%d",&module,&strip);
@@ -256,15 +254,9 @@ namespace crt{
 	adsGeo.WorldToLocal(world, svHitPosLocal);	
 
         // Distance to the readout end 
-        // FIXME: FOR NOW ASSUME ALL THE SAME DIRECTION (SiPM always at smaller coordinate value)
-	// FIXME: the y coordinate is not always along the strip length in uB like it is for SBND.
 	double distToReadout=0;
-	if (fModelLongAtten) {
-	  if (mod2orient[module]==1) distToReadout= abs(-adsGeo.HalfHeight() - svHitPosLocal[1]);
-	  else if (mod2orient[module]==0)   distToReadout = abs(-adsGeo.HalfWidth1() - svHitPosLocal[0]);
-	  else if (mod2orient[module]==2)   distToReadout = abs(-adsGeo.HalfLength() - svHitPosLocal[2]);
-	}
-	
+	if (fModelLongAtten) distToReadout= abs(-adsGeo.HalfHeight() - svHitPosLocal[1]);
+
 	// The expected number of PE, using a quadratic model for the distance
 	// dependence, and scaling linearly with deposited energy.
 	//  UseEdep flag let's us do a binary response
@@ -273,19 +265,8 @@ namespace crt{
 	//	if (fverbose) std::cout << " eDep " << eDep << " eDep/fQ0=" << eDep/fQ0 << " npe exp =" << npeExpected << std::endl;
 
 	// Put PE on channels weighted by distance
-	double d0 = abs(-adsGeo.HalfLength() - svHitPosLocal[2]);  // L
-	double d1 = abs( adsGeo.HalfLength() - svHitPosLocal[2]);  // R	    
-	if (mod2orient[module]==2) {
-	  if (mod2plane[module]==0  || mod2plane[module]==3 ) {
-	    d0 = abs(-adsGeo.HalfWidth1() - svHitPosLocal[0]);  // L
-	    d1 = abs( adsGeo.HalfWidth1() - svHitPosLocal[0]);  // R
-	  }
-	  else {
-	    d0 = abs(-adsGeo.HalfHeight() - svHitPosLocal[1]);  // L
-	    d1 = abs( adsGeo.HalfHeight() - svHitPosLocal[1]);  // R	    
-	  }
-	}
-
+	double d0 = abs(-adsGeo.HalfWidth1() - svHitPosLocal[0]);  // L
+	double d1 = abs( adsGeo.HalfWidth1() - svHitPosLocal[0]);  // R
 	short q0,q1;
 	double npeExp0=0;
 	double npeExp1=0;

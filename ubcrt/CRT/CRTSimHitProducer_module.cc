@@ -268,6 +268,7 @@ namespace crt{
       uint32_t channel = thisSiPM1->fChannel/2;
       // channel here is really the AuxDetID
       std::string name = fGeometryService->AuxDet(channel).TotalVolume()->GetName();
+      const geo::AuxDetSensitiveGeo stripGeo = (fGeometryService->AuxDet(channel)).SensitiveVolume(0);
       int strip=0; int module=0;
       sscanf(name.c_str(),"volAuxDet_Module_%d_strip_%d",&module,&strip);
       if (fVerbose) std::cout << " channel " << channel << " strip " << strip << 
@@ -280,9 +281,8 @@ namespace crt{
       // width of all strips is 10.8 cm except the strip in the top plane modules, 
       //         which are 11.2 cm wide
       //  . . . . hardcoding is ugly.
+      double width = 2*stripGeo.HalfWidth1();
       int thisplane = mod2plane[module];
-      double width = 10.8;  
-      if (thisplane==3) width = 11.2;
       int this_orient=0;
       if (mod2orient[module]==2) this_orient=1;
       int thistagger=2*thisplane+this_orient;
@@ -499,61 +499,14 @@ namespace crt{
 	double halfwidth = stripGeoL.HalfWidth1();
 	double halflength = 0.5*(stripGeoL.Length());
 
-	int stripaxis = mod2orient[strHit.module];    // 0=x, 1=y, 2=z
-	int stripplane = mod2plane[strHit.module];    // 0=bot, 1=anode, 2=cathode, 3=top
 
-	if (fVerbose) {
-	  std::cout << " plane " << stripplane << " axis " << stripaxis 
-		    << " width " << halfwidth<< " height " << 
-	    halfheight  << " length " << halflength << std::endl;
-	  std::cout << strHit.x << " " << strHit.ex << std::endl;
-	}
-	if (stripaxis==0) {
-	  thisx1= halfwidth;
-	  thisy1= halfheight;
-	  thisz1= -1.0*halflength+strHit.x-strHit.ex;
-	  thisx2= -1.0*halfwidth;
-	  thisy2= -1.0*halfheight;
-	  thisz2= -1.0*halflength+strHit.x+strHit.ex;
-	}
-	else if (stripaxis==1) {
-	  thisx1= halfwidth;
-	  thisy1= halfheight;
-	  thisz1= -1.0*halflength+strHit.x-strHit.ex;
-	  thisx2= -1.0*halfwidth;
-	  thisy2= -1.0*halfheight;
-	  thisz2= -1.0*halflength+strHit.x+strHit.ex;
-	}
-	else {  // stripaxis is z
-	  if (stripplane==0 || stripplane==3) {
-	    thisx1= -1.0*halfwidth+strHit.x-strHit.ex;
-	    thisy1= halfheight;
-	    thisz1= halflength;
-	    thisx2= -1.0*halfwidth+strHit.x+strHit.ex;
-	    thisy2= -1.0*halfheight;
-	    thisz2= -1.0*halflength;
-	  }
-	  else {
-	    thisx1= halfwidth;
-	    thisy1= -1.0*halfheight+strHit.x-strHit.ex;
-	    thisz1= halflength;
-	    thisx2= -1.0*halfwidth;
-	    thisy2= -1.0*halfheight+strHit.x+strHit.ex;
-	    thisz2= -1.0*halflength;
-	  }
-	}
-	// give more room for two crossing strips to overlap in the axis perpendicular to the plane
-	//  allowed difference will be +/- 10.0 cm now instead of +/- 0.5 cm
-	// hardcoding the geometry is ugly
-	if (stripplane==3 || stripplane==0) { thisy1+=10.0; thisy2-=10.0; }
-	else {thisx1+=10.0; thisx2-=10.0;}
-
+	double l1[3] = {-halfWidth+strHit.x+strHit.ex, halfHeight, halfLength};
 	double w1[3] = {0,0,0};
-	double w2[3] = {0,0,0};
-	const double l1[3] = {thisx1,thisy1,thisz1};
 	stripGeoL.LocalToWorld(l1, w1);
-	const double l2[3] = {thisx2,thisy2,thisz2};
+	double l2[3] = {-halfWidth+strHit.x-strHit.ex, -halfHeight, -halfLength};
+	double w2[3] = {0,0,0};
 	stripGeoL.LocalToWorld(l2, w2);
+
 	// if (fVerbose) {
 	//   std::cout << " l1 " << l1[0] << " " << l1[1] << " " << l1[2] << std::endl;
 	//   std::cout << " w1 " << w1[0] << " " << w1[1] << " " << w1[2] << std::endl;
