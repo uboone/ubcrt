@@ -493,11 +493,9 @@ namespace crt{
 	// 		    mycenter[2]<< std::endl;
 
 
-	double thisx1,thisy1,thisz1,thisx2,thisy2,thisz2;
-
-	double halfheight = stripGeoL.HalfHeight();
-	double halfwidth = stripGeoL.HalfWidth1();
-	double halflength = 0.5*(stripGeoL.Length());
+	double halfHeight = stripGeoL.HalfHeight();
+	double halfWidth = stripGeoL.HalfWidth1();
+	double halfLength = 0.5*(stripGeoL.Length());
 
 
 	double l1[3] = {-halfWidth+strHit.x+strHit.ex, halfHeight, halfLength};
