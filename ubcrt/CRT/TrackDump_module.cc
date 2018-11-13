@@ -39,6 +39,7 @@
 #include "TH2F.h"
 #include "TH3S.h"
 #include "TProfile.h"
+#include "TCanvas.h"
 #include "TF1.h"
 #include "TDatime.h"
 #include <iostream>
@@ -87,6 +88,10 @@ private:
 
   void RefineAxis(TH1F* plt, double pt);
 
+  void CreateFebPlot(int plane, int feb_id, int ax, TH2F *&hcharge);
+
+  void CreateStripPlot(int plane, int strip_id, int ax, TH1F *&hstrip, TCanvas*& cstrip);
+  
   art::ServiceHandle<art::TFileService> tfs;
   // Declare member data here.
   
@@ -105,12 +110,18 @@ private:
   int verbose_;
   bool isData;
   bool rui_debug;
-  
+  bool save_pdf_;
+
   //art::TFileDirectory fTopDir;
   art::TFileDirectory dir_strip_top;
   art::TFileDirectory dir_strip_bottom;
   art::TFileDirectory dir_strip_pipe;
   art::TFileDirectory dir_strip_ft;
+
+  art::TFileDirectory dir_feb_top;
+  art::TFileDirectory dir_feb_bottom;
+  art::TFileDirectory dir_feb_pipe;
+  art::TFileDirectory dir_feb_ft;
 
   //art::InputTag opFlashTag("opflashSat");
 
@@ -137,13 +148,22 @@ private:
   std::vector<int> ft_febids;
   std::vector<int> pipe_febids;
 
+  std::vector<int> key_bottom { 11,12,14,17,18,19,22,23,24 }; 
+  std::vector<int> key_pipe   { 15,16,20,21,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,53,54,55 }; 
+  std::vector<int> key_ft     { 26,27,28,29,30,31,52,56,57,58,59,60,61 }; 
+  std::vector<int> key_top    { 105,106,107,108,109,111,112,113,114,115,116,117,118,119,120,121,195,123,124,125,126,127,128,129 }; //Top 122 is using FEB 195
+
   //std::map<int, TH1F*> hstrip_x;
   //std::map<int, TH1F*> hstrip_y;
   //std::map<int, TH1F*> hstrip_z;
 
-  std::vector<std::vector<std::map<int, TH1F*>>> hstrip;// <plane, xoryorz, <feb_id, th1f>> 
-  //std::map<int,<std::map<int,<std::map<int, TH1F*> > > > > hstrip;// <plane, xoryorz, <feb_id, th1f>> 
+  std::vector<std::vector<std::map<int, TH1F*>>> hstrip;// <plane, xoryorz, <strip_id, th1f>> 
+  std::vector<std::vector<std::map<int, TCanvas*>>> cstrip;// <plane, xoryorz, <strip_id, tcanvas>> 
+  //std::map<int,<std::map<int,<std::map<int, TH1F*> > > > > hstrip;// <plane, xoryorz, <strip_id, th1f>> 
 
+  std::vector<std::vector<std::map<int, TH2F*>>> hcharge;// <plane, xoryorz, <feb_id, th1f>> 
+
+  
 //quality plots                                                                           
   TTree*       fTree;
   // run information
@@ -211,11 +231,16 @@ TrackDump::TrackDump(fhicl::ParameterSet const & p)
     verbose_(p.get<int>("verbose")),
     isData(p.get<bool>("isData",false)),
     rui_debug(p.get<bool>("rui_debug",false)),
+    save_pdf_(p.get<bool>("save_pdf",false)),
     //fTopDir(art::ServiceHandle<art::TFileService>()->mkdir("Strip Check", "Strip_Check")),
-    dir_strip_top(art::ServiceHandle<art::TFileService>()->mkdir("top")),
-    dir_strip_bottom(art::ServiceHandle<art::TFileService>()->mkdir("bottom")),
-    dir_strip_pipe(art::ServiceHandle<art::TFileService>()->mkdir("pipe")),
-    dir_strip_ft(art::ServiceHandle<art::TFileService>()->mkdir("ft"))
+    dir_strip_top(art::ServiceHandle<art::TFileService>()->mkdir("top_strip")),
+    dir_strip_bottom(art::ServiceHandle<art::TFileService>()->mkdir("bottom_strip")),
+    dir_strip_pipe(art::ServiceHandle<art::TFileService>()->mkdir("pipe_strip")),
+    dir_strip_ft(art::ServiceHandle<art::TFileService>()->mkdir("ft_strip")),
+    dir_feb_top(art::ServiceHandle<art::TFileService>()->mkdir("top_feb")),
+    dir_feb_bottom(art::ServiceHandle<art::TFileService>()->mkdir("bottom_feb")),
+    dir_feb_pipe(art::ServiceHandle<art::TFileService>()->mkdir("pipe_feb")),
+    dir_feb_ft(art::ServiceHandle<art::TFileService>()->mkdir("ft_feb"))
     // More initializers here.    
 {
 }
@@ -403,39 +428,35 @@ void TrackDump::analyze(art::Event const & evt)
 			  <<", event " << evt.event()
 			  <<"\n map size is now"<<hstrip[my_CRTHit.plane][0].size()
 			  <<std::endl;
-    //int fuck=0;
+    // For strip comparition and 2D hit plot
     for (auto id : feb_id[j]) {
+      
+      //std::cout<<"feb_id["<<j<<"] has"<<feb_id[j].size()<<std::endl;
       
       std::ostringstream convert;
       convert << (int) id;
       std::string key_string = convert.str();
-      int key_strip = std::stoi(key_string);
+      int key_feb = std::stoi(key_string);
       
-      if(rui_debug)std::cout<<">>>"<<"looking @ feb id of "<<key_strip<<std::endl;
-
-      std::cout<<"id is "<<id<<" key_strip    is "<<key_strip<<std::endl;
+      if(rui_debug)std::cout<<">>>"<<"looking @ feb id of "<<key_feb<<std::endl;
       //std::cout<<"id is "<<id<<" key_string is "<<key_string<<std::endl;
       
-      int key_dir = key_strip*100;
-            
       auto pes = hit_pesmap[j].find(id)->second;
       //auto pes = hit_pesmap[j].find(fuck)->second;
-      //fuck++;
-      std::cout<<"hit has "<<pes.size()<<" flashes"<<std::endl;
-      for (auto each : pes) std::cout<<each.first<<" SiPM has "<<each.second<<" flashes"<<std::endl;
+    
+      //std::cout<<"hit has "<<pes.size()<<" flashes"<<std::endl;
+      //for (auto each : pes) std::cout<<each.first<<" SiPM has "<<each.second<<" flashes"<<std::endl;
 
       std::vector<double> strip_pes;
       strip_pes.clear();
       strip_pes.resize(16);
-
-      //std::cout<<pes.size()<<std::endl;
-      int loop_size=pes.size()-1;
+      
+      int loop_size= pes.size()-1;
       
       for (int i =0; i<loop_size; ++i){
 	auto pe_this = pes[i];
 	auto pe_next = pes[i+1];
 	
-	//std::cout<<pe_this.first<<" flash has "<<pe_this.second<<" flashes"<<std::endl;
 	if (pe_this.first % 2 ==0) {
 	  strip_pes[pe_this.first/2] = pe_this.second+pe_next.second;
 	}
@@ -451,7 +472,7 @@ void TrackDump::analyze(art::Event const & evt)
 
       if(rui_debug) std::cout<<"max found @ strip "<<pe_max_iter<<std::endl;
 
-      int strip_id = key_dir+pe_max_iter;
+      int strip_id = key_feb*100+pe_max_iter;
       
       std::string strip_name = std::to_string(strip_id);
       
@@ -461,7 +482,7 @@ void TrackDump::analyze(art::Event const & evt)
       //std::cout<<"Start Filling Strip check plots"<<std::endl;
       
       if ( hstrip[plane][0].find(strip_id) == hstrip[plane][0].end() ) {
-	if(rui_debug) std::cout<<"!!! Not Found histos of strip_id "<<strip_id<<std::endl;
+	std::cout<<"!!! Not Found histos of strip_id holy"<<strip_id<<std::endl;
 	n_hist_generated++;
 	for (int ax=0; ax<3; ++ax){
 	  char ax_label[] = "_x";
@@ -480,7 +501,7 @@ void TrackDump::analyze(art::Event const & evt)
 	    std::strcpy(title,id_char);
 	    std::strcat(title,ax_label);
 	    
-	    hstrip[plane][ax][strip_id]= dir_strip_bottom.make<TH1F>(title,"Distributions",1000,-1000,1000); 
+	    hstrip[plane][ax][strip_id]= dir_strip_bottom.make<TH1F>(title,"",1200,-1200,1200); 
 	    hstrip[plane][ax][strip_id]->GetXaxis()->SetTitle("Pos[cm]");
 	    hstrip[plane][ax][strip_id]->GetYaxis()->SetTitle("Entries/bin");
 	  }
@@ -495,7 +516,7 @@ void TrackDump::analyze(art::Event const & evt)
 	    std::strcpy(title,id_char);
 	    std::strcat(title,ax_label);
 
-	    hstrip[plane][ax][strip_id]= dir_strip_ft.make<TH1F>(title,"Distributions",1000,-1000,1000); 
+	    hstrip[plane][ax][strip_id]= dir_strip_ft.make<TH1F>(title,"",1200,-1200,1200); 
 	    hstrip[plane][ax][strip_id]->GetXaxis()->SetTitle("Pos[cm]");
 	    hstrip[plane][ax][strip_id]->GetYaxis()->SetTitle("Entries/bin");
 	  }
@@ -510,7 +531,7 @@ void TrackDump::analyze(art::Event const & evt)
 	    std::strcpy(title,id_char);
 	    std::strcat(title,ax_label);
 
-	    hstrip[plane][ax][strip_id]= dir_strip_pipe.make<TH1F>(title,"Distributions",1000,-1000,1000); 
+	    hstrip[plane][ax][strip_id]= dir_strip_pipe.make<TH1F>(title,"",1200,-1200,1200); 
 	    hstrip[plane][ax][strip_id]->GetXaxis()->SetTitle("Pos[cm]");
 	    hstrip[plane][ax][strip_id]->GetYaxis()->SetTitle("Entries/bin");
 	  }
@@ -525,7 +546,7 @@ void TrackDump::analyze(art::Event const & evt)
 	    std::strcpy(title,id_char);
 	    std::strcat(title,ax_label);
 
-	    hstrip[plane][ax][strip_id]= dir_strip_top.make<TH1F>(title,"Distributions",1000,-1000,1000); 
+	    hstrip[plane][ax][strip_id]= dir_strip_top.make<TH1F>(title,"",1200,-1200,1200); 
 	    hstrip[plane][ax][strip_id]->GetXaxis()->SetTitle("Pos[cm]");
 	    hstrip[plane][ax][strip_id]->GetYaxis()->SetTitle("Entries/bin");
 	  }
@@ -534,15 +555,15 @@ void TrackDump::analyze(art::Event const & evt)
 	  //h.GetXaxis()->GetXmax();
 
 	  if(ax==0){
-	    RefineAxis(hstrip[plane][ax][strip_id], my_CRTHit.x_pos);
+	    //RefineAxis(hstrip[plane][ax][strip_id], my_CRTHit.x_pos);
 	    hstrip[plane][ax][strip_id]->Fill(my_CRTHit.x_pos);
 	  }
 	  if(ax==1){
-	    RefineAxis(hstrip[plane][ax][strip_id], my_CRTHit.y_pos);	  
+	    //RefineAxis(hstrip[plane][ax][strip_id], my_CRTHit.y_pos);	  
 	    hstrip[plane][ax][strip_id]->Fill(my_CRTHit.y_pos);
 	  }
 	  if(ax==2){
-	    RefineAxis(hstrip[plane][ax][strip_id], my_CRTHit.z_pos);
+	    //RefineAxis(hstrip[plane][ax][strip_id], my_CRTHit.z_pos);
 	    hstrip[plane][ax][strip_id]->Fill(my_CRTHit.z_pos);
 	  }
 	}
@@ -557,31 +578,35 @@ void TrackDump::analyze(art::Event const & evt)
 		   <<" my_CRTHit.z_pos "<<my_CRTHit.z_pos<<std::endl;
 	  */
 	  if(ax==0){
-	    RefineAxis(hstrip[plane][ax][strip_id], my_CRTHit.x_pos);	  
+	    //RefineAxis(hstrip[plane][ax][strip_id], my_CRTHit.x_pos);	  
 	    hstrip[plane][ax][strip_id]->Fill(my_CRTHit.x_pos);
 	  }
 	  if(ax==1){
-	    RefineAxis(hstrip[plane][ax][strip_id], my_CRTHit.y_pos);	  
+	    //RefineAxis(hstrip[plane][ax][strip_id], my_CRTHit.y_pos);	  
 	    hstrip[plane][ax][strip_id]->Fill(my_CRTHit.y_pos);
 	  }
 	  if(ax==2){
-	    RefineAxis(hstrip[plane][ax][strip_id], my_CRTHit.z_pos);	  
+	    //RefineAxis(hstrip[plane][ax][strip_id], my_CRTHit.z_pos);	  
 	    hstrip[plane][ax][strip_id]->Fill(my_CRTHit.z_pos);
 	  }
 	}
       }
+      //fill charge vs. dist per feb
+      for (int ax=0; ax<3; ++ax){
+	if (ax==0) hcharge[plane][ax][key_feb]->Fill(my_CRTHit.x_pos,my_CRTHit.peshit);
+	if (ax==1) hcharge[plane][ax][key_feb]->Fill(my_CRTHit.y_pos,my_CRTHit.peshit);
+	if (ax==2) hcharge[plane][ax][key_feb]->Fill(my_CRTHit.z_pos,my_CRTHit.peshit);
+      }
     }
-    
     //fillhistograms
     if      (my_CRTHit.plane==0) HitDistBot ->Fill(my_CRTHit.z_pos,my_CRTHit.x_pos);
     else if (my_CRTHit.plane==1) HitDistFT  ->Fill(my_CRTHit.z_pos,my_CRTHit.y_pos);
     else if (my_CRTHit.plane==2) HitDistPipe->Fill(my_CRTHit.z_pos,my_CRTHit.y_pos);
     else if (my_CRTHit.plane==3) HitDistTop ->Fill(my_CRTHit.z_pos,my_CRTHit.x_pos);
 
-
-
   }
 
+  /*
   //get CRTTracks
   art::Handle< std::vector<crt::CRTTrack> > rawHandle_track;
   evt.getByLabel(data_labeltrack_, rawHandle_track); 
@@ -646,6 +671,7 @@ void TrackDump::analyze(art::Event const & evt)
 
 
   }
+  */
 
 
   fTree->Fill();
@@ -762,6 +788,156 @@ void TrackDump::beginJob()
   hts0_ns = tfs->make<TH1F>("hts0_ns","Track_time_ns",100000,0,1e9);
   hts0_ns->GetXaxis()->SetTitle("Track time (ns)");
   hts0_ns->GetYaxis()->SetTitle("Entries/bin");
+  
+  hcharge.clear();
+  hcharge.resize(4);
+  for (auto & each : hcharge) {
+    each.clear();
+    each.resize(3);
+  }  
+  
+  hstrip.clear();
+  hstrip.resize(4);
+  for (auto & each : hstrip) {
+    each.clear();
+    each.resize(3);
+  }  
+
+  cstrip.clear();
+  cstrip.resize(4);
+  for (auto & each : cstrip) {
+    each.clear();
+    each.resize(3);
+  }  
+
+  for (int plane=0; plane<4; ++plane){
+    int key_feb=0;
+    //Bottom
+    if (plane==0){
+      for(auto feb_id : key_bottom){
+	key_feb=feb_id*100;
+	//Initial feb plots
+	for (int ax=0; ax<3; ++ax){
+	  CreateFebPlot(plane, feb_id, ax, hcharge[plane][ax][feb_id]);
+	  /*
+	  std::string s = std::to_string(feb_id);
+	  char const *feb_id_char = s.c_str();
+	  char ax_label[] = "_x";
+	  if(ax==1) ax_label[1] = 'y';
+	  if(ax==2) ax_label[1] = 'z';
+	  char * title_charge = new char[std::strlen(feb_id_char)+std::strlen(ax_label)+1];
+	  std::strcpy(title_charge,feb_id_char);
+	  std::strcat(title_charge,ax_label);
+	  hcharge[plane][ax][feb_id] = dir_feb_bottom.make<TH2F>(title_charge,"",100,-1200,1200,100,-1200,1200);
+	  hcharge[plane][ax][feb_id]->GetXaxis()->SetTitle("Dist");
+	  hcharge[plane][ax][feb_id]->GetYaxis()->SetTitle("CRT Hit Charge");
+	  hcharge[plane][ax][feb_id]->GetZaxis()->SetTitle("Entries/bin");
+	  hcharge[plane][ax][feb_id]->SetOption("COLZ");
+	  */
+	}
+	//Initial strip plots
+	for (int strip=0; strip<16; ++strip){
+	  int strip_id=key_feb+strip;
+	  bottom_febids.emplace_back(strip_id);
+	  n_hist_generated++;
+	  //std::string s = std::to_string(strip_id);
+	  //char const *id_char = s.c_str();
+	  
+	  for (int ax=0; ax<3; ++ax){
+	    CreateStripPlot(plane, 
+			    strip_id, 
+			    ax, 
+			    hstrip[plane][ax][strip_id], 
+			    cstrip[plane][ax][strip_id]);
+	    /*
+	    char ax_label[] = "_x";
+	    if(ax==1) ax_label[1] = 'y';
+	    if(ax==2) ax_label[1] = 'z';
+	    char * title = new char[std::strlen(id_char)+std::strlen(ax_label)+1];
+	    std::strcpy(title,id_char);
+	    std::strcat(title,ax_label);
+	    cstrip[plane][ax][strip_id]= dir_strip_bottom.make<TCanvas>(title,"",500,500); 
+	    hstrip[plane][ax][strip_id]= dir_strip_bottom.make<TH1F>(title,"",1200,-1200,1200); 
+	    hstrip[plane][ax][strip_id]->GetXaxis()->SetTitle("Pos[cm]");
+	    hstrip[plane][ax][strip_id]->GetYaxis()->SetTitle("Entries/bin");
+	    */
+	  }
+	}
+      }
+    }
+
+    //FT
+    if (plane==1){
+      for(auto feb_id : key_ft){
+	key_feb=feb_id*100;
+	//Initial feb plots
+	for (int ax=0; ax<3; ++ax){
+	  CreateFebPlot(plane, 
+			feb_id, 
+			ax, 
+			hcharge[plane][ax][feb_id]);
+	}
+	for (int strip=0; strip<16; ++strip){
+	  int strip_id=key_feb+strip;
+	  ft_febids.emplace_back(strip_id);
+	  n_hist_generated++;
+	  for (int ax=0; ax<3; ++ax){
+	    CreateStripPlot(plane, 
+			    strip_id, 
+			    ax, 
+			    hstrip[plane][ax][strip_id], 
+			    cstrip[plane][ax][strip_id]);
+	  }
+	}
+      }
+    }
+    //Pipe
+    if (plane==2){
+      for(auto feb_id : key_pipe){
+	key_feb=feb_id*100;
+	//Initial feb plots
+	for (int ax=0; ax<3; ++ax){
+	  CreateFebPlot(plane, feb_id, ax, hcharge[plane][ax][feb_id]);
+	}
+	for (int strip=0; strip<16; ++strip){
+	  int strip_id=key_feb+strip;
+	  pipe_febids.emplace_back(strip_id);
+	  n_hist_generated++;
+	  
+	  for (int ax=0; ax<3; ++ax){
+	    CreateStripPlot(plane, 
+			    strip_id, 
+			    ax, 
+			    hstrip[plane][ax][strip_id], 
+			    cstrip[plane][ax][strip_id]);
+	  }
+	}
+      }
+    }
+    //Top
+    if (plane==3){
+      for(auto feb_id : key_top){
+	key_feb=feb_id*100;
+	//Initial feb plots
+	for (int ax=0; ax<3; ++ax){
+	  CreateFebPlot(plane, feb_id, ax, hcharge[plane][ax][feb_id]);
+	}
+	for (int strip=0; strip<16; ++strip){
+	  int strip_id=key_feb+strip;
+	  top_febids.emplace_back(strip_id);
+	  n_hist_generated++;
+	  
+	  for (int ax=0; ax<3; ++ax){
+	    CreateStripPlot(plane, 
+			    strip_id, 
+			    ax, 
+			    hstrip[plane][ax][strip_id], 
+			    cstrip[plane][ax][strip_id]);
+	  }
+	}
+      }
+    }
+  }
 
 
   double inch =2.54; //inch in cm                                                                                                                          
@@ -789,50 +965,6 @@ void TrackDump::beginJob()
   HitDistTop->GetZaxis()->SetTitle("Entries/bin");
   HitDistTop->SetOption("COLZ");
 
-  hstrip.clear();
-  hstrip.resize(4);
-  for (auto & each : hstrip) {
-    each.clear();
-    each.resize(3);
-  }  
-  
-  /*
-  art::TFileDirectory dir_strip_x = fTopDir.mkdir("strip_check_x");
-  art::TFileDirectory dir_strip_y = fTopDir.mkdir("strip_check_y");
-  art::TFileDirectory dir_strip_z = fTopDir.mkdir("strip_check_z");
-
-  for (int i = 0; i<10; ++i){
-    char array0[] = "hstrip_x_";
-    char array1[] = "hstrip_y_";
-    char array2[] = "hstrip_z_";
-
-    std::string s = std::to_string(i);
-    char const *array3 = s.c_str();
-
-    char * title0 = new char[std::strlen(array0)+std::strlen(array3)+1];
-    std::strcpy(title0,array0);
-    std::strcat(title0,array3);
-
-    char * title1 = new char[std::strlen(array1)+std::strlen(array3)+1];
-    std::strcpy(title1,array1);
-    std::strcat(title1,array3);
-
-    char * title2 = new char[std::strlen(array2)+std::strlen(array3)+1];
-    std::strcpy(title2,array2);
-    std::strcat(title2,array3);
-
-    hstrip_x[i]=dir_strip_x.make<TH1F>(title0,"X distributions",100,-1000,1000);
-    hstrip_x[i]->GetXaxis()->SetTitle("cm");
-    hstrip_x[i]->GetYaxis()->SetTitle("Entries/bin");
-
-    hstrip_y[i]=dir_strip_y.make<TH1F>(title1,"Y distributions",100,-1000,1000);
-    hstrip_y[i]->GetXaxis()->SetTitle("cm");
-    hstrip_y[i]->GetYaxis()->SetTitle("Entries/bin");
-
-    hstrip_z[i]=dir_strip_z.make<TH1F>(title2,"Z distributions",100,-1000,-1000);
-    hstrip_z[i]->GetXaxis()->SetTitle("cm");
-    hstrip_z[i]->GetYaxis()->SetTitle("Entries/bin");
- }*/
 }
 
 void TrackDump::endJob()
@@ -840,6 +972,110 @@ void TrackDump::endJob()
   // Implementation of optional member function here.
 
 
+  for (int plane=0; plane<4; ++plane){
+    int key_feb=0;
+    //Bottom
+    if (plane==0){
+      for(auto feb_id : key_bottom){
+	key_feb=feb_id*100;
+	for (int strip=0; strip<16; ++strip){
+	  int strip_id=key_feb+strip;
+	  bottom_febids.emplace_back(strip_id);
+	  std::string s = std::to_string(strip_id);
+	  char const *id_char = s.c_str();
+	  
+	  for (int ax=0; ax<3; ++ax){
+	    char ax_label[] = "_x";
+	    if(ax==1) ax_label[1] = 'y';
+	    if(ax==2) ax_label[1] = 'z';
+	    char * title = new char[std::strlen(id_char)+std::strlen(ax_label)+1];
+	    std::strcpy(title,id_char);
+	    std::strcat(title,ax_label);
+	    //TString title_=Form("%s.png", title);
+	    cstrip[plane][ax][strip_id]->cd(); 	    
+	    if (save_pdf_)hstrip[plane][ax][strip_id]->Draw(); 	    
+	    if (save_pdf_)cstrip[plane][ax][strip_id]->SaveAs(Form("%s.pdf", title)); 
+	  }
+	}
+      }
+    }
+    //FT
+    if (plane==1){
+      for(auto feb_id : key_ft){
+	key_feb=feb_id*100;
+	for (int strip=0; strip<16; ++strip){
+	  int strip_id=key_feb+strip;
+	  ft_febids.emplace_back(strip_id);
+	  std::string s = std::to_string(strip_id);
+	  char const *id_char = s.c_str();
+	  
+	  for (int ax=0; ax<3; ++ax){
+	    char ax_label[] = "_x";
+	    if(ax==1) ax_label[1] = 'y';
+	    if(ax==2) ax_label[1] = 'z';
+	    char * title = new char[std::strlen(id_char)+std::strlen(ax_label)+1];
+	    std::strcpy(title,id_char);
+	    std::strcat(title,ax_label);
+	    //TString title_=Form("%s.png", title);
+	    cstrip[plane][ax][strip_id]->cd(); 	    
+	    if (save_pdf_)hstrip[plane][ax][strip_id]->Draw(); 	    
+	    if (save_pdf_)cstrip[plane][ax][strip_id]->SaveAs(Form("%s.pdf", title)); 
+	  }
+	}
+      }
+    }
+    //Pipe
+    if (plane==2){
+      for(auto feb_id : key_pipe){
+	key_feb=feb_id*100;
+	for (int strip=0; strip<16; ++strip){
+	  int strip_id=key_feb+strip;
+	  pipe_febids.emplace_back(strip_id);
+	  std::string s = std::to_string(strip_id);
+	  char const *id_char = s.c_str();
+	  
+	  for (int ax=0; ax<3; ++ax){
+	    char ax_label[] = "_x";
+	    if(ax==1) ax_label[1] = 'y';
+	    if(ax==2) ax_label[1] = 'z';
+	    char * title = new char[std::strlen(id_char)+std::strlen(ax_label)+1];
+	    std::strcpy(title,id_char);
+	    std::strcat(title,ax_label);
+	    //TString title_=Form("%s.png", title);
+	    cstrip[plane][ax][strip_id]->cd(); 	    
+	    if (save_pdf_)hstrip[plane][ax][strip_id]->Draw(); 	    
+	    if (save_pdf_)cstrip[plane][ax][strip_id]->SaveAs(Form("%s.pdf", title)); 
+	  }
+	}
+      }
+    }
+    //Top
+    if (plane==3){
+      for(auto feb_id : key_top){
+	key_feb=feb_id*100;
+	for (int strip=0; strip<16; ++strip){
+	  int strip_id=key_feb+strip;
+	  top_febids.emplace_back(strip_id);
+	  std::string s = std::to_string(strip_id);
+	  char const *id_char = s.c_str();
+	  
+	  for (int ax=0; ax<3; ++ax){
+	    char ax_label[] = "_x";
+	    if(ax==1) ax_label[1] = 'y';
+	    if(ax==2) ax_label[1] = 'z';
+	    char * title = new char[std::strlen(id_char)+std::strlen(ax_label)+1];
+	    std::strcpy(title,id_char);
+	    std::strcat(title,ax_label);
+	    //TString title_=Form("%s.png", title);
+	    cstrip[plane][ax][strip_id]->cd(); 	    
+	    if (save_pdf_)hstrip[plane][ax][strip_id]->Draw(); 	    
+	    if (save_pdf_)cstrip[plane][ax][strip_id]->SaveAs(Form("%s.pdf", title)); 
+	  }
+	}
+      }
+    }
+  }
+  
   ForGettingMap(top_febids);
   ForGettingMap(bottom_febids);
   ForGettingMap(pipe_febids);
@@ -847,6 +1083,7 @@ void TrackDump::endJob()
 
   std::cout<<"<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<,"<<"Top FebID""\n";
 
+  /*
   for (auto each : top_febids) std::cout<<each<<std::endl;
   std::cout<<std::endl;
   
@@ -861,7 +1098,7 @@ void TrackDump::endJob()
   std::cout<<"<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<,"<<"Pipe FebID""\n";
   for (auto each : pipe_febids) std::cout<<each<<std::endl;
   std::cout<<std::endl;
-
+  */
   std::cout<<"<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<,"<<"\n"
 	   <<"Createed "<<n_hist_generated<<"/ 1168 histograms."<<std::endl;
     
@@ -896,6 +1133,57 @@ void TrackDump::RefineAxis(TH1F* h, double pt){
   h->GetXaxis()->SetRange(new_min-10, new_max+10);
   
 }
+
+void TrackDump::CreateStripPlot(int plane, int strip_id, int ax, TH1F* & hstrip, TCanvas* & cstrip){
+
+  std::string s = std::to_string(strip_id);
+  char const *id_char = s.c_str();
+  char ax_label[] = "_x";
+  if(ax==1) ax_label[1] = 'y';
+  if(ax==2) ax_label[1] = 'z';
+  char * title = new char[std::strlen(id_char)+std::strlen(ax_label)+1];
+  std::strcpy(title,id_char);
+  std::strcat(title,ax_label);
+  if (plane==0){
+    cstrip= dir_strip_bottom.make<TCanvas>(title,"",500,500); 
+    hstrip= dir_strip_bottom.make<TH1F>(title,"",1200,-1200,1200); 
+  }
+  if (plane==1){
+    cstrip= dir_strip_ft.make<TCanvas>(title,"",500,500); 
+    hstrip= dir_strip_ft.make<TH1F>(title,"",1200,-1200,1200); 
+  }
+  if (plane==2){
+    cstrip= dir_strip_pipe.make<TCanvas>(title,"",500,500); 
+    hstrip= dir_strip_pipe.make<TH1F>(title,"",1200,-1200,1200); 
+  }
+  if (plane==3){
+    cstrip= dir_strip_top.make<TCanvas>(title,"",500,500); 
+    hstrip= dir_strip_top.make<TH1F>(title,"",1200,-1200,1200); 
+  }
+  hstrip->GetXaxis()->SetTitle("Pos[cm]");
+  hstrip->GetYaxis()->SetTitle("Entries/bin");
+}
+void TrackDump::CreateFebPlot(int plane, int feb_id, int ax, TH2F* & hcharge){
+  
+  std::string s = std::to_string(feb_id);
+  char const *feb_id_char = s.c_str();
+  char ax_label[] = "_x";
+  if(ax==1) ax_label[1] = 'y';
+  if(ax==2) ax_label[1] = 'z';
+  char * title_charge = new char[std::strlen(feb_id_char)+std::strlen(ax_label)+1];
+  std::strcpy(title_charge,feb_id_char);
+  std::strcat(title_charge,ax_label);
+  if (plane==0)  hcharge = dir_feb_bottom.make<TH2F>(title_charge,"",100,-1200,1200,100,-10,1200);
+  if (plane==1)  hcharge = dir_feb_ft.make<TH2F>(title_charge,"",100,-1200,1200,100,-10,1200);
+  if (plane==2)  hcharge = dir_feb_pipe.make<TH2F>(title_charge,"",100,-1200,1200,100,-10,1200);
+  if (plane==3)  hcharge = dir_feb_top.make<TH2F>(title_charge,"",100,-1200,1200,100,-10,1200);
+  hcharge->GetXaxis()->SetTitle("Dist");
+  hcharge->GetYaxis()->SetTitle("CRT Hit Charge");
+  //hcharge->GetZaxis()->SetTitle("Entries/bin");
+  hcharge->SetOption("COLZ");
+}
+
+
 
 
 void TrackDump::ResetVars()

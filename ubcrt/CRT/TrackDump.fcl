@@ -6,7 +6,7 @@ events_to_generate: 200
 run_number: 101
 
 services:{
-  TFileService: { fileName: "track_tree.root" }
+  TFileService: { fileName: "strip_tree_data.root" }
 }
 
 physics:	
@@ -17,7 +17,6 @@ physics:
     {			
       module_type: TrackDump
       data_labeltrack: "crttrack"
-      ##data_labelhit: "crthit"
       data_labelhit: "merger"
       data_label_flash_: "opflash"
       data_label_DAQHeader_: "daq"
@@ -25,34 +24,18 @@ physics:
       verbose: 0
       TrackModuleLabel: "pandoraCosmic"
       SaveTPCTrackInfo: false
+      isData: true
+      rui_debug:false
+      save_pdf:false
      }
   }
 
-  producers:
-  {
-      crttzero: {
-	 module_type: CRTTzeroProducer
-	 data_label: "merger"
-	 max_time_difference: 100.
-	 store_tzero: 1
-	 verbose: 0
-      }
-      crttrack: {
-	 module_type: CRTTrackProducer
-	 data_label_hits: "merger"
-	 data_label_tzeros: "crttzero"
-## method 1 = all, method 2 = ave, method 3 = pure
-	 track_method_type: 2
-	 store_track: 1
-	 verbose: 0
-      }
-   }
    
   a1: [  crt ]
-   p1: [ crttzero, crttrack ]
-   e1: [ out1, rootout ]
-   trigger_paths: [p1]
-   end_paths: [ a1 ]
+  p1: [ ]
+  e1: [ out1, rootout ]
+  trigger_paths: [p1]
+  end_paths: [ a1 ]
 }
 
 outputs:
