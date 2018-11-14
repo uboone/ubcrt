@@ -49,7 +49,7 @@
 #include <utility>
 #include <typeinfo>
 
-const int kMaxFEB = 10;
+
 const int kMaxCRThits = 1000;
 const int kMaxCRTtracks = 1000;
 const int kMaxTPCtracks = 100;
