@@ -49,6 +49,7 @@
 #include <utility>
 #include <typeinfo>
 
+
 const int kMaxCRThits = 1000;
 const int kMaxCRTtracks = 1000;
 const int kMaxTPCtracks = 100;
@@ -93,6 +94,7 @@ private:
   std::string  data_labelhit_;
   std::string  data_label_flash_;
   std::string  data_label_DAQHeader_;
+  bool fIsMC;
   int fHardDelay_;
   int verbose_;
   
@@ -136,6 +138,12 @@ private:
   double hit_posx[kMaxCRThits];
   double hit_posy[kMaxCRThits];
   double hit_posz[kMaxCRThits]; 
+  int hit_feb1[kMaxCRThits]; 
+  int hit_strip1[kMaxCRThits]; 
+  int hit_feb2[kMaxCRThits]; 
+  int hit_strip2[kMaxCRThits]; 
+  double hit_pe1[kMaxCRThits]; 
+  double hit_pe2[kMaxCRThits]; 
   // CRT tracks
   int nCRTtracks;
   double ct_theta[kMaxCRTtracks];
@@ -179,6 +187,7 @@ TrackDump::TrackDump(fhicl::ParameterSet const & p)
     data_labelhit_(p.get<std::string>("data_labelhit")),
     data_label_flash_(p.get<std::string>("data_label_flash_")),
     data_label_DAQHeader_(p.get<std::string>("data_label_DAQHeader_")),
+    fIsMC(p.get< bool >("IsMC", false)), 
     fHardDelay_(p.get<int>("fHardDelay",40000)),
     verbose_(p.get<int>("verbose"))
     // More initializers here.    
@@ -197,48 +206,54 @@ void TrackDump::analyze(art::Event const & evt)
   art::Timestamp evtTime = evt.time();
   auto evt_time_sec = evtTime.timeHigh();
   auto evt_time_nsec = evtTime.timeLow();
-
+  double evt_timeGPS_sec = 0.0;
+  double evt_timeGPS_nsec = 0.0;
+  double evt_timeNTP_sec = 0.0;
+  double evt_timeNTP_nsec = 0.0;
+  double timstp_diff = 0.0;
+  
+  if (!fIsMC) {  // get DAQ timestamps if this is data
    //get DAQ Header                                                                  
   //Commentar para old swizzler, sin DAQ Header
-  art::Handle< raw::DAQHeaderTimeUBooNE > rawHandle_DAQHeader;  
-  evt.getByLabel(data_label_DAQHeader_, rawHandle_DAQHeader);
-  
-
-  //check to make sure the data we asked for is valid 
-  if(!rawHandle_DAQHeader.isValid()){
-    std::cout << "Run " << evt.run() << ", subrun " << evt.subRun()
-	      << ", event " << evt.event() << " has zero"
-	      << " DAQHeaderTimeUBooNE  " << " in with label " << data_label_DAQHeader_ << std::endl;    
-    return;
-  }
-  
-  
-  raw::DAQHeaderTimeUBooNE const& my_DAQHeader(*rawHandle_DAQHeader);
-  art::Timestamp evtTimeGPS = my_DAQHeader.gps_time();  
-  double evt_timeGPS_sec = evtTimeGPS.timeHigh();
-  double evt_timeGPS_nsec = (double)evtTimeGPS.timeLow();
-  art::Timestamp evtTimeNTP = my_DAQHeader.ntp_time();
-  double evt_timeNTP_sec = evtTimeNTP.timeHigh();
-  double evt_timeNTP_nsec = (double)evtTimeNTP.timeLow();
-  double timstp_diff = std::abs(evt_timeGPS_nsec - evt_timeNTP_nsec);
-  
-  if(verbose_==1){
-    std::cout<< "Run:  "<<frunNum << "   subRun: " <<fsubRunNum<<std::endl;
-    std::cout<<"event: "<<fEvtNum <<std::endl;
-    std::cout.precision(19);
-    std::cout<<"  GPS time second:  "<<evt_timeGPS_sec<<std::endl;
-    std::cout<<"  GPS time nano_second:  "<<evt_timeGPS_nsec<<std::endl;
-    std::cout<<"  NTP time second:  "<<evt_timeNTP_sec<<std::endl;    
-    std::cout<<"  NTP time nano_second:  "<<evt_timeNTP_nsec<<std::endl;
-    std::cout<<"  event time second:  "<<evt_time_sec<<std::endl;
-    std::cout<<"  event time nano_second:  "<<evt_time_nsec<<std::endl;
-    std::cout<<"  difference between GPS and NTP:  "<<evt_timeGPS_nsec - evt_timeNTP_nsec<<" ns"<<std::endl;
-    std::cout<<"  ABS difference between GPS and NTP:  "<<timstp_diff<<" ns"<<std::endl;
+    art::Handle< raw::DAQHeaderTimeUBooNE > rawHandle_DAQHeader;  
+    evt.getByLabel(data_label_DAQHeader_, rawHandle_DAQHeader);
     
-    if( (evt_time_sec==evt_timeGPS_sec) && (evt_time_nsec==evt_timeGPS_nsec))  std::cout<<" Event time type is: GPS  "<<std::endl;
-    if( (evt_time_sec==evt_timeNTP_sec) && (evt_time_nsec==evt_timeNTP_nsec))  std::cout<<" Event time type is: NTP  "<<std::endl;
-    //getchar();
-  }  
+    //check to make sure the data we asked for is valid 
+    if(!rawHandle_DAQHeader.isValid()){
+      std::cout << "Run " << evt.run() << ", subrun " << evt.subRun()
+		<< ", event " << evt.event() << " has zero"
+		<< " DAQHeaderTimeUBooNE  " << " in with label " << data_label_DAQHeader_ << std::endl;    
+      return;
+    }
+    
+    
+    raw::DAQHeaderTimeUBooNE const& my_DAQHeader(*rawHandle_DAQHeader);
+    art::Timestamp evtTimeGPS = my_DAQHeader.gps_time();  
+    evt_timeGPS_sec = evtTimeGPS.timeHigh();
+    evt_timeGPS_nsec = (double)evtTimeGPS.timeLow();
+    art::Timestamp evtTimeNTP = my_DAQHeader.ntp_time();
+    evt_timeNTP_sec = evtTimeNTP.timeHigh();
+    evt_timeNTP_nsec = (double)evtTimeNTP.timeLow();
+    timstp_diff = std::abs(evt_timeGPS_nsec - evt_timeNTP_nsec);
+    
+    if(verbose_==1){
+      std::cout<< "Run:  "<<frunNum << "   subRun: " <<fsubRunNum<<std::endl;
+      std::cout<<"event: "<<fEvtNum <<std::endl;
+      std::cout.precision(19);
+      std::cout<<"  GPS time second:  "<<evt_timeGPS_sec<<std::endl;
+      std::cout<<"  GPS time nano_second:  "<<evt_timeGPS_nsec<<std::endl;
+      std::cout<<"  NTP time second:  "<<evt_timeNTP_sec<<std::endl;    
+      std::cout<<"  NTP time nano_second:  "<<evt_timeNTP_nsec<<std::endl;
+      std::cout<<"  event time second:  "<<evt_time_sec<<std::endl;
+      std::cout<<"  event time nano_second:  "<<evt_time_nsec<<std::endl;
+      std::cout<<"  difference between GPS and NTP:  "<<evt_timeGPS_nsec - evt_timeNTP_nsec<<" ns"<<std::endl;
+      std::cout<<"  ABS difference between GPS and NTP:  "<<timstp_diff<<" ns"<<std::endl;
+      
+      if( (evt_time_sec==evt_timeGPS_sec) && (evt_time_nsec==evt_timeGPS_nsec))  std::cout<<" Event time type is: GPS  "<<std::endl;
+      if( (evt_time_sec==evt_timeNTP_sec) && (evt_time_nsec==evt_timeNTP_nsec))  std::cout<<" Event time type is: NTP  "<<std::endl;
+      //getchar();
+    }  
+  }
   
 
   if (fSaveTPCTrackInfo) {
@@ -343,16 +358,88 @@ void TrackDump::analyze(art::Event const & evt)
     hit_posx[j]=my_CRTHit.x_pos;
     hit_posy[j]=my_CRTHit.y_pos;
     hit_posz[j]=my_CRTHit.z_pos;
+    hit_feb1[j]=int(my_CRTHit.feb_id[0]);
+    hit_feb2[j]=int(my_CRTHit.feb_id[1]);
+    
+    if (fIsMC) { 
+
+    //    std::map<uint8_t, std::vector<std::pair<int,float>>> pesmap;	      
+    std::vector<std::pair<int,float>> pes = my_CRTHit.pesmap.find(hit_feb1[j])->second;  //vector of pairs  
+    std::pair<int,float> ind_pes1 = pes[0];
+    std::pair<int,float> ind_pes2 = pes[1];
+
+    // std::cout << "first strip: feb  " << hit_feb1[j] << " map index feb " <<
+    //   int(my_CRTHit.pesmap.find(hit_feb1[j])->first) << " sipm no " <<
+    //   ind_pes1.first << " pes " << ind_pes1.second << " sipm no " <<
+    //   ind_pes2.first << " pes " << ind_pes2.second << " strip no " <<
+    //   int(0.5*(ind_pes1.first)) << std::endl;
+
+    hit_strip1[j]=int(0.5*(ind_pes1.first));
+    hit_pe1[j]=ind_pes1.second+ind_pes2.second;
+    pes = my_CRTHit.pesmap.find(hit_feb2[j])->second;
+    ind_pes1 = pes[0]; ind_pes2 = pes[1];
+    hit_strip2[j]=int(0.5*ind_pes1.first);
+    hit_pe2[j]=ind_pes1.second+ind_pes2.second;
+
+    // std::cout << "second strip: feb " << hit_feb2[j] << " map index feb " <<
+    //   int(my_CRTHit.pesmap.find(hit_feb2[j])->first) << " sipm no " <<
+    //   ind_pes1.first << " pes " << ind_pes1.second << " simp no " <<
+    //   ind_pes2.first << " pes " << ind_pes2.second << " strip no " <<
+    //   int(0.5*ind_pes1.first) << std::endl;
+    }
+    else {
+      //  Data has info from all 32 sipms with no indication
+      //   which ones were used to make this particular hit
+      //
+      // use the largest pe deposit on the feb, not necessarily correct
+      
+    //    std::map<uint8_t, std::vector<std::pair<int,float>>> pesmap;	       //vector of pairs  
+      std::vector<std::pair<int,float>> pes1 = my_CRTHit.pesmap.find(hit_feb1[j])->second; 
+      float hitpe1 = 0; int hitsipm1=-1;
+      for (uint isp=0;isp<pes1.size();isp+=2) {
+	std::pair<int,float> ind_pes1=pes1[isp];
+	std::pair<int,float> ind_pes2=pes1[isp+1];
+	// std::cout << isp << " " << ind_pes1.first << " " << ind_pes1.second << std::endl;
+	// std::cout << isp+1 << " " << ind_pes2.first << " " << ind_pes2.second << std::endl;
+	float tot = ind_pes1.second+ind_pes2.second;
+	if (tot>hitpe1) {
+	  hitpe1=tot;
+	  hitsipm1=0.5*ind_pes1.first;
+	}
+      }
+      hit_strip1[j]=-1;hit_pe1[j]=-1;
+      if (hitsipm1>=0) {hit_strip1[j]=hitsipm1;       hit_pe1[j]=hitpe1;}
+      //
+      std::vector<std::pair<int,float>> pes2 = my_CRTHit.pesmap.find(hit_feb2[j])->second; 
+      float hitpe2 = 0; int hitsipm2=-1;
+      for (uint isp=0;isp<pes2.size();isp+=2) {
+	std::pair<int,float> ind_pes1=pes2[isp];
+	std::pair<int,float> ind_pes2=pes2[isp+1];
+	float tot = ind_pes1.second+ind_pes2.second;
+	if (tot>hitpe2) {
+	  hitpe2=tot;
+	  hitsipm2=0.5*ind_pes1.first;
+	}
+      }
+      hit_strip2[j]=-1; hit_pe2[j]=-1;
+      if (hitsipm2>=0) {hit_strip2[j]=hitsipm2;      hit_pe2[j]=hitpe2;}
+      //
+	// std::cout << " feb1 strip1 pe1 " << hit_feb1[j] << " " << hit_strip1[j] << " " << 
+	//   hit_pe1[j] << std::endl;
+	// std::cout << " feb2 strip2 pe2 " << hit_feb2[j] << " " << hit_strip2[j] << " " << 
+	//   hit_pe2[j] << std::endl;
+      //
+    } // if data
+    
 
     //fillhistograms
     if (my_CRTHit.plane==0) HitDistBot->Fill(my_CRTHit.z_pos,my_CRTHit.x_pos);
     else if (my_CRTHit.plane==1) HitDistFT->Fill(my_CRTHit.z_pos,my_CRTHit.y_pos);
     else if (my_CRTHit.plane==2) HitDistPipe->Fill(my_CRTHit.z_pos,my_CRTHit.y_pos);
     else if (my_CRTHit.plane==3) HitDistTop->Fill(my_CRTHit.z_pos,my_CRTHit.x_pos);
+  }// loop over hits
 
 
-
-  }
 
   //get CRTTracks
   art::Handle< std::vector<crt::CRTTrack> > rawHandle_track;
@@ -443,6 +530,12 @@ void TrackDump::beginJob()
   fTree->Branch("hit_posx",hit_posx,"hit_posx[nCRThits]/D");
   fTree->Branch("hit_posy",hit_posy,"hit_posy[nCRThits]/D");
   fTree->Branch("hit_posz",hit_posz,"hit_posz[nCRThits]/D");
+  fTree->Branch("hit_feb1",hit_feb1,"hit_feb1[nCRThits]/I");
+  fTree->Branch("hit_feb2",hit_feb2,"hit_feb2[nCRThits]/I");
+  fTree->Branch("hit_strip1",hit_strip1,"hit_strip1[nCRThits]/I");
+  fTree->Branch("hit_strip2",hit_strip2,"hit_strip2[nCRThits]/I");
+  fTree->Branch("hit_pe1",hit_pe1,"hit_pe1[nCRThits]/D");
+  fTree->Branch("hit_pe2",hit_pe2,"hit_pe2[nCRThits]/D");
   // CRT tracks
   fTree->Branch("nCRTtracks",&nCRTtracks,"nCRTtracks/I");
   fTree->Branch("ct_theta",ct_theta,"ct_theta[nCRTtracks]/D");
@@ -547,8 +640,8 @@ void TrackDump::beginJob()
   HitDistPipe->SetOption("COLZ");
 
   HitDistTop = tfs->make<TH2F>("hTop","Top",125,-701+205*inch,-701+205*inch+125*11.38,80,2-170-300+50.4*inch,2-170-300+50.4*inch+80*11.38);
-  HitDistTop->GetXaxis()->SetTitle("Lenght along the beam (cm)");
-  HitDistTop->GetYaxis()->SetTitle("Lenght along the drift (cm)");
+  HitDistTop->GetXaxis()->SetTitle("Length along the beam (cm)");
+  HitDistTop->GetYaxis()->SetTitle("Length along the drift (cm)");
   HitDistTop->GetZaxis()->SetTitle("Entries/bin");
   HitDistTop->SetOption("COLZ");
 
@@ -582,6 +675,12 @@ void TrackDump::ResetVars()
     hit_posx[i] = -99999.;
     hit_posy[i] = -99999.;
     hit_posz[i] = -99999.;
+    hit_feb1[i] = -999;
+    hit_feb2[i] = -999;
+    hit_strip1[i] = -1;
+    hit_strip2[i] = -1;
+    hit_pe1[i] = -999;
+    hit_pe2[i] = -999;
   }
 
 
