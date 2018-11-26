@@ -51,6 +51,7 @@
 
 
 const int kMaxCRThits = 1000;
+const int kMaxCRTtzs = 1000;
 const int kMaxCRTtracks = 1000;
 const int kMaxTPCtracks = 100;
 
@@ -91,6 +92,7 @@ private:
   std::string  fTrackModuleLabel;
   bool fSaveTPCTrackInfo;
   std::string  data_labeltrack_;
+  std::string  data_labeltzero_;
   std::string  data_labelhit_;
   std::string  data_label_flash_;
   std::string  data_label_DAQHeader_;
@@ -144,6 +146,19 @@ private:
   int hit_strip2[kMaxCRThits]; 
   double hit_pe1[kMaxCRThits]; 
   double hit_pe2[kMaxCRThits]; 
+  // CRT Tzeros
+  int nCRTtzeros;
+  double tz_time_s[kMaxCRTtzs];
+  double tz_time0[kMaxCRTtzs];
+  double tz_time1[kMaxCRTtzs];
+  int tz_hits0[kMaxCRTtzs];
+  int tz_hits1[kMaxCRTtzs];
+  int tz_hits2[kMaxCRTtzs];
+  int tz_hits3[kMaxCRTtzs];
+  double tz_pes0[kMaxCRTtzs];
+  double tz_pes1[kMaxCRTtzs];
+  double tz_pes2[kMaxCRTtzs];
+  double tz_pes3[kMaxCRTtzs];
   // CRT tracks
   int nCRTtracks;
   double ct_theta[kMaxCRTtracks];
@@ -184,6 +199,7 @@ TrackDump::TrackDump(fhicl::ParameterSet const & p)
     fTrackModuleLabel(p.get<std::string>("TrackModuleLabel")),
     fSaveTPCTrackInfo(p.get< bool >("SaveTPCTrackInfo", false)), 
     data_labeltrack_(p.get<std::string>("data_labeltrack")),
+    data_labeltzero_(p.get<std::string>("data_labeltzero")),
     data_labelhit_(p.get<std::string>("data_labelhit")),
     data_label_flash_(p.get<std::string>("data_label_flash_")),
     data_label_DAQHeader_(p.get<std::string>("data_label_DAQHeader_")),
@@ -439,6 +455,42 @@ void TrackDump::analyze(art::Event const & evt)
   }// loop over hits
 
 
+  //get CRT tzeros
+  art::Handle< std::vector<crt::CRTTzero> > rawHandle_tz;
+  evt.getByLabel(data_labeltzero_, rawHandle_tz); 
+  
+  //check to make sure the data we asked for is valid
+  if(!rawHandle_tz.isValid()){
+    std::cout << "Run " << evt.run() << ", subrun " << evt.subRun()
+              << ", event " << evt.event() << " has zero"
+              << " CRTtzeros " << " in module " << data_labeltzero_ << std::endl;
+    std::cout << std::endl;
+    return;
+  }
+  std::vector<crt::CRTTzero> const& CRTtzCollection(*rawHandle_tz);
+  if(verbose_==1){ 
+    std::cout<<"  CRTtzCollection.size()  "<<CRTtzCollection.size()<<std::endl; 
+    //  getchar();   
+  }    //end get CRTTzeros
+
+
+  nCRTtzeros = CRTtzCollection.size();
+  if (nCRTtzeros>kMaxCRTtzs) nCRTtzeros=kMaxCRTtzs;
+  for(int j = 0; j < nCRTtzeros; j++) {
+    crt::CRTTzero my_CRTtz = CRTtzCollection[j];
+    tz_time_s[j]=(double)my_CRTtz.ts0_s;
+    tz_time0[j]=(double)my_CRTtz.ts0_ns;
+    tz_time1[j]=(double)my_CRTtz.ts1_ns;
+      tz_hits0[j]=my_CRTtz.nhits[0];
+      tz_hits1[j]=my_CRTtz.nhits[1];
+      tz_hits2[j]=my_CRTtz.nhits[2];
+      tz_hits3[j]=my_CRTtz.nhits[3];
+      tz_pes0[j]=my_CRTtz.pes[0];
+      tz_pes1[j]=my_CRTtz.pes[1];
+      tz_pes2[j]=my_CRTtz.pes[2];
+      tz_pes3[j]=my_CRTtz.pes[3];
+  }
+
 
   //get CRTTracks
   art::Handle< std::vector<crt::CRTTrack> > rawHandle_track;
@@ -535,6 +587,19 @@ void TrackDump::beginJob()
   fTree->Branch("hit_strip2",hit_strip2,"hit_strip2[nCRThits]/I");
   fTree->Branch("hit_pe1",hit_pe1,"hit_pe1[nCRThits]/D");
   fTree->Branch("hit_pe2",hit_pe2,"hit_pe2[nCRThits]/D");
+  // CRT tzeros
+  fTree->Branch("nCRTtzeros",&nCRTtzeros,"nCRTtzeros/I");
+  fTree->Branch("tz_time_s",tz_time_s,"tz_time_s[nCRTtzeros]/D");
+  fTree->Branch("tz_time0",tz_time0,"tz_time0[nCRTtzeros]/D");
+  fTree->Branch("tz_time1",tz_time1,"tz_time1[nCRTtzeros]/D");
+  fTree->Branch("tz_hits0",tz_hits0,"tz_hits0[nCRTtzeros]/I");
+  fTree->Branch("tz_hits1",tz_hits1,"tz_hits1[nCRTtzeros]/I");
+  fTree->Branch("tz_hits2",tz_hits2,"tz_hits2[nCRTtzeros]/I");
+  fTree->Branch("tz_hits3",tz_hits3,"tz_hits3[nCRTtzeros]/I");
+  fTree->Branch("tz_pes0",tz_pes0,"tz_pes0[nCRTtzeros]/D");
+  fTree->Branch("tz_pes1",tz_pes1,"tz_pes1[nCRTtzeros]/D");
+  fTree->Branch("tz_pes2",tz_pes2,"tz_pes2[nCRTtzeros]/D");
+  fTree->Branch("tz_pes3",tz_pes3,"tz_pes3[nCRTtzeros]/D");
   // CRT tracks
   fTree->Branch("nCRTtracks",&nCRTtracks,"nCRTtracks/I");
   fTree->Branch("ct_theta",ct_theta,"ct_theta[nCRTtracks]/D");

@@ -17,7 +17,7 @@ physics:
     {			
       module_type: TrackDump
       data_labeltrack: "crttrack"
-      ##data_labelhit: "crthit"
+      data_labeltzero: "crttzero"
       data_labelhit: "merger"
       data_label_flash_: "opflash"
       data_label_DAQHeader_: "daq"
