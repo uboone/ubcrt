@@ -9,7 +9,8 @@ include_directories( $ENV{IFDHC_FQ_DIR}/inc )
 
 art_make( BASENAME_ONLY
     EXCLUDE 
-        CRTXSEC_module.cc 
+        CRTAnaFun.cc
+	CRTXSEC_module.cc 
     LIB_LIBRARIES
         larcorealg_Geometry
         larcore_Geometry_Geometry_service
@@ -29,9 +30,23 @@ art_make( BASENAME_ONLY
         cetlib cetlib_except
 )
 
+art_make_library( 
+    LIBRARY_NAME 
+        CRTAna
+    SOURCE
+        CRTAnaFun.cc 
+    LIBRARIES 
+        #larcorealg_Geometry
+        ${MF_MESSAGELOGGER}
+        ${FHICLCPP}
+        ${ROOT_BASIC_LIB_LIST}
+        ${ROOT_GEOM}
+        cetlib cetlib_except
+)
+
 
 simple_plugin(CRTXSEC "module"
-            CRT
+            CRTAna
           bernfebdaq-core_Overlays
           art_Framework_Services_Optional
           art_Framework_Services_Registry
