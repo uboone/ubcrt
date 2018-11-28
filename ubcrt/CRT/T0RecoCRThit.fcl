@@ -1,0 +1,54 @@
+# FHiCL document used to run the "driver" executable. To learn more
+#  about the FHiCL language, please look at
+#  cdcvs.fnal.gov/redmine/documents/327 , the "FHiCL Quick Start Guide"
+
+t0recocrthit_data:		
+    {			
+      module_type: T0recoCRThit
+      data_label_TPCtrack: "pandoraCosmic"
+      data_label_CRTtzero: "crttzero"
+      data_label_CRThit: "merger"
+      data_label_flash: "opflashCosmic"
+      data_label_DAQHeader: "daq"
+      fHardDelay: 40000   #BNB data is 35520?
+      fTimeZeroOffset: 69100   #used for fTimeSelect=0
+      fverbose: 0
+	 # set =0 for GPS ref and =1 to use trigger time
+      fTimeSelect: 0
+	 # distance squared in cm^2 from track extrapolation to CRT hit 
+	 #   must be less than this to be considered a match
+      fMatchCut: 100
+      fMCfudge: 1.0   # default is 1.0
+	 # alignment offsets for CRT planes in cm, default is 0.0 for all
+      AlignBotX:    -4.4
+      AlignBotZ:    30.2
+      AlignAnodeY:  20.0
+      AlignAnodeZ:  5.7
+      AlignCathY:   -9.8
+      AlignCathZ:   0.4
+      AlignTopX:   20.8
+      AlignTopZ:   -28.1
+     }
+
+t0recocrthit_sim:		
+    {			
+      module_type: T0recoCRThit
+      data_label_TPCtrack: "pandoraCosmic"
+      data_label_CRTtzero: "crttzero"
+      data_label_CRThit: "merger"
+      data_label_flash: "opflashCosmic"
+      data_label_DAQHeader: "daq"
+      fHardDelay: 0   #BNB data is 35520?
+      fTimeZeroOffset: 0   #used for fTimeSelect=0
+      fverbose: 0
+	 # set =0 for GPS ref and =1 to use trigger time
+      fTimeSelect: 1
+	 # distance squared in cm^2 from track extrapolation to CRT hit 
+	 #   must be less than this to be considered a match
+      fMatchCut: 100
+#      fMatchCut: 200
+      fMCfudge: 0.2
+   # alignment offsets for CRT planes in cm, default is 0.0 for all
+   #  leave at 0.0 for simulated data
+     }
+

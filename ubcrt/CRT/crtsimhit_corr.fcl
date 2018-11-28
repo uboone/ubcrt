@@ -1,0 +1,8 @@
+crthitcorr_timebugfix:
+{
+    module_type: CRTSimHitCorr
+    CrtHitsIn_Label: "crthitsim"
+    ScaleMCtime: true
+    verbose: 0
+
+}
