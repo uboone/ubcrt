@@ -193,14 +193,12 @@ bool UBCRTCosmicFilter::filter(art::Event &e)
   double evt_timeGPS_nsec = 0.;
   // if we are using data
   if (fDAQHeaderProducer != "") {
-
     art::Handle<raw::DAQHeaderTimeUBooNE> rawHandle_DAQHeader;
     e.getByLabel(fDAQHeaderProducer, rawHandle_DAQHeader);
     if(!rawHandle_DAQHeader.isValid()) {
       e.put(std::move(crthit_flash_assn_v));
       return !fuseAsFilter;
     }
-
     raw::DAQHeaderTimeUBooNE const &my_DAQHeader(*rawHandle_DAQHeader);
     art::Timestamp evtTimeGPS = my_DAQHeader.gps_time();
     evt_timeGPS_nsec = evtTimeGPS.timeLow();
