@@ -10,7 +10,8 @@ include_directories( $ENV{IFDHC_FQ_DIR}/inc )
 art_make( BASENAME_ONLY
     EXCLUDE 
         CRTAnaFun.cc
-	CRTXSEC_module.cc 
+	CRTXSEC_module.cc
+  CRTtoTTreeVector_module.cc
     LIB_LIBRARIES
         larcorealg_Geometry
         larcore_Geometry_Geometry_service
@@ -47,6 +48,14 @@ art_make_library(
 
 simple_plugin(CRTXSEC "module"
             CRTAna
+          bernfebdaq-core_Overlays
+          art_Framework_Services_Optional
+          art_Framework_Services_Registry
+          art_Framework_Services_Optional_TFileService_service
+          ${ROOT_BASIC_LIB_LIST} )
+          
+simple_plugin(CRTtoTTreeVector "module"
+            CRT
           bernfebdaq-core_Overlays
           art_Framework_Services_Optional
           art_Framework_Services_Registry
