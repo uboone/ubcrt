@@ -262,7 +262,7 @@ namespace crt{
 	//  UseEdep flag let's us do a binary response
 	double qr = fUseEdep ? 1.0 * eDep / fQ0 : 1.0;
 	double npeExpected = (fNpeScaleNorm / pow(distToReadout - fNpeScaleShift, 2) * qr);
-	//	if (fverbose) std::cout << " eDep " << eDep << " eDep/fQ0=" << eDep/fQ0 << " npe exp =" << npeExpected << std::endl;
+	if (fverbose) std::cout << " eDep " << eDep << " eDep/fQ0=" << eDep/fQ0 << " npe exp =" << npeExpected << std::endl;
 
 	// Put PE on channels weighted by distance
 	double d0 = abs(-adsGeo.HalfWidth1() - svHitPosLocal[0]);  // L
@@ -301,7 +301,7 @@ namespace crt{
 	  q1=fQPed + fQSlope * npe1;
 	}
 
-	if (fverbose) std::cout << "npe exp = " << npeExpected << " q0,q1 " << q0 << " " << q1 << 
+	if (fverbose) std::cout <<  " npe exp = " << npeExpected << " q0,q1 " << q0 << " " << q1 << 
 	  " d0,d1 " << d0 << " " << d1 << std::endl;
       
 	// NOT The time relative to trigger in trigger ticks 
