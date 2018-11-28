@@ -107,6 +107,10 @@ CRTTzeroProducer::CRTTzeroProducer(fhicl::ParameterSet const & p)
 void CRTTzeroProducer::produce(art::Event & evt)
 {
   // Implementation of required member function here.
+
+  //Products 
+  std::unique_ptr<std::vector<crt::CRTTzero> > CRTTzeroCol(new std::vector<crt::CRTTzero>);
+  std::unique_ptr<art::Assns<crt::CRTTzero, crt::CRTHit>> outputHits(new art::Assns<crt::CRTTzero, crt::CRTHit>);
   
   art::Handle< std::vector<crt::CRTHit> > rawHandle;
   evt.getByLabel(data_label_, rawHandle);   
@@ -116,18 +120,17 @@ void CRTTzeroProducer::produce(art::Event & evt)
               << ", event " << evt.event() << " has zero"
               << " CRTHits " << " in module " << data_label_ << std::endl;
     std::cout << std::endl;
+
+    if(store_tzero_ == 1) {
+      evt.put(std::move(CRTTzeroCol));
+      evt.put(std::move(outputHits));
+    }
     return;
   }
   
   //get better access to the data               
   std::vector<crt::CRTHit> const& CRTHitCollection(*rawHandle);
 
-  //CRTTzero collection on this event                                                              
-  std::unique_ptr<std::vector<crt::CRTTzero> > CRTTzeroCol(new std::vector<crt::CRTTzero>);
-  
-
-  // Output collections  
-  std::unique_ptr<art::Assns<crt::CRTTzero, crt::CRTHit>> outputHits(new art::Assns<crt::CRTTzero, crt::CRTHit>);
   //  auto outputHits    = std::make_unique<art::Assns<crt::CRTTzero, crt::CRTHit>>();
   // need later version of art (later than v2_05_01) to use PtrMaker.
   // do it the old-fashioned way instead
