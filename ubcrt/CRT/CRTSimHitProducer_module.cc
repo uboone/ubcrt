@@ -552,8 +552,8 @@ namespace crt{
     crtHit.ts0_s_corr = 0;
     crtHit.ts0_ns = 0;
     crtHit.ts0_ns_corr = 0;
-    crtHit.ts1_ns = time * 0.5 * 10e3;
-    crtHit.ts0_s = time * 0.5 * 10e-6; 
+    crtHit.ts1_ns = time * 1e3;
+    crtHit.ts0_s = time * 1e-6; 
     crtHit.plane = plane;
     crtHit.x_pos = x;
     crtHit.x_err = ex;
