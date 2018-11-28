@@ -241,15 +241,17 @@ namespace crt{
     double readoutWindow  = (double)fDetectorProperties->ReadOutWindowSize();
     double driftTimeTicks = 2.0*(2.*fGeometryService->DetHalfWidth()+3.)/fDetectorProperties->DriftVelocity();
 
-    // Retrieve list of CRT hits
+    // Place to store CRThits as they are created
+    std::unique_ptr<std::vector<crt::CRTHit>> CRTHitcol( new std::vector<crt::CRTHit>);
+
+    //useful
+    std::map<int, std::vector<CRTStrip>> taggerStrips;
+
+    // Retrieve list of SiPM hits
     art::Handle< std::vector<crt::CRTSimData>> crtListHandle;
     std::vector<art::Ptr<crt::CRTSimData> > crtList;
     if (event.getByLabel(fCrtModuleLabel, crtListHandle))
       art::fill_ptr_vector(crtList, crtListHandle);
-
-    // Place to store CRThits as they are created
-    std::unique_ptr<std::vector<crt::CRTHit>> CRTHitcol( new std::vector<crt::CRTHit>);
-    std::map<int, std::vector<CRTStrip>> taggerStrips;
 
     // Loop over all the SiPM hits in 2 (should be in pairs due to trigger)
     if(fVerbose) std::cout<<"Number of SiPM hits = "<<crtList.size()<< std::endl;
