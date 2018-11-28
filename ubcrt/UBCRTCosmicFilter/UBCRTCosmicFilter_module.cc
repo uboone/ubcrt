@@ -199,8 +199,6 @@ bool UBCRTCosmicFilter::filter(art::Event &e)
       e.put(std::move(crthit_flash_assn_v));
       return !fuseAsFilter;
     }
-    raw::DAQHeaderTimeUBooNE const &my_DAQHeader(*rawHandle_DAQHeader);
-    art::Timestamp evtTimeGPS = my_DAQHeader.gps_time();
     evt_timeGPS_nsec = evtTimeGPS.timeLow();
   }
   // else (we are using truth)
