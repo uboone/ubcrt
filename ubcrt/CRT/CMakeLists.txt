@@ -40,6 +40,7 @@ art_make( BASENAME_ONLY
         T0recoCRTHit_module.cc                     
         T0recoCRTAnal_module.cc 
 	CRTTiming_module.cc
+        T0recoCRTHitAnal_module.cc 
     LIBRARY_NAME  
         CRTData
     LIB_LIBRARIES
@@ -348,6 +349,14 @@ simple_plugin(CRTTriggerTimeProducer "module"
           art_root_io_tfile_support ${ROOT_CORE}
           art_Framework_Services_Registry
           art_root_io_TFileService_service
+          ${ROOT_BASIC_LIB_LIST} )
+
+simple_plugin(T0recoCRTHitAnal "module"
+            CRT
+          bernfebdaq-core_Overlays
+          art_Framework_Services_Optional
+          art_Framework_Services_Registry
+          art_Framework_Services_Optional_TFileService_service
           ${ROOT_BASIC_LIB_LIST} )
 
 simple_plugin( CRTMerger "module"

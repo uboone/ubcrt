@@ -47,7 +47,7 @@ microboone_crtdetsim_binary:
   QRMS: 0.0
 # SiPM hit threshold - is ~1.5 pe in hardware on an individual sipm
 #  QThreshold: 200.0  # includes pedestal value QPed
-  QThreshold: 80.0  # includes pedestal value QPed
+  QThreshold: 40.0  # includes pedestal value QPed, in ADC
   // Coincidence window for two fibers on a strip [ticks]
   StripCoincidenceWindow: 30.0
   // Coincidence for hits in a tagger [ticks]
