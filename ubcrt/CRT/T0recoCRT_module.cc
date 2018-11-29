@@ -44,7 +44,6 @@
 #include "ubcrt/CRT/CRTAuxFunctions.hh"
 #include "ubobj/RawData/DAQHeaderTimeUBooNE.h"
 
-
 //Root                                                                                                               
 #include "TTree.h"
 #include "TH1F.h"

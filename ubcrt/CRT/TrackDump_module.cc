@@ -190,6 +190,7 @@ private:
   double trktheta[kMaxTPCtracks];
   double trkphi[kMaxTPCtracks];
   double trklen[kMaxTPCtracks];
+  double tzero[kMaxTPCtracks];
   
 };
 
@@ -317,7 +318,7 @@ void TrackDump::analyze(art::Event const & evt)
       trkenddcosz[j]=dir_end.Z();
       trktheta[j]=dir_start.Theta();
       trkphi[j]=dir_start.Phi();
-      
+      tzero[j]=-9999.0;
     }
   }   //  if (saveTPCtrackinfo)
 
@@ -633,6 +634,7 @@ void TrackDump::beginJob()
   fTree->Branch("trktheta",trktheta,"trktheta[nTPCtracks]/D");
   fTree->Branch("trkphi",trkphi,"trkphi[nTPCtracks]/D");
   fTree->Branch("trklen",trklen,"trklen[nTPCtracks]/D");
+  fTree->Branch("tzero",tzero,"tzero[nTPCtracks]/D");
   }
 
 
