@@ -15,7 +15,7 @@ events_to_generate: 200
 run_number: 101
 
 services:{
-	 TFileService: { fileName: "MergeTest.root" }
+	 TFileService: { fileName: "CRTTimingPlots.root" }
 }
 
 physics:	
@@ -24,15 +24,9 @@ physics:
   {
     crt:		
     {			
-      module_type: MergeTest
-      data_labelhit: "merger"
-      ##data_label_flash_: "opflashBeam" ##original
-      data_label_flash_: "simpleFlashCosmic"   ##cosmic actvity
-      data_label_DAQHeader_: "daq"
+      module_type: CRTTiming	
+      data_label_crthit: "crthit"
       fHardDelay: 40000
-      fShowerCut: 200
-      fPEsCut: 5
-      verbose: 0
      }
   }
 
@@ -69,7 +63,7 @@ source:
   module_type: RootInput
 }
 
-process_name: MergeTest
+process_name: CRTTimingPlots
 
 
 
