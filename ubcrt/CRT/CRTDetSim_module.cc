@@ -63,6 +63,7 @@ namespace crt{
 */
 
   CRTDetSim::CRTDetSim(const fhicl::ParameterSet& pSet)
+    : EDProducer{pSet}
   {
     art::ServiceHandle<rndm::NuRandomService> Seeds;
     Seeds->createEngine(*this, "HepJamesRandom", "crt", pSet, "Seed");
