@@ -4,22 +4,10 @@
 
 find $MRB_BUILDDIR/ubcrt/job -name \*.fcl -print | while read fcl
 do
-  shortname=`basename ${fcl}`
-  if [[ ${shortname} == "TrackDump.fcl" ]] || \
-     [[ ${shortname} == "CRTTiming.fcl" ]] || \
-     [[ ${shortname} == "runCRTMerger_v06_26_01_13.fcl" ]] || \
-     [[ ${shortname} == "run_G4VetoSignalImpact.fcl" ]] || \
-     [[ ${shortname} == "testmerger.fcl" ]] || \
-     [[ ${shortname} == "TimeExtraction.fcl" ]] || \
-     [[ ${shortname} == "MergeTest.fcl" ]] 
-  then
-    echo "Skipping ${shortname}"
-    continue
-  fi
-
   echo "Testing fcl file $fcl"
 
   # Parse this fcl file.
+
   fclout=`basename ${fcl}`.out
   larout=`basename ${fcl}`.lar.out
   larerr=`basename ${fcl}`.lar.err
@@ -34,13 +22,6 @@ do
     exit $stat
   fi
 
-  # Flag files that have services.user blocks.
-
-  if grep -q user: $fclout; then
-    echo "Deprecated services.user found in ${fcl}."
-    exit 1
-  fi
-
   # Check for certain kinds of diagnostic output.
 
   if egrep -iq 'deprecated|no longer supported' $larerr; then
@@ -48,11 +29,4 @@ do
     exit 1
   fi
 
-  # We consider it an error if the diagnostic output from lar has more than two lines.
-
-  if [ `cat $larerr | wc -l` -gt 2 ]; then
-    echo "Excess diagnostic output while parsing ${fcl}."
-    exit 1
-  fi
-  
 done
