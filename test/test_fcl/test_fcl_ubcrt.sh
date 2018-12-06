@@ -4,10 +4,22 @@
 
 find $MRB_BUILDDIR/ubcrt/job -name \*.fcl -print | while read fcl
 do
+  shortname=`basename ${fcl}`
+  if [[ ${shortname} == "TrackDump.fcl" ]] || \
+     [[ ${shortname} == "CRTTiming.fcl" ]] || \
+     [[ ${shortname} == "runCRTMerger_v06_26_01_13.fcl" ]] || \
+     [[ ${shortname} == "run_G4VetoSignalImpact.fcl" ]] || \
+     [[ ${shortname} == "testmerger.fcl" ]] || \
+     [[ ${shortname} == "TimeExtraction.fcl" ]] || \
+     [[ ${shortname} == "MergeTest.fcl" ]] 
+  then
+    echo "Skipping ${shortname}"
+    continue
+  fi
+
   echo "Testing fcl file $fcl"
 
   # Parse this fcl file.
-
   fclout=`basename ${fcl}`.out
   larout=`basename ${fcl}`.lar.out
   larerr=`basename ${fcl}`.lar.err
