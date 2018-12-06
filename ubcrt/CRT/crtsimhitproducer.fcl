@@ -3,7 +3,7 @@ BEGIN_PROLOG
 standard_crtsimhitproducer:
 
 {
-    module_type:          "CRTSimHitProducer"
+    module_type:          "ubcrt/CRT/CRTSimHitProducer"
     CrtModuleLabel:       "crt"
     Verbose:              false
     TimeCoincidenceLimit: 0.15  # Minimum time between two overlapping hit crt strips in us
@@ -20,7 +20,7 @@ standard_crtsimhitproducer:
 crtsimhitproducer_binary:
 
 {
-    module_type:          "CRTSimHitProducer"
+    module_type:          "ubcrt/CRT/CRTSimHitProducer"
     CrtModuleLabel:       "crtdetsim"
     Verbose:              false
     TimeCoincidenceLimit: 0.15 # Minimum time between two overlapping hit crt strips in us

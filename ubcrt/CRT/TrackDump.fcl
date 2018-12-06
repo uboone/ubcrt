@@ -31,14 +31,14 @@ physics:
   producers:
   {
       crttzero: {
-	 module_type: CRTTzeroProducer
+	 module_type: "ubcrt/CRT/CRTTzeroProducer"
 	 data_label: "merger"
 	 max_time_difference: 100.
 	 store_tzero: 1
 	 verbose: 0
       }
       crttrack: {
-	 module_type: CRTTrackProducer
+	 module_type: "ubcrt/CRT/CRTTrackProducer"
 	 data_label_hits: "merger"
 	 data_label_tzeros: "crttzero"
 ## method 1 = all, method 2 = ave, method 3 = pure
