@@ -19,7 +19,7 @@ physics:
   producers:
   {
      crttzero: {
-	 module_type: CRTTzeroProducer
+	 module_type: "ubcrt/CRT/CRTTzeroProducer"
 	 data_label: "merger"
 	 max_time_difference: 100.
 	 store_tzero: 1
@@ -27,7 +27,7 @@ physics:
       }
      crttrack:
      {
-      module_type: CRTTrackProducer
+      module_type: "ubcrt/CRT/CRTTrackProducer"
       ###data_label: "crthit"
       data_label_hits: "merger"
       data_label_tzeros: "crttzero"

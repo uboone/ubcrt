@@ -107,7 +107,6 @@ simple_plugin( CRTDetSim module
         ${ROOT_BASIC_LIB_LIST}
         ${CLHEP}
         cetlib cetlib_except
-    BASENAME_ONLY
 )
 
 simple_plugin(CRTCalibration "module"
@@ -155,7 +154,6 @@ simple_plugin(CRTSimHitProducer "module"
         ${ROOT_BASIC_LIB_LIST}
         ${CLHEP}
         cetlib cetlib_except
-    BASENAME_ONLY
 )
 
 		  
