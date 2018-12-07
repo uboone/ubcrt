@@ -197,6 +197,7 @@ bool UBCRTCosmicFilter::filter(art::Event &e)
     e.getByLabel(fDAQHeaderProducer, rawHandle_DAQHeader);
     if(!rawHandle_DAQHeader.isValid()) {
       e.put(std::move(crthit_flash_assn_v));
+      std::cerr << "\033[93m[ERROR]\033[00m ... could not locate DAQ header." << std::endl;
       return !fuseAsFilter;
     }
     art::Timestamp evtTimeGPS = my_DAQHeader.gps_time();
@@ -229,7 +230,8 @@ bool UBCRTCosmicFilter::filter(art::Event &e)
     //std::cerr << "\033[93m[ERROR]\033[00m ... could not locate CRT Hit!" << std::endl;
     //throw std::exception();
     e.put(std::move(crthit_flash_assn_v));
-    return true;
+    std::cerr << "\033[93m[ERROR]\033[00m ... could not locate CRT hits." << std::endl;
+    return !fuseAsFilter;
   }
 
   // load beam flashes here.
@@ -239,9 +241,8 @@ bool UBCRTCosmicFilter::filter(art::Event &e)
   // make sure beam flashes look good.
   if (!beamflash_h.isValid())
   {
-    //std::cerr << "\033[93m[ERROR]\033[00m ... could not locate beam flash!" << std::endl;
-    //throw std::exception();
     e.put(std::move(crthit_flash_assn_v));
+    std::cerr << "\033[93m[ERROR]\033[00m ... could not locate flash." << std::endl;
     return true;
   }
 
@@ -254,7 +255,7 @@ bool UBCRTCosmicFilter::filter(art::Event &e)
     std::cout << "Number of beam flashes in this event = " << _nflashes_in_beamgate << "." << std::endl;
 
   // Set the variables for the closest CRT hit time.
-  double _dt_abs = 100000.0;
+  double _dt_abs   = 100000.0;
   size_t flash_idx = 0;
   _dt = 0.;
   _CRT_hit_time = 0.;
@@ -288,9 +289,6 @@ bool UBCRTCosmicFilter::filter(art::Event &e)
       _beam_flash_time = beamflash_h->at(i).Time();
       _beam_flash_PE = beamflash_h->at(i).TotalPE();
       flash_idx = size_t(i);
-
-      std::cout << "beamflash_h->at( i ).TotalPE() = " << beamflash_h->at(i).TotalPE() << " PEs." << std::endl;
-      std::cout << "beamflash_h->at( i ).Time() = " << beamflash_h->at(i).Time() << " us." << std::endl;
     }
 
   } // End of the loop over the beam flashes.
@@ -334,10 +332,12 @@ bool UBCRTCosmicFilter::filter(art::Event &e)
     if ( (pl == 0) && !fBottom)
       continue;
 
-    //if (verbose)
-    //std::cout << "Time of the CRT Hit wrt the event timestamp = " << ((crthit_h->at(j).ts0_ns - evt_timeGPS_nsec + fDTOffset) / 1000.) << " us." << std::endl;
+    /*
+    if (verbose)
+      std::cout << "\t Time of the CRT Hit wrt the event timestamp = " << ((crthit_h->at(j).ts0_ns - evt_timeGPS_nsec + fDTOffset) / 1000.) << " us." << std::endl;
+    */
 
-    double _crt_time_temp = ((crthit_h->at(j).ts1_ns - evt_timeGPS_nsec + fDTOffset) / 1000.) / 5.;
+    double _crt_time_temp = ((crthit_h->at(j).ts0_ns - evt_timeGPS_nsec + fDTOffset) / 1000.);
     // Fill the vector variables.
     _CRT_hits_time.push_back(_crt_time_temp);
     _CRT_hits_PE.push_back(crthit_h->at(j).peshit);

@@ -40,7 +40,7 @@ physics:
 
     filters:
  {
- ubcrt : @local::UBCRTCosmicFilterBNBOFF
+ ubcrt : @local::UBCRTCosmicFilterBNBMC
  }
  analyzers:
  {
@@ -61,7 +61,6 @@ physics:
 #physics.filters.ubcrt.CRTHitProducer: "crthitsim"
 #physics.filters.ubcrt.DAQHeaderProducer: ""
 #physics.filters.ubcrt.DTOffset: 0.
-physics.filters.ubcrt.verbose: true
 
 #block to define where the output goes.  if you defined a filter in the physics
 #block and put it in the trigger_paths then you need to put a SelectEvents: {SelectEvents: [XXX]}
