@@ -31,20 +31,21 @@ table_fragment_end
 product                 version
 ubobj                   v07_13_00
 lardata                 v07_01_01
+larpandora              v07_06_00
 gallery                 v1_08_03
 cetbuildtools	        v7_04_00	-	only_for_build
 end_product_list
 
-qualifier      ubobj          lardata        gallery        
-c2:debug       c2:debug       c2:debug       c2:debug       
-c2:opt         c2:opt         c2:opt         c2:opt         
-c2:prof        c2:prof        c2:prof        c2:prof        
-e15:debug      e15:debug      e15:debug      e15:debug      
-e15:opt        e15:opt        e15:opt        e15:opt        
-e15:prof       e15:prof       e15:prof       e15:prof       
-e17:debug      e17:debug      e17:debug      e17:debug
-e17:opt        e17:opt        e17:opt        e17:opt
-e17:prof       e17:prof       e17:prof       e17:prof
+qualifier      ubobj          lardata        larpandora      gallery        
+c2:debug       c2:debug       c2:debug       c2:debug        c2:debug       
+c2:opt         c2:opt         c2:opt         c2:opt          c2:opt         
+c2:prof        c2:prof        c2:prof        c2:prof         c2:prof       
+e15:debug      e15:debug      e15:debug      e15:debug       e15:debug
+e15:opt        e15:opt        e15:opt        e15:opt         e15:opt
+e15:prof       e15:prof       e15:prof       e15:prof        e15:prof
+e17:debug      e17:debug      e17:debug      e17:debug       e17:debug
+e17:opt        e17:opt        e17:opt        e17:opt         e17:opt
+e17:prof       e17:prof       e17:prof       e17:prof        e17:prof
 end_qualifier_list
 
 # Preserve tabs and formatting in emacs and vi / vim:
