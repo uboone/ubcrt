@@ -23,6 +23,9 @@
 #include "lardataobj/RecoBase/OpFlash.h"
 #include "ubobj/RawData/DAQHeaderTimeUBooNE.h"
 
+#include "nusimdata/SimulationBase/MCTruth.h"
+#include "nusimdata/SimulationBase/MCParticle.h"
+
 // Declare the file for the associations to be made.
 #include "lardata/Utilities/AssociationUtil.h"
 
@@ -80,6 +83,13 @@ private:
   int _nflashes_in_beamgate_passing_beamspill_and_PE_cuts;
   double _beam_flash_time;
   double _beam_flash_PE;
+
+  // truth variables
+  double _nu_e;
+  int _nu_ccnc;
+  double _nu_vtx_x;
+  double _nu_vtx_y;
+  double _nu_vtx_z;
 
   // CRT hit info.
   int _nCRThits_in_event;
@@ -152,6 +162,11 @@ void UBCRTCosmicFilter::beginJob()
   _tree->Branch("CRT_hits_x", "std::vector< float >", &_CRT_hits_x);
   _tree->Branch("CRT_hits_y", "std::vector< float >", &_CRT_hits_y);
   _tree->Branch("CRT_hits_z", "std::vector< float >", &_CRT_hits_z);
+  _tree->Branch("_nu_e",&_nu_e,"nu_e/D");
+  _tree->Branch("_nu_ccnc",&_nu_ccnc,"nu_ccnc/I");
+  _tree->Branch("_nu_vtx_x",&_nu_vtx_x,"nu_vtx_x/D");
+  _tree->Branch("_nu_vtx_y",&_nu_vtx_y,"nu_vtx_y/D");
+  _tree->Branch("_nu_vtx_z",&_nu_vtx_z,"nu_vtx_z/D");
   _tree->Branch("_dt", &_dt, "dt/D");
   _tree->Branch("_within_resolution", &_within_resolution, "within_resolution/I");
 }
@@ -175,25 +190,43 @@ bool UBCRTCosmicFilter::filter(art::Event &e)
   std::unique_ptr<art::Assns<crt::CRTHit, recob::OpFlash>> crthit_flash_assn_v(new art::Assns<crt::CRTHit, recob::OpFlash>);
 
   // Declare an object for the GPS timestamp of the event so that you can offset the cosmic t0 times.
-  art::Handle<raw::DAQHeaderTimeUBooNE> rawHandle_DAQHeader;
-  e.getByLabel(fDAQHeaderProducer, rawHandle_DAQHeader);
-  if(!rawHandle_DAQHeader.isValid()) {
-    e.put(std::move(crthit_flash_assn_v));
-    return !fuseAsFilter;
+  double evt_timeGPS_nsec = 0.;
+  // if we are using data
+  if (fDAQHeaderProducer != "") {
+    art::Handle<raw::DAQHeaderTimeUBooNE> rawHandle_DAQHeader;
+    e.getByLabel(fDAQHeaderProducer, rawHandle_DAQHeader);
+    raw::DAQHeaderTimeUBooNE const &my_DAQHeader(*rawHandle_DAQHeader);
+    art::Timestamp evtTimeGPS = my_DAQHeader.gps_time();
+    evt_timeGPS_nsec = evtTimeGPS.timeLow();
   }
-
-  raw::DAQHeaderTimeUBooNE const &my_DAQHeader(*rawHandle_DAQHeader);
-  art::Timestamp evtTimeGPS = my_DAQHeader.gps_time();
-  double evt_timeGPS_nsec = evtTimeGPS.timeLow();
+  // else (we are using truth)
+  else {
+    // load neutrino mctruth
+    auto const& mct_h = e.getValidHandle<std::vector<simb::MCTruth> >("generator");
+    auto mct = mct_h->at(0);
+    auto neutrino = mct.GetNeutrino();
+    auto nu     = neutrino.Nu();
+    auto lepton = neutrino.Lepton();
+    auto ccnc   = neutrino.CCNC();
+    _nu_e    = nu.Trajectory().E(0);
+    _nu_ccnc = ccnc;
+    // vertex coordinates from neutrino end point
+    _nu_vtx_x = nu.Trajectory().X( nu.Trajectory().size() - 1 );
+    _nu_vtx_y = nu.Trajectory().Y( nu.Trajectory().size() - 1 );
+    _nu_vtx_z = nu.Trajectory().Z( nu.Trajectory().size() - 1 );
+  }
 
   // load CRT hits.
   art::Handle<std::vector<crt::CRTHit>> crthit_h;
   e.getByLabel(fCRTHitProducer, crthit_h);
 
   // make sure CRT hits look good.
-  if (!crthit_h.isValid()) {
+  if (!crthit_h.isValid())
+  {
+    //std::cerr << "\033[93m[ERROR]\033[00m ... could not locate CRT Hit!" << std::endl;
+    //throw std::exception();
     e.put(std::move(crthit_flash_assn_v));
-    return !fuseAsFilter;
+    return true;
   }
 
   // load beam flashes here.
@@ -203,8 +236,10 @@ bool UBCRTCosmicFilter::filter(art::Event &e)
   // make sure beam flashes look good.
   if (!beamflash_h.isValid())
   {
-    std::cerr << "\033[93m[ERROR]\033[00m ... could not locate beam flash!" << std::endl;
-    throw std::exception();
+    //std::cerr << "\033[93m[ERROR]\033[00m ... could not locate beam flash!" << std::endl;
+    //throw std::exception();
+    e.put(std::move(crthit_flash_assn_v));
+    return true;
   }
 
   // Set the variable for the number of flashes reconstructed in the beamgate for each event.
@@ -299,7 +334,7 @@ bool UBCRTCosmicFilter::filter(art::Event &e)
     //if (verbose)
     //std::cout << "Time of the CRT Hit wrt the event timestamp = " << ((crthit_h->at(j).ts0_ns - evt_timeGPS_nsec + fDTOffset) / 1000.) << " us." << std::endl;
 
-    double _crt_time_temp = ((crthit_h->at(j).ts0_ns - evt_timeGPS_nsec + fDTOffset) / 1000.);
+    double _crt_time_temp = ((crthit_h->at(j).ts1_ns - evt_timeGPS_nsec + fDTOffset) / 1000.) / 5.;
     // Fill the vector variables.
     _CRT_hits_time.push_back(_crt_time_temp);
     _CRT_hits_PE.push_back(crthit_h->at(j).peshit);
