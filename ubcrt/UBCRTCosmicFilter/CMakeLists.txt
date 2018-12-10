@@ -6,6 +6,7 @@ link_libraries( ${LIB_NAME} -L$ENV{BOOST_LIB} -lboost_system ${ROOTLIB} )
 
 art_make( BASENAME_ONLY
           MODULE_LIBRARIES 
+                        larpandora_LArPandoraInterface
                         lardataobj_RecoBase			
                         ${ART_FRAMEWORK_CORE}
                         ${ART_FRAMEWORK_PRINCIPAL}
