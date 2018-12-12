@@ -225,10 +225,7 @@ bool UBCRTCosmicFilter::filter(art::Event &e)
   e.getByLabel(fCRTHitProducer, crthit_h);
 
   // make sure CRT hits look good.
-  if (!crthit_h.isValid())
-  {
-    //std::cerr << "\033[93m[ERROR]\033[00m ... could not locate CRT Hit!" << std::endl;
-    //throw std::exception();
+  if (!crthit_h.isValid()) {
     e.put(std::move(crthit_flash_assn_v));
     std::cerr << "\033[93m[ERROR]\033[00m ... could not locate CRT hits." << std::endl;
     return !fuseAsFilter;
