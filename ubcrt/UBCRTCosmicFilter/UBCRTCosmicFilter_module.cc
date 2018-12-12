@@ -200,6 +200,7 @@ bool UBCRTCosmicFilter::filter(art::Event &e)
       std::cerr << "\033[93m[ERROR]\033[00m ... could not locate DAQ header." << std::endl;
       return !fuseAsFilter;
     }
+    raw::DAQHeaderTimeUBooNE const& my_DAQHeader(*rawHandle_DAQHeader);
     art::Timestamp evtTimeGPS = my_DAQHeader.gps_time();
     evt_timeGPS_nsec = evtTimeGPS.timeLow();
   }
