@@ -2,7 +2,7 @@ BEGIN_PROLOG
 
 microboone_crtdetsim_binary: 
 {
-  module_type: "CRTDetSim"
+  module_type: "ubcrt/CRT/CRTDetSim"
 #  ProducerName: "largeant"
   G4ModuleLabel: "largeant" 
   // Global timing offset [ns]
@@ -79,7 +79,7 @@ microboone_crtdetsim_binary:
 
 microboone_crtdetsim: 
 {
-  module_type: "CRTDetSim"
+  module_type: "ubcrt/CRT/CRTDetSim"
 #  ProducerName: "largeant"
   G4ModuleLabel: "largeant" 
   // Global timing offset [ns]
