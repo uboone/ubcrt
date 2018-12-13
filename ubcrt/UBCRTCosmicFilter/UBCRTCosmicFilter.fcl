@@ -27,6 +27,12 @@ UBCRTCosmicFilterNuMIOFF: @local::UBCRTCosmicFilter
 UBCRTCosmicFilterNuMIOFF.BeamStart: 6.06
 UBCRTCosmicFilterNuMIOFF.BeamEnd:   15.86
 
+# NuMI MC (note beam window not adjusted w.r.t. on beam)
+UBCRTCosmicFilterNuMIMC: @local::UBCRTCosmicFilterNuMION
+UBCRTCosmicFilterNuMIMC.DAQHeaderProducer: ""
+UBCRTCosmicFilterNuMIMC.DTOffset: 0
+UBCRTCosmicFilterNuMIMC.CRTHitProducer: "crthitsim"
+
 # BNB beam on
 UBCRTCosmicFilterBNBON: @local::UBCRTCosmicFilter
 UBCRTCosmicFilterBNBON.BeamStart: 3.19
@@ -36,6 +42,14 @@ UBCRTCosmicFilterBNBON.BeamEnd:   4.87
 UBCRTCosmicFilterBNBOFF: @local::UBCRTCosmicFilter
 UBCRTCosmicFilterBNBOFF.BeamStart: 3.57
 UBCRTCosmicFilterBNBOFF.BeamEnd:   5.25
+
+# BNB MC
+UBCRTCosmicFilterBNBMC: @local::UBCRTCosmicFilter
+UBCRTCosmicFilterBNBMC.DAQHeaderProducer: ""
+UBCRTCosmicFilterBNBMC.DTOffset: 0
+UBCRTCosmicFilterBNBMC.CRTHitProducer: "crthitsim"
+UBCRTCosmicFilterBNBMC.BeamStart: 3.1
+UBCRTCosmicFilterBNBMC.BeamEnd:   4.9
 
 # BNB beam on top-only
 UBCRTCosmicFilterBNBONtop: @local::UBCRTCosmicFilterBNBON
@@ -49,6 +63,12 @@ UBCRTCosmicFilterBNBOFFtop.Bottom:  false
 UBCRTCosmicFilterBNBOFFtop.Anode:   false
 UBCRTCosmicFilterBNBOFFtop.Cathode: false
 
+# BNB beam off top-only
+UBCRTCosmicFilterBNBMCtop: @local::UBCRTCosmicFilterBNBMC
+UBCRTCosmicFilterBNBMCtop.Bottom:  false
+UBCRTCosmicFilterBNBMCtop.Anode:   false
+UBCRTCosmicFilterBNBMCtop.Cathode: false
+
 # NuMI beam on top-only
 UBCRTCosmicFilterNuMIONtop: @local::UBCRTCosmicFilterNuMION
 UBCRTCosmicFilterNuMIONtop.Bottom:  false
@@ -60,5 +80,11 @@ UBCRTCosmicFilterNuMIOFFtop: @local::UBCRTCosmicFilterNuMIOFF
 UBCRTCosmicFilterNuMIOFFtop.Bottom:  false
 UBCRTCosmicFilterNuMIOFFtop.Anode:   false
 UBCRTCosmicFilterNuMIOFFtop.Cathode: false
+
+# NuMI beam off top-only
+UBCRTCosmicFilterNuMIMCtop: @local::UBCRTCosmicFilterNuMIMC
+UBCRTCosmicFilterNuMIMCtop.Bottom:  false
+UBCRTCosmicFilterNuMIMCtop.Anode:   false
+UBCRTCosmicFilterNuMIMCtop.Cathode: false
 
 END_PROLOG
