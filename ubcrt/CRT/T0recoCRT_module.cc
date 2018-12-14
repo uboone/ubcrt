@@ -244,7 +244,7 @@ void crt::T0recoCRT::produce(art::Event & evt)
   art::PtrMaker<recob::Track> trackPtrMaker(evt, rawHandle_TPCtrack.id());
   art::PtrMaker<recob::OpFlash> flashPtrMaker(evt, rawHandle_OpFlash.id());
   art::PtrMaker<crt::CRTTrack> crttrackPtrMaker(evt, rawHandle_CRTtrack.id());
-  art::PtrMaker<anab::T0> t0PtrMaker(evt, *this);  
+  art::PtrMaker<anab::T0> t0PtrMaker(evt);  
 
   
   if( CRTTrackCollection.size()<fShowerCut_) {//A0 cut in showers

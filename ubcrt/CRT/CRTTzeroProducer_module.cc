@@ -132,9 +132,9 @@ void CRTTzeroProducer::produce(art::Event & evt)
   // need later version of art (later than v2_05_01) to use PtrMaker.
   // do it the old-fashioned way instead
   //      art::PtrMaker<crt::CRTHit> hitPtrMaker(evt, rawhandle.id());
-  //  art::PtrMaker<crt::CRTTzero> tzeroPtrMaker(evt, *this);
+  //  art::PtrMaker<crt::CRTTzero> tzeroPtrMaker(evt);
   art::PtrMaker<crt::CRTHit> hitPtrMaker(evt, rawHandle.id());
-  art::PtrMaker<crt::CRTTzero> tzeroPtrMaker(evt, *this);
+  art::PtrMaker<crt::CRTTzero> tzeroPtrMaker(evt);
 
  
 
