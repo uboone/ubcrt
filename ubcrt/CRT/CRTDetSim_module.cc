@@ -63,6 +63,7 @@ namespace crt{
 */
 
   CRTDetSim::CRTDetSim(const fhicl::ParameterSet& pSet)
+    : EDProducer{pSet}
   {
     art::ServiceHandle<rndm::NuRandomService> Seeds;
     Seeds->createEngine(*this, "HepJamesRandom", "crt", pSet, "Seed");
@@ -179,7 +180,10 @@ namespace crt{
     detinfo::ElecClock trigClock = detClocks->provider()->TriggerClock();
 
     art::ServiceHandle<art::RandomNumberGenerator> rng;
-    CLHEP::HepRandomEngine* engine = &rng->getEngine("crt");
+    //CLHEP::HepRandomEngine* engine = &rng->getEngine("crt");
+    CLHEP::HepRandomEngine* engine = &rng->getEngine(art::ScheduleID::first(),
+                                                     moduleDescription().moduleLabel(),
+                                                     "crt");
 
     // Handle for (truth) AuxDetSimChannels
     art::Handle<std::vector<sim::AuxDetSimChannel> > channels;
