@@ -109,8 +109,10 @@ private:
   TH1F* hTrackLength;
   TH1F* hOpeningAngle;
 
-  TH1F* hDistTwo;
+  // TH1F* hDistTwo;
   TH1F* hDistOne;
+  TH1F* hDistAn;
+  TH1F* hDistCa;
   TH1F* hDistNone;
   TH1F* hTimeBest;
 
@@ -178,14 +180,14 @@ T0recoCRTHit::T0recoCRTHit(fhicl::ParameterSet const & p)
     fTimeZeroOffset(p.get<int>("TimeZeroOffset",60000)),
     fTimeSelect(p.get<int>("TimeSelect",1)),
     fMatchCut(p.get<int>("MatchCut",40)),
-    fvdrift(p.get<int>("vdrift",1.11436)),
+    fvdrift(p.get<float>("vdrift",1.11436)),
     fstoreAssn(p.get<bool>("storeAssn",true)),
     fverbose(p.get<bool>("verbose",false)),
     fIsMC(p.get<bool>("IsMC",false)),
     fAlignBotX(p.get<float>("AlignBotX",0.0)),
-    fAlignBotY(p.get<float>("AlignBotZ",0.0)),
+    fAlignBotY(p.get<float>("AlignBotY",0.0)),
     fAlignBotZ(p.get<float>("AlignBotZ",0.0)),
-    fAlignAnodeX(p.get<float>("AlignAnodeY",0.0)),
+    fAlignAnodeX(p.get<float>("AlignAnodeX",0.0)),
     fAlignAnodeY(p.get<float>("AlignAnodeY",0.0)),
     fAlignAnodeZ(p.get<float>("AlignAnodeZ",0.0)),
     fAlignCathX(p.get<float>("AlignCathX",0.0)),
@@ -230,7 +232,7 @@ void T0recoCRTHit::produce(art::Event & evt)
 
   // get any t0 information for these tracks from ACPT module
   art::FindMany<anab::T0> trk_t0_assn_v(trackListHandle, evt, "t0reco" );
-  art::FindMany<recob::OpFlash> trk_flash_assn_v(trackListHandle, evt, "t0reco" );
+  //  art::FindMany<recob::OpFlash> trk_flash_assn_v(trackListHandle, evt, "t0reco" );
 
   
   double evt_timeGPS_nsec=0.0;   double evt_timeGPS_sec=0.0;
@@ -361,8 +363,9 @@ void T0recoCRTHit::produce(art::Event & evt)
 	if (diff<min_deltat) { min_deltat=diff; best_time_match=tzIter;}
       } // loop over tzeros     
       if (best_time_match>=0) {
-	std::cout << "Closest CRT hit in time to this flash is tzero no " << best_time_match << " at time (us) " <<
-	  0.001*(tzerolist[best_time_match]->ts1_ns+fHardDelay) << std::endl;
+	if (fverbose) std::cout << "Closest CRT hit in time to this flash is tzero no " << 
+			best_time_match << " at time (us) " <<
+			0.001*(tzerolist[best_time_match]->ts1_ns+fHardDelay) << std::endl;
       }// if CRT-flash match found
     } // if tzeros 
 
@@ -384,14 +387,14 @@ void T0recoCRTHit::produce(art::Event & evt)
   } // loop over flashes
    
   // loop over tracks  
-  double vdrift = 0.0001*fvdrift;
-  std::cout << "drift velocity is " << std::endl;
+  double vdrift = 0.0001*fvdrift;  // units cm/ns
+  if (fverbose)  std::cout << "drift velocity is " << vdrift << std::endl;
   if (tracklist.size()>0) {
     for (size_t trkIter = 0; trkIter < tracklist.size(); ++trkIter) {
       
       //    int TrackGood=0;
       float dist_besthit = 99999999.; int plane_besthit=11;
-      float time_besthit=999999999.; 
+      double time_besthit=999999999.; 
       double theta,phi,trklen;
       // fetch track length, start and end points, theta and phi
       auto startP=tracklist[trkIter]->Start();      
@@ -409,7 +412,8 @@ void T0recoCRTHit::produce(art::Event & evt)
       
       //reject tracks that are too short and bend too much
       //      if (trklen>40 && opang>0.8) { - guess for now
-      if (trklen>20&& opang>0.95)  {
+      //      if (trklen>20&& opang>0.95)  {
+      if (trklen>5 && opang>0.8)  {
 	//      TrackGood=1;
 	//      if (ACPTyes==1) {      
 	//  Apply track quality cuts on length and straightness
@@ -498,7 +502,7 @@ void T0recoCRTHit::produce(art::Event & evt)
 		    
 		    if (fTimeSelect==1)
 		      time_besthit=hitlist[ah]->ts1_ns+ fHardDelay; 
-		    else time_besthit = hitlist[ah]->ts0_ns + fTimeZeroOffset- evt_timeGPS_nsec;
+		    else time_besthit = (double)hitlist[ah]->ts0_ns + fTimeZeroOffset- evt_timeGPS_nsec;
 		  }
 		} // loop over CRT hits
 	      }// if hits 
@@ -508,24 +512,34 @@ void T0recoCRTHit::produce(art::Event & evt)
 	
 	// fill histograms and creates associations	
 	if (dist_besthit<200) {
-	  std::vector<art::Ptr<crt::CRTHit> > hitlist=fmht.at(besttz);
-	  int icountplanes =1;
-	  if (hitlist.size()>0) {
-	    for (size_t ah = 0; ah< hitlist.size(); ++ah){	
-	      if (hitlist[ah]->plane!=plane_besthit) icountplanes=2;
-	    }
-	  }
-	  if (icountplanes==1) hDistOne->Fill(dist_besthit);
-	  else hDistTwo->Fill(dist_besthit);	  
-	  //	  std::cout << time_besthit << std::endl;
-	  // make associations
+	  //	  std::vector<art::Ptr<crt::CRTHit> > hitlist=fmht.at(besttz);
+	  // int icountplanes =1;
+	  // if (hitlist.size()>0) {
+	  //   for (size_t ah = 0; ah< hitlist.size(); ++ah){	
+	  //     if (hitlist[ah]->plane!=plane_besthit) icountplanes=2;
+	  //   }
+	  // }
+	  hDistOne->Fill(dist_besthit);
 
+		  
+	  //calculate track shift in x for the time  of this CRT hit
+	  double xshift = time_besthit*vdrift;
+	  TVector3 trackstart(startP.X()-xshift,startP.Y(),startP.Z());
+	  TVector3 trackend(endP.X()-xshift,endP.Y(),endP.Z());
 	  
-	  // args are (time, triggertype, triggerbits, ?, trigger confidence)
-	  //  should be triggertype=0 (CRT), triggerbits=
+	  if (plane_besthit==1) {
+	    if ((trackstart.X()>-10 && trackstart.X()<2)  || (trackend.X()>-10 && trackend.X()<2) )
+	      hDistAn->Fill(dist_besthit); 
+	  }
+	  else if (plane_besthit==2) {
+	    if ((trackstart.X()>255 && trackstart.X()<268)  || (trackend.X()>255 && trackend.X()<268) )
+	      hDistCa->Fill(dist_besthit); 
+	  }	  
 	  if (dist_besthit<fMatchCut) {
-	    anab::T0 t0(time_besthit, 0, 1, 1, 0 );
-	    T0_v->emplace_back(t0);
+	    //	    double dT =0.0;
+	    // args are (time, triggertype, triggerbits, ?, trigger confidence)
+	    anab::T0 thist0(0.001*time_besthit, 2, 1, 1, dist_besthit);
+	    T0_v->emplace_back(thist0);
 	    
 	    //make pointers and associations
 	    art::Ptr<recob::Track> trackptr = trackPtrMaker(trkIter);
@@ -537,7 +551,7 @@ void T0recoCRTHit::produce(art::Event & evt)
 	    trk_crttzero_assn_v->addSingle(trackptr,crttzeroptr);
 	    trk_t0_assn_v_new->addSingle(trackptr,t0ptr);
 	  }
-	  else hDistNone->Fill(50.);
+	  else hDistNone->Fill(100.);
 	  //
 	  hTimeBest->Fill(time_besthit*0.001);
 	} // if hit is close	  
@@ -577,8 +591,12 @@ void T0recoCRTHit::beginJob()
   
   hDistOne = tfs->make<TH1F>("hDistOne","hDistOne",200,0.,200.);
   hDistOne->GetXaxis()->SetTitle("distance (cm)");
-  hDistTwo= tfs->make<TH1F>("hDistTwo","hDistTwo",200,0.,200.);    
-  hDistTwo->GetXaxis()->SetTitle("distance (cm)");
+  hDistAn = tfs->make<TH1F>("hDistAn","hDistAn",200,0.,200.);
+  hDistAn->GetXaxis()->SetTitle("distance (cm)");
+  hDistCa = tfs->make<TH1F>("hDistCa","hDistCa",200,0.,200.);
+  hDistCa->GetXaxis()->SetTitle("distance (cm)");
+  // hDistTwo= tfs->make<TH1F>("hDistTwo","hDistTwo",200,0.,200.);    
+  // hDistTwo->GetXaxis()->SetTitle("distance (cm)");
   hDistNone= tfs->make<TH1F>("hDistNone","hDistNone",200,0.,200.);    
   hDistNone->GetXaxis()->SetTitle("distance (cm)");
   hTimeBest = tfs->make<TH1F>("hTimeBest","hTimeBest",200,0.,200.);

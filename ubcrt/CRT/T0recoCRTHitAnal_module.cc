@@ -3,6 +3,11 @@
 // Module Type: analyzer
 // File:        T0recoCRTHitAnal_module.cc
 //
+//   Written Dec 2018 to test developments in matching TPC tracks
+//      to CRT hits
+//
+//   Last updated 12/19/2018
+//
 ////////////////////////////////////////////////////////////////////////
 
 #include "art/Framework/Core/EDAnalyzer.h"
@@ -83,21 +88,42 @@ private:
   // Declare member data here.
   art::ServiceHandle<art::TFileService> tfs;
 
-  std::string  data_label_TPCTrack_;
-  std::string  data_label_T0reco_;
+  std::string  data_label_TPCTrack;
+  std::string  data_label_crtT0;
+  std::string  data_label_acptT0;
+  float fTQCutOpAng;
+  float fTQCutLength;
   bool fverbose;
   bool fIsMC;
   
-  TH1F* hDiffT_CRT_T0;
-  TH1F* hDiffT_CRT_T0Flash;
-  TH1F* hDiffT_T0Flash;
+  TH1F* hDiffT_CRT_Flash;
+  TH1F* hDiffT_CRT_AFlash;
   TH1F* hGeoMatch;
-  TH1F* hTrackTheta;
-  TH1F* hTrackPhi;
+  TH1F* hTheta;
+  TH1F* hPhi;
+  TH1F* hLength;
+  TH1F* hOpAng;
   TH1F* hMTheta;
   TH1F* hMPhi;
-  TH1F* hTime;
-
+  TH1F* hMTime;
+  TH1F* hMLength;
+  TH1F* hMOpAng;
+  TH1F* hMlowx;
+  TH1F* hMhighx;
+  TH1F* hATheta;
+  TH1F* hAPhi;
+  TH1F* hATime;
+  TH1F* hALength;
+  TH1F* hAOpAng;
+  TH1F* hAlowx;
+  TH1F* hAhighx;
+  TH1F* hAMTheta;
+  TH1F* hAMPhi;
+  TH1F* hAMTime;
+  TH1F* hAMLength;
+  TH1F* hAMOpAng;
+  TH1F* hAMlowx;
+  TH1F* hAMhighx;
 
 };
 
@@ -108,10 +134,13 @@ crt::T0recoCRTHitAnal::T0recoCRTHitAnal(fhicl::ParameterSet const & p)
   // data_labelCRThit_(p.get<std::string>("data_labelCRThit")),
   // data_label_flash_(p.get<std::string>("data_label_flash_")),
   // data_label_DAQHeader_(p.get<std::string>("data_label_DAQHeader_")),
-  data_label_TPCTrack_(p.get<std::string>("data_label_TPCTrack_")),
-  data_label_T0reco_(p.get<std::string>("data_label_T0reco_")),
-  fIsMC(p.get<bool>("IsMC")),
-  fverbose(p.get<bool>("verbose"))  // ,
+  data_label_TPCTrack(p.get<std::string>("data_label_TPCtrack","pandoraCosmic")),
+  data_label_crtT0(p.get<std::string>("data_label_crtT0","t0recocrthit")),
+  data_label_acptT0(p.get<std::string>("data_label_acptT0","pandoraComsicT0Reco")),
+  fTQCutOpAng(p.get<float>("TQCutOpAng",0.95)),
+  fTQCutLength(p.get<float>("TQCutLength",20)),
+  fverbose(p.get<bool>("verbose",false)),
+  fIsMC(p.get<bool>("IsMC",false))
  // More initializers here.
 {}
 
@@ -123,12 +152,12 @@ void crt::T0recoCRTHitAnal::analyze(art::Event const & evt)
   
   //get TPC Tracks  
   art::Handle< std::vector<recob::Track> > rawHandle_TPCtrack;
-  evt.getByLabel(data_label_TPCTrack_, rawHandle_TPCtrack);
+  evt.getByLabel(data_label_TPCTrack, rawHandle_TPCtrack);
   //check to make sure the data we asked for is valid                                                                                                         
   if(!rawHandle_TPCtrack.isValid()){
     std::cout << "Run " << evt.run() << ", subrun " << evt.subRun()
               << ", event " << evt.event() << " has zero"
-              << " recob::Track " << " in module " << data_label_TPCTrack_ << std::endl;
+              << " recob::Track " << " in module " << data_label_TPCTrack << std::endl;
     std::cout << std::endl;
     return;
   }
@@ -173,69 +202,154 @@ void crt::T0recoCRTHitAnal::analyze(art::Event const & evt)
   //   std::cout<<"  CRTHitCollection.size()  "<<CRTHitCollection.size()<<std::endl;
   //   //  getchar();			  
   // }
-  // //get CRTHits                                                                                                                                                 
-  
-// grab T0 objects associated with tracks    
-  art::FindMany<anab::T0> trk_t0_assn_v(rawHandle_TPCtrack, evt, data_label_T0reco_); //objeto, evento, label
-  
-  //  art::FindMany<recob::OpFlash> trk_flash_assn_v(trackListHandle, evt,  fT0recoModuleLabel );
+  // //get CRTHits                                                                                                                                              
+  // 1.11436 mm/us   
+  double driftvel = 0.11436; //   units  cm/us 
 
 
-  // grab flashes associated with tracks 
-  //  art::FindMany<recob::OpFlash> trk_flash_assn_v(rawHandle_TPCtrack, evt, data_label_T0reco_ );
+  // grab T0 objects associated with tracks    
+  art::FindMany<anab::T0> trk_t0_assn_v(rawHandle_TPCtrack, evt, data_label_crtT0);
+  // grab flashes associated with tracks (anode or cathode crossers)
+  art::FindMany<anab::T0> trk_flash_assn_v(rawHandle_TPCtrack, evt, data_label_acptT0 );
   
-    for(std::vector<int>::size_type i = 0; i != TPCTrackCollection.size(); i++) {                                  
+  for(std::vector<int>::size_type i = 0; i != TPCTrackCollection.size(); i++) {     
+    recob::Track my_TPCTrack = TPCTrackCollection[i];    
+    const std::vector<const anab::T0*>& T0_v = trk_t0_assn_v.at(i);
+    const std::vector<const anab::T0*>& T0_acpt = trk_flash_assn_v.at(i);
+    
+    double t_theta=my_TPCTrack.Theta();
+    double t_phi=my_TPCTrack.Phi();
+    if (t_phi>0) {t_phi-=3.14159; t_theta=3.14159-my_TPCTrack.Theta();}
+    double t_len = my_TPCTrack.Length();
+    // get track directional cosines
+    double trackCosStart[3]={0.,0.,0.};
+    double trackCosEnd[3]={0.,0.,0.};
+    my_TPCTrack.Direction(trackCosStart,trackCosEnd);      
+    double t_opang = trackCosStart[0]*trackCosEnd[0] +  trackCosStart[1]*trackCosEnd[1] + 
+      trackCosStart[2]*trackCosEnd[2];
+    if (t_len>fTQCutLength && t_opang>fTQCutOpAng) {
+      //    if (t_len>20 && t_opang>0.95) {
+      auto startP = my_TPCTrack.Start();
+      auto endP = my_TPCTrack.End();
+      double lowx = startP.X();
+      double highx = endP.X();
+      if (lowx>highx) {
+	highx=lowx;
+	lowx=endP.X();
+      }
       
-      recob::Track my_TPCTrack = TPCTrackCollection[i];
+      hTheta->Fill(t_theta);
+      hPhi->Fill(t_phi);
+      hOpAng->Fill(t_opang);
+      hLength->Fill(t_len);
       
-      const std::vector<const anab::T0*>& T0_v = trk_t0_assn_v.at(i);
-      //      const std::vector<const recob::OpFlash*>& flash_v = trk_flash_assn_v.at(trkIter);
-                 
-      hTrackTheta->Fill(my_TPCTrack.Theta());
-      hTrackPhi->Fill(my_TPCTrack.Phi());
-
-      double tracktime=0.0;
-      if (T0_v.size() == 1){
-	auto t0 = T0_v.at(0);
-	tracktime = 1000.0*(t0->Time());
-	hMTheta->Fill(my_TPCTrack.Theta());
-	hMPhi->Fill(my_TPCTrack.Phi());
-	hTime->Fill(tracktime);
-	if (fverbose) std::cout << "time found " << std::endl;
+      double atracktime=0.0;
+      bool b_acpt = false;
+      if (T0_acpt.size()==1) { 
+	b_acpt=true;
+	auto t0 = T0_acpt.at(0);
+	atracktime = t0->Time();  //track time in us, t0->time() in us
+	if (fverbose) std::cout << "acpt T0 time and trigger type  " << 
+		      atracktime << " " << t0->TriggerType() << std::endl;      
+	hATheta->Fill(t_theta);
+	hAPhi->Fill(t_phi);
+	hATime->Fill(atracktime);
+	hAOpAng->Fill(t_opang);
+	hALength->Fill(t_len);
+	hAlowx->Fill(lowx-atracktime*driftvel);
+	hAhighx->Fill(highx-atracktime*driftvel);
       }
 
-	
-
-    }
-
-
-
+      double ctracktime=0.0;
+      if (T0_v.size() == 1){
+	auto t0 = T0_v.at(0);
+	ctracktime = t0->Time();  //track time in us, t0->time() in us
+	if (fverbose) std::cout << "CRT T0 time and trigger type  " << 
+			ctracktime << " " << t0->TriggerType() << std::endl;
+	hMTheta->Fill(t_theta);
+	hMPhi->Fill(t_phi);
+	hMTime->Fill(ctracktime);
+	hMOpAng->Fill(t_opang);
+	hMlowx->Fill(lowx-ctracktime*driftvel);
+	hMhighx->Fill(highx-ctracktime*driftvel);
+	hMLength->Fill(t_len);
+	if (b_acpt) {
+	  hAMTheta->Fill(t_theta);
+	  hAMPhi->Fill(t_phi);
+	  hDiffT_CRT_AFlash->Fill(atracktime-ctracktime);
+	  hAMTime->Fill(ctracktime);
+	  hAMOpAng->Fill(t_opang);
+	  hAMLength->Fill(t_len);
+	  hAMlowx->Fill(lowx-atracktime*driftvel);
+	  hAMhighx->Fill(highx-atracktime*driftvel);
+	}
+      }
+    }// if (t_len>5 && t_opang>0.8)
+      
+  }//loop over tracks
+    
+    
+    
 }
 
 void crt::T0recoCRTHitAnal::beginJob()
 {
 
-  hDiffT_CRT_T0 = tfs->make<TH1F>("hDiffT_CRT_T0","hDiffT_CRT_T0",5000,-20000,20000);
-  hDiffT_CRT_T0->GetXaxis()->SetTitle("T0Time - CRTTrack_Time (ns)");
-  hDiffT_CRT_T0->GetYaxis()->SetTitle("Entries/bin");
+  hDiffT_CRT_AFlash = tfs->make<TH1F>("hDiffT_CRT_AFlash","hDiffT_CRT_AFlash",400,-2,2);
+  hDiffT_CRT_AFlash->GetXaxis()->SetTitle("Flash_time_ACPT - CRTHit_Time (us)");
+  hDiffT_CRT_AFlash->GetYaxis()->SetTitle("Entries/bin");
 
-  hDiffT_CRT_T0Flash = tfs->make<TH1F>("hDiffT_CRT_T0Flash","hDiffT_CRT_T0Flash",5000,-20000,20000);
-  hDiffT_CRT_T0Flash->GetXaxis()->SetTitle("T0Time_Flash - CRTTrack_Time (ns)");
-  hDiffT_CRT_T0Flash->GetYaxis()->SetTitle("Entries/bin");
+  hDiffT_CRT_Flash = tfs->make<TH1F>("hDiffT_CRT_T0Flash","hDiffT_CRT_T0Flash",400,-2,2);
+  hDiffT_CRT_Flash->GetXaxis()->SetTitle("Nearest_Flash - CRTHit_Time (us)");
+  hDiffT_CRT_Flash->GetYaxis()->SetTitle("Entries/bin");
 
-  hDiffT_T0Flash = tfs->make<TH1F>("hDiffT_T0Flash","hDiffT_T0Flash",5000,-20000,20000);
-  hDiffT_T0Flash->GetXaxis()->SetTitle("T0Time - T0Time_Flash (ns)");
-  hDiffT_T0Flash->GetYaxis()->SetTitle("Entries/bin");
+  // hDiffT_T0Flash = tfs->make<TH1F>("hDiffT_T0Flash","hDiffT_T0Flash",5000,-20000,20000);
+  // hDiffT_T0Flash->GetXaxis()->SetTitle("T0Time - T0Time_Flash (ns)");
+  // hDiffT_T0Flash->GetYaxis()->SetTitle("Entries/bin");
 
-  hGeoMatch = tfs->make<TH1F>("hGeoMatch","hGeoMatch",5000,-20000,20000);
-  hGeoMatch->GetXaxis()->SetTitle("FlashTime - CRTTrack_Time (ns)");
-  hGeoMatch->GetYaxis()->SetTitle("Entries/bin");
+  // hGeoMatch = tfs->make<TH1F>("hGeoMatch","hGeoMatch",5000,-20000,20000);
+  // hGeoMatch->GetXaxis()->SetTitle("FlashTime - CRTTrack_Time (ns)");
+  // hGeoMatch->GetYaxis()->SetTitle("Entries/bin");
 
-  hTrackTheta = tfs->make<TH1F>("hTrackTheta","hTrackTheta",60,0,2*3.14159);
-  hTrackPhi = tfs->make<TH1F>("hTrackPhi","hTrackPhi",60,0,2*3.14159);
-  hMTheta = tfs->make<TH1F>("hMTheta","hMTheta",60,0,2*3.14159);
-  hMPhi = tfs->make<TH1F>("hMPhi","hMPhi",60,0,2*3.14159);
-  hTime = tfs->make<TH1F>("htime","htime",200,-4000,4000);
+  hTheta = tfs->make<TH1F>("hTheta","hTheta",30,0,3.14159);
+  hPhi = tfs->make<TH1F>("hPhi","hPhi",30,-3.14159,0);
+  hMTheta = tfs->make<TH1F>("hMTheta","hMTheta",30,0,3.14159);
+  hMPhi = tfs->make<TH1F>("hMPhi","hMPhi",30,-3.14159,0);
+  hATheta = tfs->make<TH1F>("hATheta","hATheta",30,0,3.14159);
+  hAPhi = tfs->make<TH1F>("hAPhi","hAPhi",30,-3.14159,0);
+  hAMTheta = tfs->make<TH1F>("hAMTheta","hAMTheta",30,0,3.14159);
+  hAMPhi = tfs->make<TH1F>("hAMPhi","hAMPhi",30,-3.14159,0);
+  hMTime = tfs->make<TH1F>("hMtime","htime",200,-4000,4000);
+  hATime = tfs->make<TH1F>("hAMtime","hAtime",200,-4000,4000);
+  hAMTime = tfs->make<TH1F>("hAMtime","hAtime",200,-4000,4000);
+  hLength = tfs->make<TH1F>("hLength","hLength",80,0,400.0);
+  hLength->GetXaxis()->SetTitle("Track Length (cm)");
+  hOpAng = tfs->make<TH1F>("hOpAng","hOpAng",60,0.85,1.00);
+  hOpAng->GetXaxis()->SetTitle("cos(alpha)");
+  hMLength = tfs->make<TH1F>("hMLength","hMLength",80,0,400.0);
+  hMLength->GetXaxis()->SetTitle("Track Length (cm)");
+  hMOpAng = tfs->make<TH1F>("hMOpAng","hMOpAng",60,0.85,1.00);
+  hMOpAng->GetXaxis()->SetTitle("cos(alpha)");
+  hMlowx = tfs->make<TH1F>("hMlowx","hMlowx",300,-10.,290.);
+  hMlowx->GetXaxis()->SetTitle("x (cm)");
+  hMhighx = tfs->make<TH1F>("hMhighx","hMhighx",300,-10.,290.);
+  hMhighx->GetXaxis()->SetTitle("x (cm)");
+  hALength = tfs->make<TH1F>("hALength","hALength",80,0,400.0);
+  hALength->GetXaxis()->SetTitle("Track Length (cm)");
+  hAOpAng = tfs->make<TH1F>("hAOpAng","hAOpAng",60,0.85,1.00);
+  hAOpAng->GetXaxis()->SetTitle("cos(alpha)");
+  hAlowx = tfs->make<TH1F>("hAlowx","hAlowx",300,-10.,290.);
+  hAlowx->GetXaxis()->SetTitle("x (cm)");
+  hAhighx = tfs->make<TH1F>("hAhighx","hAhighx",300,-10.,290.);
+  hAhighx->GetXaxis()->SetTitle("x (cm)");
+  hAMLength = tfs->make<TH1F>("hAMLength","hAMLength",80,0,400.0);
+  hAMLength->GetXaxis()->SetTitle("Track Length (cm)");
+  hAMOpAng = tfs->make<TH1F>("hAMOpAng","hAMOpAng",60,0.85,1.00);
+  hAMOpAng->GetXaxis()->SetTitle("cos(alpha)");
+  hAMlowx = tfs->make<TH1F>("hAMlowx","hAMlowx",300,-10.,290.);
+  hAMlowx->GetXaxis()->SetTitle("x (cm)");
+  hAMhighx = tfs->make<TH1F>("hAMhighx","hAMhighx",300,-10.,290.);
+  hAMhighx->GetXaxis()->SetTitle("x (cm)");
 
 }
 
@@ -249,24 +363,5 @@ void crt::T0recoCRTHitAnal::endJob()
 
 }
 
-void crt::T0recoCRTAnal::SortTrackPoints(const recob::Track& track, std::vector<TVector3>& sorted_trk)
-{
-
-  sorted_trk.clear();
-
-  auto const&N = track.NumberTrajectoryPoints();
-  auto const&start = track.LocationAtPoint(0);
-  auto const&end   = track.LocationAtPoint( N - 1 );
-
-  if (start.Y() > end.Y()){
-    for (size_t i=0; i < N; i++)
-      sorted_trk.push_back( track.LocationAtPoint(i) );
-  }
-
-  else {
-    for (size_t i=0; i < N; i++)
-      sorted_trk.push_back( track.LocationAtPoint( N - i - 1) );
-  }
-}
 
 DEFINE_ART_MODULE(crt::T0recoCRTHitAnal)
