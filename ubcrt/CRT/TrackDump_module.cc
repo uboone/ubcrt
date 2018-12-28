@@ -93,6 +93,8 @@ private:
   bool fSaveTPCTrackInfo;
   std::string  data_labeltrack_;
   std::string  data_labeltzero_;
+  std::string  data_label_t0A_;
+  std::string  data_label_t0C_;
   std::string  data_labelhit_;
   std::string  data_label_flash_;
   std::string  data_label_DAQHeader_;
@@ -190,7 +192,8 @@ private:
   double trktheta[kMaxTPCtracks];
   double trkphi[kMaxTPCtracks];
   double trklen[kMaxTPCtracks];
-  double tzero[kMaxTPCtracks];
+  double tzeroACPT[kMaxTPCtracks];
+  double tzeroCRT[kMaxTPCtracks];
   
 };
 
@@ -201,6 +204,8 @@ TrackDump::TrackDump(fhicl::ParameterSet const & p)
     fSaveTPCTrackInfo(p.get< bool >("SaveTPCTrackInfo", false)), 
     data_labeltrack_(p.get<std::string>("data_labeltrack")),
     data_labeltzero_(p.get<std::string>("data_labeltzero")),
+    data_label_t0A_(p.get<std::string>("data_label_t0ACPT")),
+    data_label_t0C_(p.get<std::string>("data_label_t0CRT")),
     data_labelhit_(p.get<std::string>("data_labelhit")),
     data_label_flash_(p.get<std::string>("data_label_flash_")),
     data_label_DAQHeader_(p.get<std::string>("data_label_DAQHeader_")),
@@ -274,8 +279,8 @@ void TrackDump::analyze(art::Event const & evt)
   
 
   if (fSaveTPCTrackInfo) {
-
-    // get TPC Track List 
+    
+      // get TPC Track List 
     art::Handle< std::vector<recob::Track>  > trackListHandle; 
     std::vector<art::Ptr<recob::Track> >  tracklist;
     if (evt.getByLabel(fTrackModuleLabel,trackListHandle))
@@ -288,7 +293,17 @@ void TrackDump::analyze(art::Event const & evt)
       std::cout << std::endl;
       return;
     }
-    
+  //check whether tzeros exist
+    // bool iT0acpt=false;
+    // bool iT0crt = false;
+    // art::Handle< std::vector<anab::T0> > rawHandle_Tzero;
+    // evt.getByLabel(data_label_tzeroACPT, rawHandle_Tzero);
+    // //check to make sure the data we asked for is valid                                                                                
+    // if(!rawHandle_Tzero.isValid()){ 
+            // grab T0 objects associated with tracks    
+    art::FindMany<anab::T0> trk_t0C_assn_v(trackListHandle, evt, data_label_t0C_);
+    // grab flashes associated with tracks (anode or cathode crossers)
+    art::FindMany<anab::T0> trk_t0A_assn_v(trackListHandle, evt, data_label_t0A_);
     
     nTPCtracks = tracklist.size();
     if (nTPCtracks>kMaxTPCtracks) nTPCtracks=kMaxTPCtracks;
@@ -297,6 +312,8 @@ void TrackDump::analyze(art::Event const & evt)
       TVector3 pos, dir_start, dir_end, end;              
       art::Ptr<recob::Track> ptrack(trackListHandle, j);
       const recob::Track& track = *ptrack;
+      const std::vector<const anab::T0*>& T0_v = trk_t0C_assn_v.at(j);
+      const std::vector<const anab::T0*>& T0_acpt = trk_t0A_assn_v.at(j);
       
       pos       = track.Vertex();
       dir_start = track.VertexDirection();
@@ -318,10 +335,19 @@ void TrackDump::analyze(art::Event const & evt)
       trkenddcosz[j]=dir_end.Z();
       trktheta[j]=dir_start.Theta();
       trkphi[j]=dir_start.Phi();
-      tzero[j]=-9999.0;
-    }
+      tzeroACPT[j]=-9999.0;
+      if (T0_acpt.size()==1) { 
+	auto t0 = T0_acpt.at(0);
+	tzeroACPT[j]=t0->Time();  //track time in us, t0->time() in us
+      }
+      tzeroCRT[j]=-9999.0;
+      if (T0_v.size()==1) { 
+	auto t0 = T0_v.at(0);
+	tzeroCRT[j]=t0->Time();
+      }
+    }  // loop over tracks
   }   //  if (saveTPCtrackinfo)
-
+  
   /*
   
   //get Optical Flash
@@ -483,14 +509,14 @@ void TrackDump::analyze(art::Event const & evt)
     tz_time_s[j]=(double)my_CRTtz.ts0_s;
     tz_time0[j]=(double)my_CRTtz.ts0_ns;
     tz_time1[j]=(double)my_CRTtz.ts1_ns;
-      tz_hits0[j]=my_CRTtz.nhits[0];
-      tz_hits1[j]=my_CRTtz.nhits[1];
-      tz_hits2[j]=my_CRTtz.nhits[2];
-      tz_hits3[j]=my_CRTtz.nhits[3];
-      tz_pes0[j]=my_CRTtz.pes[0];
-      tz_pes1[j]=my_CRTtz.pes[1];
-      tz_pes2[j]=my_CRTtz.pes[2];
-      tz_pes3[j]=my_CRTtz.pes[3];
+    tz_hits0[j]=my_CRTtz.nhits[0];
+    tz_hits1[j]=my_CRTtz.nhits[1];
+    tz_hits2[j]=my_CRTtz.nhits[2];
+    tz_hits3[j]=my_CRTtz.nhits[3];
+    tz_pes0[j]=my_CRTtz.pes[0];
+    tz_pes1[j]=my_CRTtz.pes[1];
+    tz_pes2[j]=my_CRTtz.pes[2];
+    tz_pes3[j]=my_CRTtz.pes[3];
   }
 
 
@@ -634,7 +660,8 @@ void TrackDump::beginJob()
   fTree->Branch("trktheta",trktheta,"trktheta[nTPCtracks]/D");
   fTree->Branch("trkphi",trkphi,"trkphi[nTPCtracks]/D");
   fTree->Branch("trklen",trklen,"trklen[nTPCtracks]/D");
-  fTree->Branch("tzero",tzero,"tzero[nTPCtracks]/D");
+  fTree->Branch("tzeroACPT",tzeroACPT,"tzeroACPT[nTPCtracks]/D");
+  fTree->Branch("tzeroCRT",tzeroCRT,"tzeroCRT[nTPCtracks]/D");
   }
 
 

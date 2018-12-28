@@ -4,7 +4,7 @@
 
 t0recocrthit_data:		
     {			
-      module_type: T0recoCRThit
+      module_type: T0recoCRTHit
       data_label_TPCtrack: "pandoraCosmic"
       data_label_CRTtzero: "crttzero"
       data_label_CRThit: "merger"
@@ -18,21 +18,24 @@ t0recocrthit_data:
 	 # distance squared in cm^2 from track extrapolation to CRT hit 
 	 #   must be less than this to be considered a match
       fMatchCut: 100
-      fMCfudge: 1.0   # default is 1.0
 	 # alignment offsets for CRT planes in cm, default is 0.0 for all
       AlignBotX:    -4.4
+      AlignBotY:     0.0
       AlignBotZ:    30.2
+      AlignAnodeX:   0.0
       AlignAnodeY:  20.0
-      AlignAnodeZ:  5.7
+      AlignAnodeZ:   5.7
+      AlignCathX:    0.0
       AlignCathY:   -9.8
-      AlignCathZ:   0.4
-      AlignTopX:   20.8
+      AlignCathZ:    0.4
+      AlignTopX:    20.8
+      AlignTopY:     0.0
       AlignTopZ:   -28.1
      }
 
 t0recocrthit_sim:		
     {			
-      module_type: T0recoCRThit
+      module_type: T0recoCRTHit
       data_label_TPCtrack: "pandoraCosmic"
       data_label_CRTtzero: "crttzero"
       data_label_CRThit: "merger"
