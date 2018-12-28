@@ -17,7 +17,7 @@ t0recocrthit_data:
       fTimeSelect: 0
 	 # distance squared in cm^2 from track extrapolation to CRT hit 
 	 #   must be less than this to be considered a match
-      fMatchCut: 100
+      fMatchCut: 40
 	 # alignment offsets for CRT planes in cm, default is 0.0 for all
       AlignBotX:    -4.4
       AlignBotY:     0.0
@@ -48,10 +48,7 @@ t0recocrthit_sim:
       fTimeSelect: 1
 	 # distance squared in cm^2 from track extrapolation to CRT hit 
 	 #   must be less than this to be considered a match
-      fMatchCut: 100
-#      fMatchCut: 200
-      fMCfudge: 0.2
-   # alignment offsets for CRT planes in cm, default is 0.0 for all
-   #  leave at 0.0 for simulated data
+      fMatchCut: 40
+      fMCfudge: 0.2  # not used
      }
 
