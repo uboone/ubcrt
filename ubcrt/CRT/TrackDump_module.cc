@@ -294,17 +294,22 @@ void TrackDump::analyze(art::Event const & evt)
       return;
     }
   //check whether tzeros exist
-    // bool iT0acpt=false;
-    // bool iT0crt = false;
-    // art::Handle< std::vector<anab::T0> > rawHandle_Tzero;
-    // evt.getByLabel(data_label_tzeroACPT, rawHandle_Tzero);
-    // //check to make sure the data we asked for is valid                                                                                
-    // if(!rawHandle_Tzero.isValid()){ 
-            // grab T0 objects associated with tracks    
-    art::FindMany<anab::T0> trk_t0C_assn_v(trackListHandle, evt, data_label_t0C_);
-    // grab flashes associated with tracks (anode or cathode crossers)
-    art::FindMany<anab::T0> trk_t0A_assn_v(trackListHandle, evt, data_label_t0A_);
-    
+    bool iT0acpt=false;
+    bool iT0crt = false;
+    art::Handle< std::vector<anab::T0> > rawHandle_Tzero;
+    evt.getByLabel(data_label_t0A_, rawHandle_Tzero);
+    if(rawHandle_Tzero.isValid()) { iT0acpt=true;
+      // grab flashes associated with tracks (anode or cathode crossers)
+      //      art::FindMany<anab::T0> trk_t0A_assn_v(trackListHandle, evt, data_label_t0A_);
+      std::cout << "found data product for acpt times" << std::endl;
+    }
+    evt.getByLabel(data_label_t0C_, rawHandle_Tzero);
+    if(rawHandle_Tzero.isValid()) {iT0crt=true;
+      // grab T0 objects associated with tracks    
+      //      art::FindMany<anab::T0> trk_t0C_assn_v(trackListHandle, evt, data_label_t0C_);
+      std::cout << "found data product for crt times" << std::endl;
+    }
+
     nTPCtracks = tracklist.size();
     if (nTPCtracks>kMaxTPCtracks) nTPCtracks=kMaxTPCtracks;
     for(int j = 0; j < nTPCtracks; j++) {
@@ -312,8 +317,6 @@ void TrackDump::analyze(art::Event const & evt)
       TVector3 pos, dir_start, dir_end, end;              
       art::Ptr<recob::Track> ptrack(trackListHandle, j);
       const recob::Track& track = *ptrack;
-      const std::vector<const anab::T0*>& T0_v = trk_t0C_assn_v.at(j);
-      const std::vector<const anab::T0*>& T0_acpt = trk_t0A_assn_v.at(j);
       
       pos       = track.Vertex();
       dir_start = track.VertexDirection();
@@ -336,14 +339,22 @@ void TrackDump::analyze(art::Event const & evt)
       trktheta[j]=dir_start.Theta();
       trkphi[j]=dir_start.Phi();
       tzeroACPT[j]=-9999.0;
-      if (T0_acpt.size()==1) { 
-	auto t0 = T0_acpt.at(0);
-	tzeroACPT[j]=t0->Time();  //track time in us, t0->time() in us
+      if (iT0acpt) { 
+	art::FindMany<anab::T0> trk_t0A_assn_v(trackListHandle, evt, data_label_t0A_);
+	const std::vector<const anab::T0*>& T0_acpt = trk_t0A_assn_v.at(j);
+	if (T0_acpt.size()==1) { 
+	  auto t0 = T0_acpt.at(0);
+	  tzeroACPT[j]=t0->Time();  //track time in us, t0->time() in us
+	}
       }
       tzeroCRT[j]=-9999.0;
-      if (T0_v.size()==1) { 
-	auto t0 = T0_v.at(0);
-	tzeroCRT[j]=t0->Time();
+      if (iT0crt) { 
+	art::FindMany<anab::T0> trk_t0C_assn_v(trackListHandle, evt, data_label_t0C_);
+	const std::vector<const anab::T0*>& T0_v = trk_t0C_assn_v.at(j);
+	if (T0_v.size()==1) { 
+	  auto t0 = T0_v.at(0);
+	  tzeroCRT[j]=t0->Time();
+	}
       }
     }  // loop over tracks
   }   //  if (saveTPCtrackinfo)

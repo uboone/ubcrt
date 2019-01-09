@@ -19,10 +19,10 @@
 #include "canvas/Utilities/InputTag.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
-
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "art/Framework/Services/Optional/TFileService.h"
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
 //data-products
 #include "lardataobj/RecoBase/Track.h"
@@ -205,6 +205,8 @@ void crt::T0recoCRTHitAnal::analyze(art::Event const & evt)
   // //get CRTHits                                                                                                                                              
   // 1.11436 mm/us   
   double driftvel = 0.11436; //   units  cm/us 
+  // const detinfo::DetectorProperties *_detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
+  // double const vdrift =  _detprop->DriftVelocity();  
 
 
   // grab T0 objects associated with tracks    
