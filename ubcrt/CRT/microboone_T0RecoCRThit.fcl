@@ -10,14 +10,15 @@ t0recocrthit_data:
       data_label_CRThit: "merger"
       data_label_flash: "opflashCosmic"
       data_label_DAQHeader: "daq"
-      fHardDelay: 40000   #BNB data is 35520?
-      fTimeZeroOffset: 69100   #used for fTimeSelect=0
-      fverbose: 0
+      HardDelay: 40000   #BNB data is 35520, for TimeSelect=1
+      TimeZeroOffset: 69100   #used for TimeSelect=0
+      verbose: 0
 	 # set =0 for GPS ref and =1 to use trigger time
-      fTimeSelect: 0
+      TimeSelect: 0
 	 # distance squared in cm^2 from track extrapolation to CRT hit 
 	 #   must be less than this to be considered a match
-      fMatchCut: 40
+      MatchCut: 40
+      DriftVel: 0.11436  # in cm/us, should be 0.1098 eventually
 	 # alignment offsets for CRT planes in cm, default is 0.0 for all
       AlignBotX:    -4.4
       AlignBotY:     0.0
