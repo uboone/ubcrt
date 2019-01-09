@@ -15,6 +15,8 @@
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
+#include "art/Framework/Services/Registry/ServiceHandle.h"
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardataobj/RecoBase/Track.h"
 #include "lardataobj/RecoBase/OpFlash.h"
 #include "lardataobj/RecoBase/PFParticle.h"
@@ -86,7 +88,7 @@ private:
   int fTimeZeroOffset;
   int fTimeSelect;
   int fMatchCut;
-  double fvdrift;
+  float fDriftVel;
   bool fstoreAssn;
   bool fverbose;
   bool fIsMC;
@@ -180,7 +182,7 @@ T0recoCRTHit::T0recoCRTHit(fhicl::ParameterSet const & p)
     fTimeZeroOffset(p.get<int>("TimeZeroOffset",60000)),
     fTimeSelect(p.get<int>("TimeSelect",1)),
     fMatchCut(p.get<int>("MatchCut",40)),
-    fvdrift(p.get<float>("vdrift",1.11436)),
+    fDriftVel(p.get<float>("DriftVel",0.11436)),   // cm/us
     fstoreAssn(p.get<bool>("storeAssn",true)),
     fverbose(p.get<bool>("verbose",false)),
     fIsMC(p.get<bool>("IsMC",false)),
@@ -355,7 +357,7 @@ void T0recoCRTHit::produce(art::Event & evt)
       for(size_t tzIter = 0; tzIter < tzerolist.size(); ++tzIter){   
 	
 	// if (fTimeSelect==0) // for EXT BNB data
-	//     xshift = ((double)tzerolist[tzIter]->ts0_ns - (double)evt_timeGPS_nsec)*vdrift;
+	//     xshift = ((double)tzerolist[tzIter]->ts0_ns - (double)evt_timeGPS_nsec)*vdrift);
 	// else //fTimeSelect_==1 for BNB data
 	float diff;
 	if (fTimeSelect==1) diff= fabs(0.001*(tzerolist[tzIter]->ts1_ns+fHardDelay)-Timeflash);
@@ -386,9 +388,13 @@ void T0recoCRTHit::produce(art::Event & evt)
     }
   } // loop over flashes
    
+  
+  double const vdrift = fDriftVel*0.001;  // in cm/ns
+  // const detinfo::DetectorProperties *_detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
+  // double const vdrift =  _detprop->DriftVelocity();  
+  // std::cout << "drift velocity is " << vdrift << std::endl;
+
   // loop over tracks  
-  double vdrift = 0.0001*fvdrift;  // units cm/ns
-  if (fverbose)  std::cout << "drift velocity is " << vdrift << std::endl;
   if (tracklist.size()>0) {
     for (size_t trkIter = 0; trkIter < tracklist.size(); ++trkIter) {
       
