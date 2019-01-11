@@ -180,7 +180,7 @@ T0recoCRTHit::T0recoCRTHit(fhicl::ParameterSet const & p)
     data_label_DAQHeader_(p.get<std::string>("data_label_DAQHeader")),
     fHardDelay(p.get<int>("HardDelay",40000)),
     fTimeZeroOffset(p.get<int>("TimeZeroOffset",60000)),
-    fTimeSelect(p.get<int>("TimeSelect",1)),
+    fTimeSelect(p.get<int>("TimeSelect",0)),
     fMatchCut(p.get<int>("MatchCut",40)),
     fDriftVel(p.get<float>("DriftVel",0.11436)),   // cm/us
     fstoreAssn(p.get<bool>("storeAssn",true)),
@@ -278,25 +278,6 @@ void T0recoCRTHit::produce(art::Event & evt)
   }// end if verbose  
   
    
- 
-  /*  Not used
-  //get CRTHits
-  art::Handle< std::vector<crt::CRTHit> > rawHandle_hit;
-  evt.getByLabel(data_label_CRThit_, rawHandle_hit); //
-  
-  //check to make sure the data we asked for is valid
-  if(!rawHandle_hit.isValid()){
-    std::cout << "Run " << evt.run() << ", subrun " << evt.subRun()
-	      << ", event " << evt.event() << " has zero"
-              << " CRTHits " << " in module " << data_label_CRThit_ << std::endl;
-    std::cout << std::endl;
-    return;
-  }
-  std::vector<crt::CRTHit> const& CRTHitCollection(*rawHandle_hit);
-  if(fverbose){ 
-    std::cout<<"  CRTHitCollection.size()  "<<CRTHitCollection.size()<<std::endl; 
-  }    //end get CRTHits
-  */
 
   // fetch tzeros 
   art::Handle< std::vector<crt::CRTTzero> > rawHandletzero;
@@ -417,23 +398,13 @@ void T0recoCRTHit::produce(art::Event & evt)
 	trackCosStart[2]*trackCosEnd[2];
       
       //reject tracks that are too short and bend too much
-      //      if (trklen>40 && opang>0.8) { - guess for now
-      //      if (trklen>20&& opang>0.95)  {
       if (trklen>5 && opang>0.8)  {
-	//      TrackGood=1;
-	//      if (ACPTyes==1) {      
-	//  Apply track quality cuts on length and straightness
 	
 	if (fverbose) {
 	  std::cout << "Event " << evt.event() <<  " Track " << trkIter << " cos(opening angle) " << 
 	    opang << "  track length " << trklen << std::endl;
 	  std::cout << "        theta " << theta << " phi " << phi << std::endl;
 	}
-	// crosses anode or cathode??
-	// if (fabs(startP.X()-vdrift*tracktime+0.557)<1) anodeYES=1;
-	// else if (fabs(endP.X()-vdrift*tracktime+0.557)<1) anodeYES=1;
-	// else if (fabs(startP.X()-vdrift*tracktime-258.18)<1) anodeYES=2;
-	// else if (fabs(endP.X()-vdrift*tracktime-258.18)<1) anodeYES=2;
 	
 	int besttz=-1; 
 	//loop over CRT tzeros
@@ -506,9 +477,9 @@ void T0recoCRTHit::produce(art::Event & evt)
 		    //	    art::Ptr<recob::OpFlash> flashptr = flashPtrMaker(j);
 		    //	    art::Ptr<crt::CRTHit> crthitptr = crthitPtrMaker(k);
 		    
-		    if (fTimeSelect==1)
-		      time_besthit=hitlist[ah]->ts1_ns+ fHardDelay; 
-		    else time_besthit = (double)hitlist[ah]->ts0_ns + fTimeZeroOffset- evt_timeGPS_nsec;
+		    if (fTimeSelect==0)
+		      time_besthit = (double)hitlist[ah]->ts0_ns + fTimeZeroOffset- evt_timeGPS_nsec;
+		    else  time_besthit=hitlist[ah]->ts1_ns+ fHardDelay; 
 		  }
 		} // loop over CRT hits
 	      }// if hits 
