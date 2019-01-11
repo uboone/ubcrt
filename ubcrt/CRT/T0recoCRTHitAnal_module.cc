@@ -169,7 +169,6 @@ void crt::T0recoCRTHitAnal::analyze(art::Event const & evt)
     
   }
   //get TPCTracks                                                                                                                                               
-  /*  
 
   //get Optical Flash			   
   
@@ -181,33 +180,62 @@ void crt::T0recoCRTHitAnal::analyze(art::Event const & evt)
   }
   //get Optical Flash 
   
-  */
-  // //get CRTHits				   
-  // art::Handle< std::vector<crt::CRTHit> > rawHandle_CRThit;
-  // evt.getByLabel(data_labelCRThit_, rawHandle_CRThit); //                                                                                                       
-  // //check to make sure the data we asked for is valid	
-  
-  // if(!rawHandle_CRThit.isValid()){
-  //   std::cout << "Run " << evt.run() << ", subrun " << evt.subRun()
-  //             << ", event " << evt.event() << " has zero"
-  //             << " CRTHits " << " in module " << data_labelCRThit_ << std::endl;
-  //   std::cout << std::endl;
-  //   return;
-  // }
-  
-  // //get better access to the data      
-  
-  // std::vector<crt::CRTHit> const& CRTHitCollection(*rawHandle_CRThit);
-  // if(verbose_!=0){
-  //   std::cout<<"  CRTHitCollection.size()  "<<CRTHitCollection.size()<<std::endl;
-  //   //  getchar();			  
-  // }
-  // //get CRTHits                                                                                                                                              
+                 
+  // look for match between CRT and flashes   
+  for(std::vector<int>::size_type i = 0; i != OpFlashCollection.size(); i++) {//B
+      
+    recob::OpFlash my_OpFlash = OpFlashCollection[i];
+      
+    auto Yflash = my_OpFlash.YCenter();
+    auto Zflash = my_OpFlash.ZCenter();
+    auto PEflash = my_OpFlash.TotalPE();
+    auto Timeflash = my_OpFlash.Time(); //in us from trigger time
+    auto Timeflash_ns = (Timeflash * 1000);
+    auto Timeflash_ns_GPS = evt_timeGPS_nsec + (Timeflash * 1000);      
+    int fbeam = my_OpFlash.OnBeamTime();
+    uint32_t Flash_sec = evt_timeGPS_sec;
+      
+    //    hFlashTimeDis->Fill(Timeflash);
+    
+    //loop over CRT tzeros
+    float min_deltat = 3000.0; int best_time_match = -1;
+    if (tzerolist.size()>0) {   
+      for(size_t tzIter = 0; tzIter < tzerolist.size(); ++tzIter){   
+	float diff;
+	if (fTimeSelect==0) diff = fabs(0.001*(tzerolist[tzIter]->ts0_ns+fTimeZeroOffset-(double)evt_timeGPS_nsec)-Timeflash);
+	else diff= fabs(0.001*(tzerolist[tzIter]->ts1_ns+fHardDelay)-Timeflash);
+	if (diff<min_deltat) { min_deltat=diff; best_time_match=tzIter;}
+      } // loop over tzeros     
+      if (best_time_match>=0) {
+	hDiffT_CRT_Flash->Fill(min_deltat);	
+	if (fverbose) std::cout << "Closest CRT hit in time to this flash is tzero no " << 
+			best_time_match << " at time (us) " <<
+			0.001*(tzerolist[best_time_match]->ts1_ns+fHardDelay) << std::endl;
+      }// if CRT-flash match found
+    } // if tzeros 
+
+    if(fverbose){ 
+      std::cout<<"event: "<<fEvtNum<<std::endl;
+      std::cout<<"Flash: "<<i<<std::endl;
+      std::cout<<"Beam: "<<fbeam<<std::endl;
+      std::cout<<"Zflash: "<<Zflash<<std::endl;
+      std::cout<<"Yflash: "<<Yflash<<std::endl;
+      std::cout<<"PEflash: "<<PEflash<<std::endl;
+      std::cout.precision(19);
+      std::cout<<" "<<std::endl;
+      std::cout<<"Flash time: "<<Flash_sec<< " seconds"<<std::endl;
+      std::cout<<"Flash time: "<<Timeflash<< "  us w.r.t to trigger"<<std::endl;
+      std::cout<<"Flash time: "<<Timeflash_ns<< "  ns w.r.t to trigger"<<std::endl;
+      std::cout<<"Flash time: "<<Timeflash_ns_GPS<< "  ns in GPS"<<std::endl;
+      std::cout<<" "<<std::endl;
+    }
+  } // loop over flashes
+   
+
   // 1.11436 mm/us   
   double driftvel = 0.11436; //   units  cm/us 
   // const detinfo::DetectorProperties *_detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
   // double const vdrift =  _detprop->DriftVelocity();  
-
 
   // grab T0 objects associated with tracks    
   art::FindMany<anab::T0> trk_t0_assn_v(rawHandle_TPCtrack, evt, data_label_crtT0);
@@ -301,7 +329,7 @@ void crt::T0recoCRTHitAnal::beginJob()
   hDiffT_CRT_AFlash->GetXaxis()->SetTitle("Flash_time_ACPT - CRTHit_Time (us)");
   hDiffT_CRT_AFlash->GetYaxis()->SetTitle("Entries/bin");
 
-  hDiffT_CRT_Flash = tfs->make<TH1F>("hDiffT_CRT_T0Flash","hDiffT_CRT_T0Flash",400,-2,2);
+  hDiffT_CRT_Flash = tfs->make<TH1F>("hDiffT_CRT_Flash","hDiffT_CRT_Flash",400,-2,2);
   hDiffT_CRT_Flash->GetXaxis()->SetTitle("Nearest_Flash - CRTHit_Time (us)");
   hDiffT_CRT_Flash->GetYaxis()->SetTitle("Entries/bin");
 

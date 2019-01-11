@@ -9,7 +9,7 @@ t0recocrthitana:
       data_label_acptT0: "pandoraCosmicT0Reco"
       data_label_crtT0:  "match"
       data_label_CRThit: "merger"
-      data_label_flash: "opflashCosmic"
+      data_label_flash: "simpleFlashCosmic"
       data_label_DAQHeader: "daq"
       fHardDelay: 40000   #BNB data is 35520?
       fTimeZeroOffset: 69100   #used for fTimeSelect=0
