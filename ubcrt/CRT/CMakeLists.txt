@@ -204,8 +204,6 @@ simple_plugin(CRTSimHitCorr "module"
     BASENAME_ONLY
 )
 
-		  
-
 
 simple_plugin(CRTHitProducer "module"
             CRT
