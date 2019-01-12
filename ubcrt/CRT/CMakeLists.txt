@@ -34,6 +34,7 @@ art_make( BASENAME_ONLY
 	CRTRawtoCRTHitGPScorr_source.cc
 	CRTAnalyser_module.cc	
 	CRTeffStd_module.cc			
+	CRTTiming_module.cc
         T0recoCRT_module.cc                     
         T0recoCRTHit_module.cc                     
         T0recoCRTAnal_module.cc 
@@ -335,6 +336,14 @@ simple_plugin(T0recoCRTAnal "module"
           ${ROOT_BASIC_LIB_LIST} )
 
 simple_plugin(T0recoCRTHitAnal "module"
+            CRT
+          bernfebdaq-core_Overlays
+          art_Framework_Services_Optional
+          art_Framework_Services_Registry
+          art_Framework_Services_Optional_TFileService_service
+          ${ROOT_BASIC_LIB_LIST} )
+
+simple_plugin(CRTTiming "module"
             CRT
           bernfebdaq-core_Overlays
           art_Framework_Services_Optional
