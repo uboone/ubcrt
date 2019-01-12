@@ -104,7 +104,8 @@ microboone_crtdetsim:
 # temporary change for binary detector response 
   TResInterpolator: 1.268
   // Model parameters for Npe vs. distance along strip
-  NpeScaleNorm: 5.261e7
+#  NpeScaleNorm: 5.261e7
+  NpeScaleNorm: 1.052e8
   NpeScaleShift: -1085.0
   // Mean deposited charge for mips [GeV]
   Q0: 1.75e-3
