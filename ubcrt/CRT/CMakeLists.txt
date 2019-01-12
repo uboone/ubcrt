@@ -181,30 +181,6 @@ simple_plugin(CRTSimHitCorr "module"
     BASENAME_ONLY
 )
 
-simple_plugin(CRTSimHitCorr "module"
-          larcorealg_Geometry
-        larcore_Geometry_Geometry_service
-	  CRT
-	  CRTData
-	          ${ART_FRAMEWORK_CORE}
-        	  ${ART_FRAMEWORK_IO_SOURCES}
-        	  ${ART_FRAMEWORK_PRINCIPAL}
-        art_Persistency_Common canvas
-        art_Persistency_Provenance canvas
-        art_Utilities canvas
-        lardata_DetectorInfoServices_DetectorClocksServiceStandard_service
-        nutools_RandomUtils_NuRandomService_service
-        ${ART_FRAMEWORK_SERVICES_REGISTRY}
-        ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR_SERVICE}
-        ${MF_MESSAGELOGGER}        
-        ${ROOT_BASIC_LIB_LIST}
-        ${CLHEP}
-        cetlib cetlib_except
-    BASENAME_ONLY
-)
-
-		  
-
 
 simple_plugin(CRTHitProducer "module"
             CRT
