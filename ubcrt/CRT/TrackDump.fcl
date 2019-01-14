@@ -28,6 +28,7 @@ physics:
       data_label_flash_: "opflash"
       data_label_DAQHeader_: "daq"
       fHardDelay: 40000
+      fTimeZeroOffset: 60000
       verbose: 0
       TrackModuleLabel: "pandoraCosmic"
       SaveTPCTrackInfo: true

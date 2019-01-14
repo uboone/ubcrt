@@ -19,10 +19,12 @@
 #include "canvas/Utilities/InputTag.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
-#include "fhiclcpp/ParameterSet.h"
-#include "messagefacility/MessageLogger/MessageLogger.h"
 #include "art/Framework/Services/Optional/TFileService.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
+#include "canvas/Persistency/Common/Ptr.h"
+#include "canvas/Persistency/Common/Assns.h"
+#include "canvas/Persistency/Provenance/ProductID.h"
+#include "art/Persistency/Common/PtrMaker.h"
 
 //data-products
 #include "lardataobj/RecoBase/Track.h"
@@ -37,6 +39,7 @@
 //CRT data-products                                                              
 #include "ubobj/CRT/CRTHit.hh"
 #include "ubobj/CRT/CRTTrack.hh"
+#include "ubobj/CRT/CRTTzero.hh"
 #include "ubcrt/CRT/CRTAuxFunctions.hh"
 #include "ubobj/RawData/DAQHeaderTimeUBooNE.h"
 
@@ -88,11 +91,17 @@ private:
   // Declare member data here.
   art::ServiceHandle<art::TFileService> tfs;
 
+  std::string  data_label_DAQHeader;
+  std::string  data_label_flash;
+  std::string  data_label_crttzero;
   std::string  data_label_TPCTrack;
   std::string  data_label_crtT0;
   std::string  data_label_acptT0;
   float fTQCutOpAng;
   float fTQCutLength;
+  int fTimeSelect;
+  int fHardDelay;
+  int fTimeZeroOffset;
   bool fverbose;
   bool fIsMC;
   
@@ -132,13 +141,17 @@ crt::T0recoCRTHitAnal::T0recoCRTHitAnal(fhicl::ParameterSet const & p)
   :
   EDAnalyzer(p),
   // data_labelCRThit_(p.get<std::string>("data_labelCRThit")),
-  // data_label_flash_(p.get<std::string>("data_label_flash_")),
-  // data_label_DAQHeader_(p.get<std::string>("data_label_DAQHeader_")),
+  data_label_DAQHeader(p.get<std::string>("data_label_DAQHeader")),
+  data_label_flash(p.get<std::string>("data_label_flash","simpleFlashCosmic")),
+  data_label_crttzero(p.get<std::string>("data_label_CRTtzero","crttzero")),
   data_label_TPCTrack(p.get<std::string>("data_label_TPCtrack","pandoraCosmic")),
   data_label_crtT0(p.get<std::string>("data_label_crtT0","t0recocrthit")),
-  data_label_acptT0(p.get<std::string>("data_label_acptT0","pandoraComsicT0Reco")),
+  data_label_acptT0(p.get<std::string>("data_label_acptT0","pandoraCosmicT0Reco")),
   fTQCutOpAng(p.get<float>("TQCutOpAng",0.95)),
   fTQCutLength(p.get<float>("TQCutLength",20)),
+  fTimeSelect(p.get<int>("TimeSelect",0)),
+  fHardDelay(p.get<int>("HardDelay",40000)),
+  fTimeZeroOffset(p.get<int>("TimeZeroOffset",60000)),
   fverbose(p.get<bool>("verbose",false)),
   fIsMC(p.get<bool>("IsMC",false))
  // More initializers here.
@@ -147,8 +160,29 @@ crt::T0recoCRTHitAnal::T0recoCRTHitAnal(fhicl::ParameterSet const & p)
 void crt::T0recoCRTHitAnal::analyze(art::Event const & evt)
 {
 
+  double evt_timeGPS_sec = 0.0;
+  double evt_timeGPS_nsec = 0.0;
 
-  if (fIsMC) std::cout << "this is monte carlo" << std::endl;
+  if (!fIsMC) {  // this is data
+    
+    //check to make sure the data we asked for is valid 
+    //get DAQ Header                                                                  
+    art::Handle< raw::DAQHeaderTimeUBooNE > rawHandle_DAQHeader;  
+    evt.getByLabel(data_label_DAQHeader, rawHandle_DAQHeader);
+    
+    if(!rawHandle_DAQHeader.isValid()){
+      std::cout << "Run " << evt.run() << ", subrun " << evt.subRun()
+		<< ", event " << evt.event() << " has zero"
+		<< " DAQHeaderTimeUBooNE  " << " in with label " << data_label_DAQHeader << std::endl;    
+      return;
+    }
+    
+    raw::DAQHeaderTimeUBooNE const& my_DAQHeader(*rawHandle_DAQHeader);
+    art::Timestamp evtTimeGPS = my_DAQHeader.gps_time();  
+    evt_timeGPS_sec = evtTimeGPS.timeHigh();
+    evt_timeGPS_nsec = (double)evtTimeGPS.timeLow();
+  }// end if data
+
   
   //get TPC Tracks  
   art::Handle< std::vector<recob::Track> > rawHandle_TPCtrack;
@@ -170,15 +204,29 @@ void crt::T0recoCRTHitAnal::analyze(art::Event const & evt)
   }
   //get TPCTracks                                                                                                                                               
 
-  //get Optical Flash			   
-  
+  //get Optical Flash			     
   art::Handle< std::vector<recob::OpFlash> > rawHandle_OpFlash;
-  evt.getByLabel(data_label_flash_, rawHandle_OpFlash);
+  evt.getByLabel(data_label_flash, rawHandle_OpFlash);
   std::vector<recob::OpFlash> const& OpFlashCollection(*rawHandle_OpFlash);
   if(fverbose){
     std::cout<<"  OpFlashCollection.size()  "<<OpFlashCollection.size()<<std::endl;
   }
   //get Optical Flash 
+
+
+  // fetch tzeros 
+  art::Handle< std::vector<crt::CRTTzero> >  rawHandle_crttzero;
+  evt.getByLabel(data_label_crttzero, rawHandle_crttzero); 
+  //check to make sure the data we asked for is valid                                           
+  if(!rawHandle_crttzero.isValid()){
+    std::cout << "Run " << evt.run() << ", subrun " << evt.subRun()
+              << ", event " << evt.event() << " has zero"
+              << " CRTTzeros " << " in module " << data_label_crttzero << std::endl;
+    std::cout << std::endl;
+    return;
+  }
+  std::vector<crt::CRTTzero> const& tzerolist(*rawHandle_crttzero);
+
   
                  
   // look for match between CRT and flashes   
@@ -202,20 +250,20 @@ void crt::T0recoCRTHitAnal::analyze(art::Event const & evt)
     if (tzerolist.size()>0) {   
       for(size_t tzIter = 0; tzIter < tzerolist.size(); ++tzIter){   
 	float diff;
-	if (fTimeSelect==0) diff = fabs(0.001*(tzerolist[tzIter]->ts0_ns+fTimeZeroOffset-(double)evt_timeGPS_nsec)-Timeflash);
-	else diff= fabs(0.001*(tzerolist[tzIter]->ts1_ns+fHardDelay)-Timeflash);
-	if (diff<min_deltat) { min_deltat=diff; best_time_match=tzIter;}
+	if (fTimeSelect==0) diff = 0.001*(tzerolist[tzIter].ts0_ns+fTimeZeroOffset-(double)evt_timeGPS_nsec)-Timeflash;
+	else diff=0.001*(tzerolist[tzIter].ts1_ns+fHardDelay)-Timeflash;
+	if (fabs(diff)<fabs(min_deltat)) { min_deltat=diff; best_time_match=tzIter;}
       } // loop over tzeros     
       if (best_time_match>=0) {
 	hDiffT_CRT_Flash->Fill(min_deltat);	
 	if (fverbose) std::cout << "Closest CRT hit in time to this flash is tzero no " << 
 			best_time_match << " at time (us) " <<
-			0.001*(tzerolist[best_time_match]->ts1_ns+fHardDelay) << std::endl;
+			0.001*(tzerolist[best_time_match].ts1_ns+fHardDelay) << std::endl;
       }// if CRT-flash match found
     } // if tzeros 
 
     if(fverbose){ 
-      std::cout<<"event: "<<fEvtNum<<std::endl;
+      std::cout<<"event: "<<evt.event()<<std::endl;
       std::cout<<"Flash: "<<i<<std::endl;
       std::cout<<"Beam: "<<fbeam<<std::endl;
       std::cout<<"Zflash: "<<Zflash<<std::endl;
@@ -251,14 +299,13 @@ void crt::T0recoCRTHitAnal::analyze(art::Event const & evt)
     double t_phi=my_TPCTrack.Phi();
     if (t_phi>0) {t_phi-=3.14159; t_theta=3.14159-my_TPCTrack.Theta();}
     double t_len = my_TPCTrack.Length();
-    // get track directional cosines
-    double trackCosStart[3]={0.,0.,0.};
-    double trackCosEnd[3]={0.,0.,0.};
-    my_TPCTrack.Direction(trackCosStart,trackCosEnd);      
-    double t_opang = trackCosStart[0]*trackCosEnd[0] +  trackCosStart[1]*trackCosEnd[1] + 
-      trackCosStart[2]*trackCosEnd[2];
+    auto trackCosStart = my_TPCTrack.StartDirection();
+    auto trackCosEnd = my_TPCTrack.EndDirection();    
+    double t_opang = trackCosStart.X()*trackCosEnd.X() +  trackCosStart.Y()*trackCosEnd.Y() + 
+      trackCosStart.Z()*trackCosEnd.Z();
+    
+    // clean track cuts for calculating efficiencies
     if (t_len>fTQCutLength && t_opang>fTQCutOpAng) {
-      //    if (t_len>20 && t_opang>0.95) {
       auto startP = my_TPCTrack.Start();
       auto endP = my_TPCTrack.End();
       double lowx = startP.X();
@@ -349,9 +396,9 @@ void crt::T0recoCRTHitAnal::beginJob()
   hAPhi = tfs->make<TH1F>("hAPhi","hAPhi",30,-3.14159,0);
   hAMTheta = tfs->make<TH1F>("hAMTheta","hAMTheta",30,0,3.14159);
   hAMPhi = tfs->make<TH1F>("hAMPhi","hAMPhi",30,-3.14159,0);
-  hMTime = tfs->make<TH1F>("hMtime","htime",200,-4000,4000);
-  hATime = tfs->make<TH1F>("hAMtime","hAtime",200,-4000,4000);
-  hAMTime = tfs->make<TH1F>("hAMtime","hAtime",200,-4000,4000);
+  hMTime = tfs->make<TH1F>("hMtime","hMtime",200,-4000,4000);
+  hATime = tfs->make<TH1F>("hAtime","hAtime",200,-4000,4000);
+  hAMTime = tfs->make<TH1F>("hAMtime","hAMtime",200,-4000,4000);
   hLength = tfs->make<TH1F>("hLength","hLength",80,0,400.0);
   hLength->GetXaxis()->SetTitle("Track Length (cm)");
   hOpAng = tfs->make<TH1F>("hOpAng","hOpAng",60,0.85,1.00);

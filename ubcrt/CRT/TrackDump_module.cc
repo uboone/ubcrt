@@ -100,6 +100,7 @@ private:
   std::string  data_label_DAQHeader_;
   bool fIsMC;
   int fHardDelay_;
+  int fTimeZeroOffset;
   int verbose_;
   
 
@@ -204,13 +205,14 @@ TrackDump::TrackDump(fhicl::ParameterSet const & p)
     fSaveTPCTrackInfo(p.get< bool >("SaveTPCTrackInfo", false)), 
     data_labeltrack_(p.get<std::string>("data_labeltrack")),
     data_labeltzero_(p.get<std::string>("data_labeltzero")),
-    data_label_t0A_(p.get<std::string>("data_label_t0ACPT")),
-    data_label_t0C_(p.get<std::string>("data_label_t0CRT")),
+    data_label_t0A_(p.get<std::string>("data_label_t0ACPT", "pandoraCosmicT0Reco" )),
+    data_label_t0C_(p.get<std::string>("data_label_t0CRT", "trackmatch" )),
     data_labelhit_(p.get<std::string>("data_labelhit")),
     data_label_flash_(p.get<std::string>("data_label_flash_")),
     data_label_DAQHeader_(p.get<std::string>("data_label_DAQHeader_")),
     fIsMC(p.get< bool >("IsMC", false)), 
     fHardDelay_(p.get<int>("fHardDelay",40000)),
+    fTimeZeroOffset(p.get<int>("fTimeZeroOffset",60000)),
     verbose_(p.get<int>("verbose"))
     // More initializers here.    
 {
@@ -404,8 +406,8 @@ void TrackDump::analyze(art::Event const & evt)
     //fill tree
     crt::CRTHit my_CRTHit = CRTHitCollection[j];
     hit_time_s[j]=(double)my_CRTHit.ts0_s;
-    hit_time0[j]=(double)my_CRTHit.ts0_ns - (double)evt_timeGPS_nsec;
-    hit_time1[j]=(double)my_CRTHit.ts1_ns + (double)fHardDelay_;  //  + 40000 for hardware offset;
+    hit_time0[j]=(double)my_CRTHit.ts0_ns - (double)evt_timeGPS_nsec + (double)fTimeZeroOffset;
+    hit_time1[j]=(double)my_CRTHit.ts1_ns + (double)fHardDelay_; 
     hit_charge[j]=my_CRTHit.peshit;
     hit_plane[j]=my_CRTHit.plane;
     hit_posx[j]=my_CRTHit.x_pos;
