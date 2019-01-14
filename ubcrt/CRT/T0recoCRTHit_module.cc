@@ -217,14 +217,6 @@ void T0recoCRTHit::produce(art::Event & evt)
   fsubRunNum = evt.subRun();
   fEvtNum = evt.event();
   
-  // art::Timestamp evtTime = evt.time();
-  // auto evt_time_sec = evtTime.timeHigh();
-  // auto evt_time_nsec = evtTime.timeLow();
-
-  //  double  evt_timeGPS_sec = evt_time_sec;
-  //double  evt_timeGPS_nsec = evt_time_nsec;
-  
-  
   // get TPC Track List 
   art::Handle< std::vector<recob::Track>  > trackListHandle;
   std::vector<art::Ptr<recob::Track> >  tracklist;
@@ -305,7 +297,8 @@ void T0recoCRTHit::produce(art::Event & evt)
   art::PtrMaker<recob::Track> trackPtrMaker(evt, trackListHandle.id());
   //art::PtrMaker<recob::OpFlash> flashPtrMaker(evt, rawHandle_OpFlash.id());
   art::PtrMaker<crt::CRTTzero> crttzPtrMaker(evt, rawHandletzero.id());
-  art::PtrMaker<anab::T0> t0PtrMaker(evt, *this);  
+  //  art::PtrMaker<anab::T0> t0PtrMaker(evt, *this);  
+  art::PtrMaker<anab::T0> t0PtrMaker(evt);  
 
   //get Optical Flash
   art::Handle< std::vector<recob::OpFlash> > rawHandle_OpFlash;
@@ -391,11 +384,11 @@ void T0recoCRTHit::produce(art::Event & evt)
       if (phi>0) {theta=3.14159-theta; phi=phi-3.14159;}
       
       // get track directional cosines
-      double trackCosStart[3]={0.,0.,0.};
-      double trackCosEnd[3]={0.,0.,0.};
-      tracklist[trkIter]->Direction(trackCosStart,trackCosEnd);      
-      double opang = trackCosStart[0]*trackCosEnd[0] +  trackCosStart[1]*trackCosEnd[1] + 
-	trackCosStart[2]*trackCosEnd[2];
+      auto trackCosStart = tracklist[trkIter]->StartDirection();
+      auto trackCosEnd = tracklist[trkIter]->EndDirection();
+
+      double opang = trackCosStart.X()*trackCosEnd.X() +  trackCosStart.Y()*trackCosEnd.Y() + 
+	trackCosStart.Z()*trackCosEnd.Z();
       
       //reject tracks that are too short and bend too much
       if (trklen>5 && opang>0.8)  {
