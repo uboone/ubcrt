@@ -246,7 +246,7 @@ void crt::T0recoCRTHitAnal::analyze(art::Event const & evt)
     //    hFlashTimeDis->Fill(Timeflash);
     
     //loop over CRT tzeros
-    float min_deltat = 3000.0; int best_time_match = -1;
+    float min_deltat = 30.0; int best_time_match = -1;
     if (tzerolist.size()>0) {   
       for(size_t tzIter = 0; tzIter < tzerolist.size(); ++tzIter){   
 	float diff;
