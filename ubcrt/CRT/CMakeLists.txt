@@ -313,7 +313,6 @@ simple_plugin( CRTMerger "module"
 simple_plugin( CRTMergerExtra "module"
   CRT
   bernfebdaq-core_Overlays
-   lardataobj_RecoBase
   ${CETLIB}	
   ${ROOT_BASIC_LIB_LIST}
   ${ART_UTILITIES}
@@ -325,11 +324,11 @@ simple_plugin( CRTMergerExtra "module"
   ${MF_UTILITIES}
   ${CETLIB}
   ${GALLERY}
-  CRTProducts
+  ubobj_CRT
   ifdh
   gallery
-  boost_date_time
-  cetlib #cetlib_except	
+  ${Boost_DATE_TIME_LIBRARY}
+  cetlib cetlib_except	
 )
 
 simple_plugin( CRTFlashAna "module"

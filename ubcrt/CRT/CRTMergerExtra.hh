@@ -20,7 +20,7 @@
 //#include "ifdh.h"
 #include "IFDH_service.h"
 #include "boost/date_time/posix_time/posix_time.hpp"
-#include "uboone/CRT/CRTProducts/CRTHit.hh"
+#include "ubobj/CRT/CRTHit.hh"
 
 using namespace art;
 using namespace std;
@@ -61,7 +61,7 @@ namespace crt
 		
     void produce( art::Event &evt ) override;
 		
-    void reconfigure(fhicl::ParameterSet const & p) override;
+    void reconfigure(fhicl::ParameterSet const & p);
 
     // Find CRT swizzled files that matches a particular event time.
 
@@ -80,7 +80,7 @@ namespace crt
 		
     std::vector< std::vector< artdaq::Fragment > > w;
     ifdh_ns::ifdh* tIFDH=0;
-    ifdh_ns::ifdh* fIFDH=0;
+    //ifdh_ns::ifdh* fIFDH=0; // unused
 		
     std::string data_label_DAQHeader_;
     std::string cTag;
