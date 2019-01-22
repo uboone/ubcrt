@@ -2,8 +2,8 @@
 #include "microboone_crt_file_manager.fcl"
 #include "microboone_crt_merger.fcl"
 #include "time_memory_tracker_microboone.fcl"
-#
-process_name: CRTMerger
+
+process_name: CRTMergerExtra
 
 source:
 {
@@ -30,9 +30,9 @@ physics:
 	{
 		### random number saver
 		rns	:		{module_type: RandomNumberSaver}
-		merger	:		@local::microboone_crt_merger
+		mergerextra	:		@local::microboone_crt_merger_extra
 	}
-	merge2produce	:[merger]
+	merge2produce	:[mergerextra]
 	trigger_paths	:[merge2produce]
 	stream1		:[out1]
 	end_paths	:[stream1]
@@ -73,4 +73,4 @@ services.message.destinations:
 
 services.CRTFileManager.ubversion_CRTHits: prod_v06_26_01_13
 
-physics.producers.merger.debug: false
+physics.producers.mergerextra.debug: false
