@@ -108,18 +108,18 @@ simple_plugin(CRTtoTTreeVector "module"
           art_Framework_Services_Registry
           art_Framework_Services_Optional_TFileService_service
           ${ROOT_BASIC_LIB_LIST} )
-          
-simple_plugin(EventAnalyser "module"
+#[[          
+##simple_plugin(EventAnalyser "module"
             CRT
-            CRTAna
-          bernfebdaq-core_Overlays
-          LArPandoraContent
-          larpandoraobj
-          art_Framework_Services_Optional
-          art_Framework_Services_Registry
-          art_Framework_Services_Optional_TFileService_service
-          ${ROOT_BASIC_LIB_LIST} )
-          
+#            CRTAna
+#          bernfebdaq-core_Overlays
+#          LArPandoraContent
+#          larpandoraobj
+#          art_Framework_Services_Optional
+#          art_Framework_Services_Registry
+#          art_Framework_Services_Optional_TFileService_service
+#          ${ROOT_BASIC_LIB_LIST} )
+]]        
 simple_plugin(CRTTPCAssoAnalyser "module"
             CRT
             CRTAna
@@ -137,26 +137,26 @@ simple_plugin(TPCTrackAnalyser "module"
           art_Framework_Services_Registry
           art_Framework_Services_Optional_TFileService_service
           ${ROOT_BASIC_LIB_LIST} )
+ #[[         
+simple_plugin(CRTSimpleNeutrinoId "tool" larpandora_LArPandoraEventBuilding)
           
-##simple_plugin(CRTSimpleNeutrinoId "tool" larpandora_LArPandoraEventBuilding)
-          
-##simple_plugin(CRTLArPandoraExternalEventBuilding "module"
-#            CRT
-#            CRTAna
-#          bernfebdaq-core_Overlays
-#          lardataobj_RecoBase
-#          lardataobj_AnalysisBase
-#          lardata_Utilities
-#          #larpandora_LarPandoraEventBuilding
-#          larpandora_LarPandoraInterface
-#          #larpandora_LArPandoraObjects
-#          #larpandoraobj
-#          LArPandoraContent
-#         art_Framework_Services_Optional
-#          art_Framework_Services_Registry
-#          art_Framework_Services_Optional_TFileService_service
-#          ${ROOT_BASIC_LIB_LIST} )
-
+simple_plugin(CRTLArPandoraExternalEventBuilding "module"
+            CRT
+            CRTAna
+          bernfebdaq-core_Overlays
+          lardataobj_RecoBase
+          lardataobj_AnalysisBase
+          lardata_Utilities
+          #larpandora_LarPandoraEventBuilding
+          #larpandora_LarPandoraInterface
+          #larpandora_LArPandoraObjects
+          #larpandoraobj
+          #LArPandoraContent
+         art_Framework_Services_Optional
+          art_Framework_Services_Registry
+          art_Framework_Services_Optional_TFileService_service
+          ${ROOT_BASIC_LIB_LIST} )
+]]
 install_headers()
 install_fhicl()
 install_source()
