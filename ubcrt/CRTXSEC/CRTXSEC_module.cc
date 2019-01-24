@@ -41,7 +41,6 @@
 #include "ubobj/CRT/CRTHit.hh"
 #include "ubobj/CRT/CRTTrack.hh"
 #include "ubcrt/CRT/CRTAuxFunctions.hh"
-#include "ubcrt/CRTXSEC/CRTAnaFun.hh"
 #include "ubobj/RawData/DAQHeaderTimeUBooNE.h"
 
 //Root                                                                                                               
@@ -91,8 +90,6 @@ private:
   art::ServiceHandle<art::TFileService> tfs;
 
   std::string  data_labelCRThit_;
-  std::string  data_labelCRTtrack_;
-  std::string  data_labelTPCtrack_;
 
   int verbose_;
 

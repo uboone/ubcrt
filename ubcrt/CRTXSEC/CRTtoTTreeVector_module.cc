@@ -24,6 +24,8 @@
 #include "ubcrt/CRT/CRTAuxFunctions.hh"
 #include "ubobj/RawData/DAQHeaderTimeUBooNE.h"
 
+#include "ubcrt/CRTXSEC/CRTAnaFun.hh"
+
 // data-products
 #include "lardataobj/RecoBase/Track.h"                                                                
 #include "lardataobj/RecoBase/Hit.h"                                                                  
@@ -71,12 +73,6 @@
 namespace crt {
   class CRTtoTTree;
 
-  typedef art::Handle< std::vector<recob::PFParticle> > PFParticleHandle;
-  typedef std::map< size_t, art::Ptr<recob::PFParticle> > PFParticleIdMap;
-  typedef std::vector< art::Ptr<recob::PFParticle> > PFParticleVector;
-  typedef std::vector< art::Ptr<recob::Track> > TrackVector;
-  typedef std::vector< art::Ptr<recob::Shower> > ShowerVector;
-
   class CRTtoTTree : public art::EDAnalyzer {
   public:
     explicit CRTtoTTree(fhicl::ParameterSet const & p);
@@ -116,11 +112,10 @@ namespace crt {
     crt::CRTHit mycrthit;
     std::vector<crt::CRTHit> crthit_vec;
     std::vector<crt::CRTTrack> crttrack_vec;
+    std::vector<recob::OpFlash> beam_flash_vec;
     std::vector<recob::OpFlash> flash_vec;
-    
     std::vector<recob::Track> nutrack_vec;
-    std::vector<recob::Shower> nushower_vec;
-    
+    std::vector<recob::Shower> nushower_vec;  
     std::vector<recob::Track> tpctrack_vec;
     
     //raw::DAQHeaderTimeUBooNE myDAQheader;
@@ -137,17 +132,13 @@ namespace crt {
     std::string m_pandoraLabel;         ///< The label for the pandora producer
     std::string m_trackLabel;           ///< The label for the track producer from PFParticles
     std::string m_showerLabel;          ///< The label for the shower producer from PFParticles
-
     int verbose_;
     //int numberOfevents_;
     std::string data_label_hits_;
-    std::string data_label_tracks_;
-    
+    std::string data_label_tracks_;   
     int saveTTree_;
-  
-    //std::string  data_labelCRTtrack_;
-    //std::string  data_labelCRThit_;
     std::string  data_label_flash_;
+    std::string  data_label_flash_beam_;
     std::string  data_label_DAQHeader_;
     std::string  data_label_TPCTrack_;
     std::string  data_label_T0reco_;
@@ -157,10 +148,6 @@ namespace crt {
     double fvdrift_;
 
     // functions ////////////////////////////////////////////////////////////////////////////////////////
-
-    void GetPFParticleIdMap(const PFParticleHandle &pfParticleHandle, PFParticleIdMap &pfParticleMap);
-    void GetFinalStatePFParticleVectors(const PFParticleIdMap &pfParticleMap, PFParticleVector &crParticles, PFParticleVector &nuParticles);
-    void CollectTracksAndShowers(const PFParticleVector &particles, const PFParticleHandle &pfParticleHandle, const art::Event &evt, TrackVector &tracks, ShowerVector &showers);
 
     void initialize_tpandora();
     //void initialize_tcrthits();
@@ -191,6 +178,7 @@ namespace crt {
     data_label_tracks_ = pset.get<std::string>("data_label_tracks");
 
     data_label_flash_ = pset.get<std::string>("data_label_flash");
+    data_label_flash_beam_ = pset.get<std::string>("data_label_flash_beam");
     data_label_DAQHeader_ = pset.get<std::string>("data_label_DAQHeader");
     data_label_TPCTrack_ = pset.get<std::string>("data_label_TPCTrack");
     data_label_T0reco_ = pset.get<std::string>("data_label_T0reco");
@@ -208,7 +196,7 @@ namespace crt {
     std::cout << "Run " << evt.run() << ", subrun " << evt.subRun() << std::endl;
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // get PFParticle information////////////////////////////////////////////////////////////////////////////////////
-    PFParticleHandle pfParticleHandle;
+    crtana::PFParticleHandle pfParticleHandle;
     evt.getByLabel(m_pandoraLabel, pfParticleHandle);
 
     if (!pfParticleHandle.isValid())
@@ -218,15 +206,15 @@ namespace crt {
     }
 
     // Produce a map of the PFParticle IDs for fast navigation through the hierarchy
-    PFParticleIdMap pfParticleMap;
-    this->GetPFParticleIdMap(pfParticleHandle, pfParticleMap);
+    crtana::PFParticleIdMap pfParticleMap;
+    crtana::auxfunc::GetPFParticleIdMap(pfParticleHandle, pfParticleMap);
 
     // Produce two PFParticle vectors containing final-state particles:
     // 1. Particles identified as cosmic-rays - recontructed under cosmic-hypothesis
     // 2. Daughters of the neutrino PFParticle - reconstructed under the neutrino hypothesis
     std::vector< art::Ptr<recob::PFParticle> > crParticles;
     std::vector< art::Ptr<recob::PFParticle> > nuParticles;
-    this->GetFinalStatePFParticleVectors(pfParticleMap, crParticles, nuParticles);
+    crtana::auxfunc::GetFinalStatePFParticleVectors(pfParticleMap, crParticles, nuParticles);
 
     // Use as required!
     // -----------------------------
@@ -235,7 +223,7 @@ namespace crt {
     // These are the vectors to hold the tracks and showers for the final-states of the reconstructed neutrino
     std::vector< art::Ptr<recob::Track> > tracks;
     std::vector< art::Ptr<recob::Shower> > showers;
-    this->CollectTracksAndShowers(nuParticles, pfParticleHandle, evt, tracks, showers);
+    crtana::auxfunc::CollectTracksAndShowers(nuParticles, pfParticleHandle, evt, tracks, showers, m_trackLabel, m_showerLabel);
 
     // Print a summary of the consolidated event
     std::cout << "Consolidated event summary:" << std::endl;
@@ -251,18 +239,21 @@ namespace crt {
     nPFPnuShower = showers.size();
     t_pandora->Fill();
     
+    recob::Track my_track;
+    recob::Shower my_shower;
+    
     for(std::vector<int>::size_type i = 0; i != tracks.size(); i++) {//A 
-      recob::Track my_track = *tracks.at(i).get();
+      my_track = *tracks.at(i).get();
       nutrack_vec.push_back(my_track);
     }//A
     for(std::vector<int>::size_type i = 0; i != showers.size(); i++) {//A 
-      recob::Shower my_shower = *showers.at(i).get();
+      my_shower = *showers.at(i).get();
       nushower_vec.push_back(my_shower);
     }//A
     
     if(tracks.size()>0 && showers.size()>0){
-      recob::Track my_track = *tracks.at(0).get();
-      recob::Shower my_shower = *showers.at(0).get();
+      //recob::Track my_track = *tracks.at(0).get();
+      //recob::Shower my_shower = *showers.at(0).get();
 
       std::cout << "Size of track: " << sizeof(my_track) << std::endl;
       std::cout << "Size of shower: " << sizeof(my_shower) << std::endl;
@@ -294,7 +285,15 @@ namespace crt {
                   << " CRTHits " << " in module " << data_label_hits_ << std::endl;
        //return;
       }
+      std::cout << "Time first event: " << CRTHitCollection[0].ts0_s << std::endl;
       crthit_vec = CRTHitCollection;
+      if(verbose_ != 0){
+        for(std::vector<int>::size_type i = 0; i != CRTHitCollection.size(); i++) {//A 
+          //printf("Processing %ld hit\n", i);
+          //std::cout << "Time event: " << CRTHitCollection[i].ts0_s <<" , ns+ " << CRTHitCollection[i].ts0_ns << std::endl;
+          //std::cout << "Position event: " << CRTHitCollection[i].x_pos <<" , " << CRTHitCollection[i].y_pos << std::endl;
+        }//A
+      }
     }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // end get CRT hit information /////////////////////////////////////////////////////////////////////////////////
@@ -355,15 +354,24 @@ namespace crt {
     //get Optical Flash
     art::Handle< std::vector<recob::OpFlash> > rawHandle_OpFlash;
     evt.getByLabel(data_label_flash_, rawHandle_OpFlash);
-
-    std::vector<recob::OpFlash> const& OpFlashCollection(*rawHandle_OpFlash);
-    
+    std::vector<recob::OpFlash> const& OpFlashCollection(*rawHandle_OpFlash);   
     //get Optical Flash
     //NrFlash = OpFlashCollection.size();
     std::cout << "Run " << evt.run() << ", subrun " << evt.subRun()
               << ", event " << evt.event() << " has " << "\033[32m" << OpFlashCollection.size() << "\033[0m"
               << " TPCFlashes " << " in module " << data_label_flash_ << std::endl;  
     flash_vec = OpFlashCollection;
+    
+    //get Optical Flash
+    art::Handle< std::vector<recob::OpFlash> > rawHandle_OpFlashBeam;
+    evt.getByLabel(data_label_flash_beam_, rawHandle_OpFlashBeam);
+    std::vector<recob::OpFlash> const& OpFlashBeamCollection(*rawHandle_OpFlashBeam);   
+    //get Optical Flash
+    //NrFlash = OpFlashCollection.size();
+    std::cout << "Run " << evt.run() << ", subrun " << evt.subRun()
+              << ", event " << evt.event() << " has " << "\033[32m" << OpFlashBeamCollection.size() << "\033[0m"
+              << " TPCFlashes " << " in module " << data_label_flash_beam_ << std::endl;  
+    beam_flash_vec = OpFlashBeamCollection;
     
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // end get PMT flash information ///////////////////////////////////////////////////////////////////////////////
@@ -383,101 +391,9 @@ namespace crt {
     my_event_->Fill();
     nutrack_vec.clear();
     nushower_vec.clear();
-  }
-
-  void CRTtoTTree::GetPFParticleIdMap(const PFParticleHandle &pfParticleHandle, PFParticleIdMap &pfParticleMap)
-  {
-      for (unsigned int i = 0; i < pfParticleHandle->size(); ++i)
-      {
-          const art::Ptr<recob::PFParticle> pParticle(pfParticleHandle, i);
-          if (!pfParticleMap.insert(PFParticleIdMap::value_type(pParticle->Self(), pParticle)).second)
-          {
-              throw cet::exception("crt_ana") << "  Unable to get PFParticle ID map, the input PFParticle collection has repeat IDs!";
-          }
-      }
-  }
-
-
-  void CRTtoTTree::GetFinalStatePFParticleVectors(const PFParticleIdMap &pfParticleMap, PFParticleVector &crParticles, PFParticleVector &nuParticles)
-  {
-      for (PFParticleIdMap::const_iterator it = pfParticleMap.begin(); it != pfParticleMap.end(); ++it)
-      {
-          const art::Ptr<recob::PFParticle> pParticle(it->second);
-
-          // Only look for primary particles
-          if (!pParticle->IsPrimary()) continue;
-
-          // Check if this particle is identified as the neutrino
-          const int pdg(pParticle->PdgCode());
-          const bool isNeutrino(std::abs(pdg) == pandora::NU_E || std::abs(pdg) == pandora::NU_MU || std::abs(pdg) == pandora::NU_TAU);
-
-          // All non-neutrino primary particles are reconstructed under the cosmic hypothesis
-          if (!isNeutrino)
-          {
-              crParticles.push_back(pParticle);
-              continue;
-          }
-
-          // ATTN. We are filling nuParticles under the assumption that there is only one reconstructed neutrino identified per event.
-          //       If this is not the case please handle accordingly
-          if (!nuParticles.empty())
-          {
-              throw cet::exception("crt_ana") << "  This event contains multiple reconstructed neutrinos!";
-          }
-
-          // Add the daughters of the neutrino PFParticle to the nuPFParticles vector
-          for (const size_t daughterId : pParticle->Daughters())
-          {
-              if (pfParticleMap.find(daughterId) == pfParticleMap.end())
-                  throw cet::exception("crt_ana") << "  Invalid PFParticle collection!";
-
-              nuParticles.push_back(pfParticleMap.at(daughterId));
-          }
-      }
-  }
-
-  //------------------------------------------------------------------------------------------------------------------------------------------
-
-  void CRTtoTTree::CollectTracksAndShowers(const PFParticleVector &particles, const PFParticleHandle &pfParticleHandle, const art::Event &evt, TrackVector &tracks, ShowerVector &showers)
-  {
-      // Get the associations between PFParticles and tracks/showers from the event
-
-      //std::string m_trackLabel = "";           ///< The label for the track producer from PFParticles
-      //std::string m_showerLabel = "";
-
-      art::FindManyP< recob::Track > pfPartToTrackAssoc(pfParticleHandle, evt, m_trackLabel);
-      art::FindManyP< recob::Shower > pfPartToShowerAssoc(pfParticleHandle, evt, m_showerLabel);
-
-      for (const art::Ptr<recob::PFParticle> &pParticle : particles)
-      {
-          const std::vector< art::Ptr<recob::Track> > associatedTracks(pfPartToTrackAssoc.at(pParticle.key()));
-          const std::vector< art::Ptr<recob::Shower> > associatedShowers(pfPartToShowerAssoc.at(pParticle.key()));
-          const unsigned int nTracks(associatedTracks.size());
-          const unsigned int nShowers(associatedShowers.size());
-
-          // Check if the PFParticle has no associated tracks or showers
-          if (nTracks == 0 && nShowers == 0)
-          {
-              mf::LogDebug("crt_ana") << "  No tracks or showers were associated to PFParticle " << pParticle->Self() << std::endl;
-              continue;
-          }
-
-          // Check if there is an associated track
-          if (nTracks == 1 && nShowers == 0)
-          {
-              tracks.push_back(associatedTracks.front());
-              continue;
-          }
-
-          // Check if there is an associated shower
-          if (nTracks == 0 && nShowers == 1)
-          {
-              showers.push_back(associatedShowers.front());
-              continue;
-          }
-
-          throw cet::exception("crt_ana") << "  There were " << nTracks << " tracks and " << nShowers << " showers associated with PFParticle " << pParticle->Self();
-      }
+    
+    int testana = crtana::auxfunc::test(3);
+    std::cout<< "Test ana aux: " << testana << std::endl;
   }
 
   void CRTtoTTree::initialize_tpandora()
@@ -506,17 +422,18 @@ namespace crt {
     //int splitlevel = 99;
     //_tree1->Branch("ubxsec_event_split", &ubxsec_event, bufsize, splitlevel);
     
-    int bufsize_crthit = 128*500;
-    int bufsize_flash = 152*500;
-    int bufsize_crttrack = 184*500;
-    int bufsize_track = 368*50;
-    int bufsize_shower = 336*50;
+    int bufsize_crthit = 128*5000;
+    int bufsize_flash = 152*5000;
+    int bufsize_crttrack = 184*5000;
+    int bufsize_track = 368*500;
+    int bufsize_shower = 336*500;
     //int bufsize_daqheader = 48;
     
     int splitlevel = 99;
     my_event_->Branch("crthits", &crthit_vec, bufsize_crthit, splitlevel);
     my_event_->Branch("crttracks", &crttrack_vec, bufsize_crttrack, splitlevel);
     my_event_->Branch("flashes", &flash_vec, bufsize_flash, splitlevel);
+    my_event_->Branch("beamflashes", &beam_flash_vec, bufsize_flash, splitlevel);
     my_event_->Branch("nutracks", &nutrack_vec, bufsize_track, splitlevel);
     my_event_->Branch("nushowers", &nushower_vec, bufsize_shower, splitlevel);
     my_event_->Branch("tpctracks", &tpctrack_vec, bufsize_track*10, splitlevel);
@@ -536,10 +453,6 @@ namespace crt {
   {
     // Implementation of optional member function here.
     initialize_tpandora();
-    //initialize_tcrthits();
-    //initialize_tcrttracks();
-    //initialize_tflash();
-    //initialize_tracks();
     initialize_tmyevent();
 
   }

@@ -277,7 +277,8 @@ void TrackDump::analyze(art::Event const & evt)
     if (nTPCtracks>kMaxTPCtracks) nTPCtracks=kMaxTPCtracks;
     for(int j = 0; j < nTPCtracks; j++) {
       
-      TVector3 pos, dir_start, dir_end, end;              
+      //TVector3 pos, dir_start, dir_end, end;              
+      recob::Track::Vector_t pos, dir_start, dir_end, end;  
       art::Ptr<recob::Track> ptrack(trackListHandle, j);
       const recob::Track& track = *ptrack;
       

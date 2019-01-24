@@ -179,8 +179,10 @@ namespace crt{
     detinfo::ElecClock trigClock = detClocks->provider()->TriggerClock();
 
     art::ServiceHandle<art::RandomNumberGenerator> rng;
-    CLHEP::HepRandomEngine* engine = &rng->getEngine("crt");
-
+    //rng->getEngine(ScheduleID::first(), pset.get<std::string>("module_label"), "optional_engine_label");
+    CLHEP::HepRandomEngine* engine = &rng->getEngine(art::ScheduleID::first(),
+                                                     moduleDescription().moduleLabel(),
+                                                     "crt");
     // Handle for (truth) AuxDetSimChannels
     art::Handle<std::vector<sim::AuxDetSimChannel> > channels;
     evt.getByLabel(fG4ModuleLabel, channels);

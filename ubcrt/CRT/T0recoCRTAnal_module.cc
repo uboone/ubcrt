@@ -23,6 +23,7 @@
 
 //data-products
 #include "lardataobj/RecoBase/Track.h"
+//#include "Track.h"
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/AnalysisBase/T0.h"
 #include "lardataobj/AnalysisBase/CosmicTag.h"
@@ -78,7 +79,7 @@ public:
   void beginJob() override;
   void endJob() override;
 
-  void SortTrackPoints (const recob::Track& track, std::vector<TVector3>& sorted_trk);
+  void SortTrackPoints (const recob::Track& track, std::vector<recob::Track::Point_t>& sorted_trk);
 
 private:
 
@@ -241,7 +242,7 @@ void crt::T0recoCRTAnal::analyze(art::Event const & evt)
       recob::Track my_TPCTrack = TPCTrackCollection[i];
       //auto TPCTrackLength =  my_TPCTrack.Length();
       
-      std::vector<TVector3> sorted_trk;
+      std::vector<recob::Track::Point_t> sorted_trk;
       SortTrackPoints(my_TPCTrack,sorted_trk);
       
       auto const& top    = sorted_trk.at(0);
@@ -468,7 +469,7 @@ void crt::T0recoCRTAnal::endJob()
 
 }
 
-void crt::T0recoCRTAnal::SortTrackPoints(const recob::Track& track, std::vector<TVector3>& sorted_trk)
+void crt::T0recoCRTAnal::SortTrackPoints(const recob::Track& track, std::vector<recob::Track::Point_t>& sorted_trk)
 {
 
   sorted_trk.clear();

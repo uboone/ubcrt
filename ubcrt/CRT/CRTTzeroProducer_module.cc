@@ -134,7 +134,8 @@ void CRTTzeroProducer::produce(art::Event & evt)
   //      art::PtrMaker<crt::CRTHit> hitPtrMaker(evt, rawhandle.id());
   //  art::PtrMaker<crt::CRTTzero> tzeroPtrMaker(evt, *this);
   art::PtrMaker<crt::CRTHit> hitPtrMaker(evt, rawHandle.id());
-  art::PtrMaker<crt::CRTTzero> tzeroPtrMaker(evt, *this);
+  //art::PtrMaker<crt::CRTTzero> tzeroPtrMaker(evt, *this);
+  art::PtrMaker<crt::CRTTzero> tzeroPtrMaker(evt);
 
  
 
