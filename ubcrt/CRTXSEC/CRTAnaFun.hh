@@ -70,7 +70,7 @@ namespace crtana {
     void CollectTracksAndShowers(const PFParticleVector &particles, const PFParticleHandle &pfParticleHandle, const art::Event &evt, TrackVector &tracks, ShowerVector &showers,std::string m_trackLabel, std::string m_showerLabel);
     
     double TpcTrack_match_CrtHit(const art::Ptr<recob::Track> &ptracks, std::vector<crt::CRTHit> const& CRTHitCollection, std::vector<double> &dist, double crthitmatch_);
-    void SortTrackPoints(const recob::Track& track, std::vector<TVector3>& sorted_trk);
+    void SortTrackPoints(const recob::Track& track, std::vector<recob::Track::Point_t>& sorted_trk);
 
 
   }

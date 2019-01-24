@@ -137,7 +137,7 @@ simple_plugin(TPCTrackAnalyser "module"
           art_Framework_Services_Registry
           art_Framework_Services_Optional_TFileService_service
           ${ROOT_BASIC_LIB_LIST} )
- #[[         
+#[[
 simple_plugin(CRTSimpleNeutrinoId "tool" larpandora_LArPandoraEventBuilding)
           
 simple_plugin(CRTLArPandoraExternalEventBuilding "module"
@@ -147,6 +147,7 @@ simple_plugin(CRTLArPandoraExternalEventBuilding "module"
           lardataobj_RecoBase
           lardataobj_AnalysisBase
           lardata_Utilities
+          #larpandora_LArPandoraEvent
           #larpandora_LarPandoraEventBuilding
           #larpandora_LarPandoraInterface
           #larpandora_LArPandoraObjects

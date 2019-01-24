@@ -145,7 +145,7 @@ int crtana::auxfunc::test2(int a){
   }
 
 double crtana::auxfunc::TpcTrack_match_CrtHit(const art::Ptr<recob::Track> &ptracks, std::vector<crt::CRTHit> const& CRTHitCollection, std::vector<double> &dist_return, double crthitmatch_){
-  std::vector<TVector3> sorted_trk;
+  std::vector<recob::Track::Point_t> sorted_trk;
   recob::Track my_track = *ptracks.get();
   SortTrackPoints(my_track,sorted_trk);
   std::vector<double> dist;
@@ -220,7 +220,7 @@ double crtana::auxfunc::TpcTrack_match_CrtHit(const art::Ptr<recob::Track> &ptra
   return matching;
 }
 
-void crtana::auxfunc::SortTrackPoints(const recob::Track& track, std::vector<TVector3>& sorted_trk)
+void crtana::auxfunc::SortTrackPoints(const recob::Track& track, std::vector<recob::Track::Point_t>& sorted_trk)
 {
 
   sorted_trk.clear();
