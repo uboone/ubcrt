@@ -436,6 +436,9 @@ void TrackDump::analyze(art::Event const & evt)
     hit_strip2[j]=int(0.5*ind_pes1.first);
     hit_pe2[j]=ind_pes1.second+ind_pes2.second;
 
+    // if (hit_charge[j]>500.) hit_charge[j]=500.;
+    // if (hit_pe1[j]>300.) hit_pe1[j]=300.;
+    // if (hit_pe2[j]>300.) hit_pe2[j]=300.;
     // std::cout << "second strip: feb " << hit_feb2[j] << " map index feb " <<
     //   int(my_CRTHit.pesmap.find(hit_feb2[j])->first) << " sipm no " <<
     //   ind_pes1.first << " pes " << ind_pes1.second << " simp no " <<

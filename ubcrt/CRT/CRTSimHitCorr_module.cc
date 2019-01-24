@@ -96,6 +96,11 @@ namespace crt{
     // Params got from fcl file.......
     art::InputTag fCrtHitsIn_Label;      ///< name of crt producer
     bool          fScaleMCtime;             ///< turns off/on bug fix for hit times
+    float fHitThreshold;
+    float fStripThreshold;
+    float fSiPMThreshold;
+    float fPEscaleFactor;
+    bool fRemoveBottomHits;
     bool          fVerbose;             ///< print info
    
 
@@ -115,7 +120,12 @@ namespace crt{
   void CRTSimHitCorr::reconfigure(fhicl::ParameterSet const & p)
   {
     fCrtHitsIn_Label       = (p.get<art::InputTag> ("CrtHitsIn_Label","crtsimhit")); 
-    fScaleMCtime           = (p.get<bool>("ScaleMCtime",true));
+    fScaleMCtime           = (p.get<bool>("ScaleMCtime",false));
+    fHitThreshold           = (p.get<float>("HitThreshold",0.0));
+    fStripThreshold           = (p.get<float>("StripThreshold",0.0));
+    fSiPMThreshold           = (p.get<float>("SiPMThreshold",0.0));
+    fPEscaleFactor           = (p.get<float>("PEscaleFactor",-1.0));
+    fRemoveBottomHits           = (p.get<bool>("RemoveBottomHits",true));
     fVerbose              = (p.get<bool> ("Verbose",false));
 
   }
@@ -137,22 +147,23 @@ namespace crt{
                <<"============================================"<<std::endl;
     }
 
+    // Place to store corrected CRThits as they are created
+    std::unique_ptr<std::vector<crt::CRTHit>> CRTHitOutCol( new std::vector<crt::CRTHit>);
     // Retrieve list of CRT hits
     art::Handle< std::vector<crt::CRTHit>> crtHitsInHandle;
     event.getByLabel(fCrtHitsIn_Label, crtHitsInHandle);
-    //check to make sure the data we asked for is valid
+   //check to make sure the data we asked for is valid
     if(!crtHitsInHandle.isValid()){
       std::cout << "Run " << event.run() << ", subrun " << event.subRun()
 		<< ", event " << event.event() << " has zero"
 		<< " CRTHits " << " in module " << fCrtHitsIn_Label << std::endl;
       std::cout << std::endl;
       //add protection here
+      event.put(std::move(CRTHitOutCol));
       return;
     }
     std::vector<crt::CRTHit> const& crtHitInList(*crtHitsInHandle);
 
-    // Place to store corrected CRThits as they are created
-    std::unique_ptr<std::vector<crt::CRTHit>> CRTHitOutCol( new std::vector<crt::CRTHit>);
 
     if(fVerbose) std::cout<<"Number of CRT hits read in= "<<crtHitInList.size()<< std::endl;
 
@@ -161,8 +172,6 @@ namespace crt{
       crt::CRTHit thisCrtHit = crtHitInList[i];
 
       std::vector<uint8_t> tfeb_id = thisCrtHit.feb_id; 
-      std::map<uint8_t, std::vector<std::pair<int,float>>> tpesmap=thisCrtHit.pesmap;
-      float pestot = thisCrtHit.peshit;
       double time1 = thisCrtHit.ts0_s;
       double time2 = thisCrtHit.ts0_s_corr;
       double time3 = thisCrtHit.ts0_ns;
@@ -177,29 +186,79 @@ namespace crt{
       double z = thisCrtHit.z_pos;
       double ez= thisCrtHit.z_err;
       
-      //  apply corrections to fix bug in simulation
-      if (fScaleMCtime) {
-	time5/=5;
-	time1/=5;
-      }
+      std::map<uint8_t, std::vector<std::pair<int,float>>> tpesmap=thisCrtHit.pesmap;
+      float pestot = thisCrtHit.peshit;      
 
-      // Create a corrected CRT hit
-      crt::CRTHit crtHit = FillCrtHit(tfeb_id, tpesmap, pestot, time1,  time2,  time3,  time4,  time5, 
-				      plane, x, ex,y,ey,z,ez );
-      
-      CRTHitOutCol->push_back(crtHit);
-      nHits++;
-      if (fVerbose) std::cout << "hit created: time " << time5 << " x " <<  x << 
-		      " y " << y << " z " <<  z << std::endl;
-      
-    }
+      int iKeepMe = 1;
+      std::vector<std::pair<int,float>> test = tpesmap.find(tfeb_id[0])->second; 
+      if (test.size()==2)  { // this is simulation
+	//  apply corrections to fix bug in simulation
+	if (fScaleMCtime) {
+	  time5/=5;
+	  time1/=5;
+	}
+	if (fPEscaleFactor>0) {
+	  // scale charge 
+	  pestot*=fPEscaleFactor;
+	  // more scaling of charge, maps are painful.
+	  tpesmap.clear();
+	  std::map<uint8_t, std::vector<std::pair<int,float>>> tempmap=thisCrtHit.pesmap;
+	  std::vector<std::pair<int,float>> pesA = tempmap.find(tfeb_id[0])->second; 
+	  std::pair<int,float> pesA0(pesA[0].first,fPEscaleFactor*pesA[0].second);
+	  std::pair<int,float> pesA1(pesA[1].first,fPEscaleFactor*pesA[1].second);
+	  std::vector<std::pair<int,float>> pesAnew;
+	  pesAnew.push_back(pesA0); pesAnew.push_back(pesA1);
+	  tpesmap.emplace(tfeb_id[0],pesAnew);
+	  std::vector<std::pair<int,float>> pesB = tempmap.find(tfeb_id[1])->second; 
+	  std::pair<int,float> pesB0(pesB[0].first,fPEscaleFactor*pesB[0].second);
+	  std::pair<int,float> pesB1(pesB[1].first,fPEscaleFactor*pesB[1].second);
+	  std::vector<std::pair<int,float>> pesBnew;
+	  pesBnew.push_back(pesB0); pesBnew.push_back(pesB1);
+	  tpesmap.emplace(tfeb_id[1],pesBnew);
+	} // if scale factor >0
 	
-	event.put(std::move(CRTHitOutCol));
+	// remove bottom hits from FEB combinations not allowed in data
+	if (fRemoveBottomHits) {
+	  if ((tfeb_id[0]==11 && tfeb_id[1]!=12) || (tfeb_id[0]==12 && tfeb_id[1]!=11)) iKeepMe=0;	
+	  if ((tfeb_id[1]==11 && tfeb_id[0]!=12) || (tfeb_id[1]==12 && tfeb_id[0]!=11)) iKeepMe=0;	
+	}
+	
+	// apply hit threshold
+	if (pestot<fHitThreshold) iKeepMe=0;
+	// apply strip and sipm threshold
+	std::vector<std::pair<int,float>> pes1 = tpesmap.find(tfeb_id[0])->second; 
+	std::pair<int,float> ind_pes1=pes1[0];  // works only for simulation (the pes1 vector only has 2 elements)
+	std::pair<int,float> ind_pes2=pes1[1];
+	float tot1 = ind_pes1.second+ind_pes2.second;
+	std::vector<std::pair<int,float>> pes2 = tpesmap.find(tfeb_id[1])->second; 
+	std::pair<int,float> ind2_pes1=pes2[0];  // works only for simulation (the pes1 vector only has 2 elements)
+	std::pair<int,float> ind2_pes2=pes2[1];
+	float tot2 = ind2_pes1.second+ind2_pes2.second;
+	if ( tot2<fStripThreshold || tot1<fStripThreshold ) iKeepMe=0;
+	if (ind2_pes1.second < fSiPMThreshold || ind2_pes2.second<fSiPMThreshold) iKeepMe=0;
+	if (ind_pes1.second < fSiPMThreshold || ind_pes2.second<fSiPMThreshold ) iKeepMe=0;
+	//	if (iKeepMe==0) std::cout << "tot1 " << tot1 << " tot2 " << tot2 << std::endl;
+	    
+      } // if this is a MC hit
+      if (iKeepMe) {
+	     
+	      // Create a corrected CRT hit
+	      crt::CRTHit crtHit = FillCrtHit(tfeb_id, tpesmap, pestot, time1,  time2,  time3,  time4,  time5, 
+					      plane, x, ex,y,ey,z,ez );
+	      
+	      CRTHitOutCol->push_back(crtHit);
+	      nHits++;
+	      if (fVerbose) std::cout << "hit created: time " << time5 << " x " <<  x << 
+			      " y " << y << " z " <<  z << std::endl;
+      }  // keep this hit	    
+    } // loop over hits
+    
+    event.put(std::move(CRTHitOutCol));
+
+    if(fVerbose) std::cout<<"Number of CRT hits produced = "<<nHits<<std::endl;
       
-      if(fVerbose) std::cout<<"Number of CRT hits produced = "<<nHits<<std::endl;
-      
-      
-    } // produce()
+    
+  } // produce()
     
     void CRTSimHitCorr::endJob()
     {
