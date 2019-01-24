@@ -1,0 +1,97 @@
+# FHiCL document used to run the "driver" executable. To learn more
+#  about the FHiCL language, please look at
+#  cdcvs.fnal.gov/redmine/documents/327 , the "FHiCL Quick Start Guide"
+
+#include "services_microboone.fcl"
+#include "microboone_crtreco.fcl"
+#include "microboone_T0RecoCRThitAnal.fcl"
+
+
+events_to_generate: 200
+run_number: 101
+
+services:{
+#   Geometry:                       @local::microboone_geo
+#   DetectorPropertiesService:    @local::microboone_detproperties
+#   @table::microboone_services_reco
+   TFileService: { fileName: "/uboone/data/users/mstancar/histos_MCC9.root" }
+#  TFileService: { fileName: "histos_all.root" }
+}
+
+physics:	
+{
+  analyzers:	
+  {
+      trackmatch: @local::t0recocrthitana
+
+  }
+
+  producers:
+  {
+      match: @local::t0recocrthit_data
+      crttzero: @local::crttzero
+#      crttrack: @local::crttrack
+   }
+   
+  a1: [  trackmatch ]
+#  p1: [ crttzero ]
+  p1: [ crttzero, match]
+#  e1: [ rootout ]
+#  e1: [ out1, rootout ]
+  trigger_paths: [p1]
+  end_paths: [ a1 ]
+}
+
+outputs:
+{
+
+ rootout:
+  {
+    module_type: RootOutput
+    fileName: "/pnfs/uboone/scratch/users/mstancar/driver.root"
+    compressionLevel: 0
+  }
+
+  out1:
+  {
+    module_type: FileDumperOutput
+    wantProductFriendlyClassName: true
+  }
+}
+
+source:
+{
+  module_type: RootInput
+}
+
+
+#services.DetectorClocksService.TriggerOffsetTPC: -400
+#services.DetectorClocksService.TriggerOffsetTPC: -1600
+
+# Max DCA value for a match in cm
+physics.producers.match.MatchCut: 40
+physics.producers.match.TimeSelect: 0
+physics.producers.match.TimeZeroOffset: 69200
+#physics.producers.match.TimeZeroOffset: 68300
+physics.producers.match.HardDelay: 31000
+physics.producers.match.verbose: false
+#physics.producers.match.data_label_TPCtrack: "pandoraCosmic"
+physics.producers.match.data_label_TPCtrack: "pandoraTrack"
+physics.producers.match.data_label_CRTtzero: "crttzero"
+physics.producers.match.data_label_CRThit: "merger"
+#physics.producers.match.data_label_flash: "opflashCosmic"
+physics.producers.match.data_label_flash: "simpleFlashCosmic"
+physics.producers.match.data_label_DAQHeader: "daq"
+
+
+physics.analyzers.trackmatch.verbose: false
+physics.analyzers.trackmatch.TQCutLength: 5
+physics.analyzers.trackmatch.TQCutOpAng: 0.8
+physics.analyzers.trackmatch.TimeSelect: 0
+physics.analyzers.trackmatch.TimeZeroOffset: 69200
+#physics.analyzers.trackmatch.TimeZeroOffset: 68300
+physics.analyzers.trackmatch.HardDelay: 31000
+physics.analyzers.trackmatch.data_label_TPCtrack: "pandoraTrack"
+#physics.analyzers.trackmatch.data_label_TPCtrack: "pandoraCosmic"
+
+
