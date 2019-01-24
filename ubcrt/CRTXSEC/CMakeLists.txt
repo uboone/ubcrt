@@ -108,18 +108,18 @@ simple_plugin(CRTtoTTreeVector "module"
           art_Framework_Services_Registry
           art_Framework_Services_Optional_TFileService_service
           ${ROOT_BASIC_LIB_LIST} )
-#[[          
-##simple_plugin(EventAnalyser "module"
+         
+simple_plugin(EventAnalyser "module"
             CRT
-#            CRTAna
-#          bernfebdaq-core_Overlays
-#          LArPandoraContent
-#          larpandoraobj
-#          art_Framework_Services_Optional
-#          art_Framework_Services_Registry
-#          art_Framework_Services_Optional_TFileService_service
-#          ${ROOT_BASIC_LIB_LIST} )
-]]        
+            CRTAna
+          bernfebdaq-core_Overlays
+          #LArPandoraContent
+          #larpandoraobj
+          art_Framework_Services_Optional
+          art_Framework_Services_Registry
+          art_Framework_Services_Optional_TFileService_service
+          ${ROOT_BASIC_LIB_LIST} )
+        
 simple_plugin(CRTTPCAssoAnalyser "module"
             CRT
             CRTAna
@@ -147,12 +147,13 @@ simple_plugin(CRTLArPandoraExternalEventBuilding "module"
           lardataobj_RecoBase
           lardataobj_AnalysisBase
           lardata_Utilities
-          #larpandora_LArPandoraEvent
-          #larpandora_LarPandoraEventBuilding
-          #larpandora_LarPandoraInterface
+          
+          larpandora_LarPandoraEventBuilding
+          larpandora_LarPandoraInterface
           #larpandora_LArPandoraObjects
           #larpandoraobj
-          #LArPandoraContent
+          LArPandoraContent
+          
          art_Framework_Services_Optional
           art_Framework_Services_Registry
           art_Framework_Services_Optional_TFileService_service
