@@ -3,8 +3,7 @@
 #  cdcvs.fnal.gov/redmine/documents/327 , the "FHiCL Quick Start Guide"
 
 
-#include "microboone_T0RecoCRThit.fcl"
-#include "microboone_T0RecoCRThitAnal.fcl"
+#include "microboone_crtreco.fcl"
 
 events_to_generate: 200
 run_number: 101
@@ -22,44 +21,28 @@ physics:
       module_type: TrackDump
       data_labeltrack: "crttrack"
       data_labeltzero: "crttzero"
+      data_labelhit: "merger"
+      data_label_flash_: "simpleFlashCosmic"
+      data_label_DAQHeader_: "daq"
       data_label_t0CRT: "trackmatch"
       data_label_t0ACPT: "pandoraCosmicT0Reco"
-      data_labelhit: "merger"
-      data_label_flash_: "opflash"
-      data_label_DAQHeader_: "daq"
-      fHardDelay: 40000
-      fTimeZeroOffset: 60000
+      fHardDelay: 1038800            #default is 40000
+      fTimeZeroOffset: 69000 
       verbose: 0
       TrackModuleLabel: "pandoraCosmic"
-      SaveTPCTrackInfo: true
-      SavePMTFlashInfo: false
+      SaveTPCTrackInfo: false
+      SavePMTFlashInfo: true
      }
   }
 
   producers:
   {
-      
-      trackmatch: @local::t0recocrthit_data		
-      crttzero: {
-	 module_type: "ubcrt/CRT/CRTTzeroProducer"
-	 data_label: "merger"
-	 max_time_difference: 100.
-	 store_tzero: 1
-	 verbose: 0
-      }
-      crttrack: {
-	 module_type: "ubcrt/CRT/CRTTrackProducer"
-	 data_label_hits: "merger"
-	 data_label_tzeros: "crttzero"
-## method 1 = all, method 2 = ave, method 3 = pure
-	 track_method_type: 2
-	 store_track: 1
-	 verbose: 0
-      }
+      crttzero: @local::crttzero
+      crttrack: @local::crttrack
    }
    
-   a1: [  crt ]
-   p1: [ crttzero, crttrack, trackmatch]
+  a1: [  crt ]
+   p1: [ crttzero, crttrack ]
    e1: [ out1, rootout ]
    trigger_paths: [p1]
    end_paths: [ a1 ]

@@ -1,0 +1,87 @@
+# FHiCL document used to run the "driver" executable. To learn more
+#  about the FHiCL language, please look at
+#  cdcvs.fnal.gov/redmine/documents/327 , the "FHiCL Quick Start Guide"
+
+#include "microboone_crtreco.fcl"
+#include "crtsimhit_corr.fcl"
+
+
+events_to_generate: 200
+run_number: 101
+
+services:{
+  TFileService: { fileName: "track_tree.root" }
+}
+
+physics:	
+{
+  analyzers:	
+  {
+    crt:		
+    {			
+      module_type: TrackDump
+      data_labeltrack: "crttrack"
+      data_labeltzero: "crttzero"
+      data_labelhit: "crthitfilter"
+#      data_labelhit: "crthitsim"
+      data_label_flash_: "opflash"
+      data_label_DAQHeader_: "daq"
+      fHardDelay: 40000  #BNB data is 40000-4480
+      verbose: 0
+      TrackModuleLabel: "pandoraCosmic"
+      SaveTPCTrackInfo: false
+      SavePMTFlashInfo: false
+      IsMC: true
+     }
+  }
+
+  producers:
+  {
+     crthitfilter: @local::crthitcorr_filter
+     crttzero: @local::crttzero_sim
+     crttrack: @local::crttrack_sim
+   }
+   
+   a1: [  crt ]
+   p1: [ crthitfilter, crttzero, crttrack ]
+   e1: [ out1, rootout ]
+   trigger_paths: [p1]
+   end_paths: [ a1 ]
+}
+
+outputs:
+{
+
+ rootout:
+  {
+    module_type: RootOutput
+    fileName: "driver.root"
+    compressionLevel: 0
+  }
+
+  out1:
+  {
+    module_type: FileDumperOutput
+    wantProductFriendlyClassName: true
+  }
+}
+
+source:
+{
+  module_type: RootInput
+}
+
+process_name: TrackDump
+
+# use filtered sim hits for CRT reco
+physics.producers.crttzero.data_label: "crthitfilter"
+physics.producers.crtttracks.data_label_hits: "crthitfilter"
+
+# configure the filter
+physics.producers.crthitfilter.HitThreshold: 0.0
+physics.producers.crthitfilter.StripThreshold: 0.0
+physics.producers.crthitfilter.SiPMThreshold: 0.0
+physics.producers.crthitfilter.ScaleMCtime: true  # true means divide times by 5, bugfix for nov18 MCC9 samples
+physics.producers.crthitfilter.PEscaleFactor: -1.0 #-1.0 means skip this (or use 1.0)
+physics.producers.crthitfilter.CrtHitsIn_Label: "crthitsim"
+physics.producers.crthitfilter.RemoveBottomHits: true

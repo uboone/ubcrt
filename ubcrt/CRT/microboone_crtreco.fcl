@@ -2,6 +2,24 @@
 #  about the FHiCL language, please look at
 #  cdcvs.fnal.gov/redmine/documents/327 , the "FHiCL Quick Start Guide"
 
+crttzero: {
+   module_type: CRTTzeroProducer
+   data_label: "merger"
+   max_time_difference: 100.
+   store_tzero: 1
+   verbose: 0
+}
+
+crttrack: {
+   module_type: CRTTrackProducer
+   data_label_hits: "merger"
+   data_label_tzeros: "crttzero"
+   ## method 1 = all, method 2 = ave, method 3 = pure
+   track_method_type: 2
+   store_track: 1
+   verbose: 0
+}
+
 t0recocrthit_data:		
     {			
       module_type: T0recoCRTHit
@@ -34,6 +52,24 @@ t0recocrthit_data:
       AlignTopZ:   -28.1
      }
 
+crttzero_sim: {
+   module_type: CRTTzeroProducer
+   data_label: "crthitsim"
+   max_time_difference: 100.
+   store_tzero: 1
+   verbose: 0
+}
+
+crttrack_sim: {
+   module_type: CRTTrackProducer
+   data_label_hits: "crthitsim"
+   data_label_tzeros: "crttzero"
+   ## method 1 = all, method 2 = ave, method 3 = pure
+   track_method_type: 2
+   store_track: 1
+   verbose: 0
+}
+
 t0recocrthit_sim:		
     {			
       module_type: T0recoCRTHit
@@ -50,22 +86,7 @@ t0recocrthit_sim:
 	 # distance squared in cm^2 from track extrapolation to CRT hit 
 	 #   must be less than this to be considered a match
       fMatchCut: 40
+	 # alignment offsets for CRT planes in cm, default is 0.0 for all
+         # should be 0 for MC, so not listed here
      }
-
-crttzero: {
-   module_type: "ubcrt/CRT/CRTTzeroProducer"
-   data_label: "merger"
-   max_time_difference: 100.
-   store_tzero: 1
-   verbose: 0
-}
-crttrack: {
-   module_type: "ubcrt/CRT/CRTTrackProducer"
-   data_label_hits: "merger"
-   data_label_tzeros: "crttzero"
-   ## method 1 = all, method 2 = ave, method 3 = pure
-   track_method_type: 2
-   store_track: 1
-   verbose: 0
-}
 
