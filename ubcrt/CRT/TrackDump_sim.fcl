@@ -79,7 +79,7 @@ physics.producers.crtttracks.data_label_hits: "crthitfilter"
 
 # configure the filter
 physics.producers.crthitfilter.HitThreshold: 0.0
-physics.producers.crthitfilter.StripThreshold: 0.0
+physics.producers.crthitfilter.StripThreshold: 8.0
 physics.producers.crthitfilter.SiPMThreshold: 0.0
 physics.producers.crthitfilter.ScaleMCtime: true  # true means divide times by 5, bugfix for nov18 MCC9 samples
 physics.producers.crthitfilter.PEscaleFactor: -1.0 #-1.0 means skip this (or use 1.0)
