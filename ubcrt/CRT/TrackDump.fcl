@@ -26,7 +26,7 @@ physics:
       data_label_DAQHeader_: "daq"
       data_label_t0CRT: "trackmatch"
       data_label_t0ACPT: "pandoraCosmicT0Reco"
-      fHardDelay: 1038800            #default is 40000
+      fHardDelay: 40000            #default is 40000
       fTimeZeroOffset: 69000 
       verbose: 0
       TrackModuleLabel: "pandoraCosmic"
