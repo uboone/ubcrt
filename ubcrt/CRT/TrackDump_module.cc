@@ -149,6 +149,10 @@ private:
   int hit_strip2[kMaxCRThits]; 
   double hit_pe1[kMaxCRThits]; 
   double hit_pe2[kMaxCRThits]; 
+  double hit_sipm1a[kMaxCRThits]; 
+  double hit_sipm1b[kMaxCRThits]; 
+  double hit_sipm2a[kMaxCRThits]; 
+  double hit_sipm2b[kMaxCRThits]; 
   // CRT Tzeros
   int nCRTtzeros;
   double tz_time_s[kMaxCRTtzs];
@@ -431,10 +435,12 @@ void TrackDump::analyze(art::Event const & evt)
 
     hit_strip1[j]=int(0.5*(ind_pes1.first));
     hit_pe1[j]=ind_pes1.second+ind_pes2.second;
+    hit_sipm1a[j]=ind_pes1.second;    hit_sipm1b[j]=ind_pes2.second;
     pes = my_CRTHit.pesmap.find(hit_feb2[j])->second;
     ind_pes1 = pes[0]; ind_pes2 = pes[1];
     hit_strip2[j]=int(0.5*ind_pes1.first);
     hit_pe2[j]=ind_pes1.second+ind_pes2.second;
+    hit_sipm2a[j]=ind_pes1.second;    hit_sipm2b[j]=ind_pes2.second;
 
     // if (hit_charge[j]>500.) hit_charge[j]=500.;
     // if (hit_pe1[j]>300.) hit_pe1[j]=300.;
@@ -454,6 +460,7 @@ void TrackDump::analyze(art::Event const & evt)
     //    std::map<uint8_t, std::vector<std::pair<int,float>>> pesmap;	       //vector of pairs  
       std::vector<std::pair<int,float>> pes1 = my_CRTHit.pesmap.find(hit_feb1[j])->second; 
       float hitpe1 = 0; int hitsipm1=-1;
+      float spe1=0; float spe2=0;
       for (uint isp=0;isp<pes1.size();isp+=2) {
 	std::pair<int,float> ind_pes1=pes1[isp];
 	std::pair<int,float> ind_pes2=pes1[isp+1];
@@ -462,26 +469,33 @@ void TrackDump::analyze(art::Event const & evt)
 	float tot = ind_pes1.second+ind_pes2.second;
 	if (tot>hitpe1) {
 	  hitpe1=tot;
+	  spe1=ind_pes1.second; spe2=ind_pes2.second;
 	  hitsipm1=0.5*ind_pes1.first;
 	}
       }
       hit_strip1[j]=-1;hit_pe1[j]=-1;
-      if (hitsipm1>=0) {hit_strip1[j]=hitsipm1;       hit_pe1[j]=hitpe1;}
+      if (hitsipm1>=0) {hit_strip1[j]=hitsipm1;      
+	hit_sipm1a[j]=spe1;	hit_sipm1b[j]=spe2;
+	hit_pe1[j]=hitpe1;}
       //
       std::vector<std::pair<int,float>> pes2 = my_CRTHit.pesmap.find(hit_feb2[j])->second; 
       float hitpe2 = 0; int hitsipm2=-1;
+      spe1=0; spe2=0;
       for (uint isp=0;isp<pes2.size();isp+=2) {
 	std::pair<int,float> ind_pes1=pes2[isp];
 	std::pair<int,float> ind_pes2=pes2[isp+1];
 	float tot = ind_pes1.second+ind_pes2.second;
 	if (tot>hitpe2) {
 	  hitpe2=tot;
+	  spe1=ind_pes1.second; spe2=ind_pes2.second;
 	  hitsipm2=0.5*ind_pes1.first;
 	}
       }
       hit_strip2[j]=-1; hit_pe2[j]=-1;
-      if (hitsipm2>=0) {hit_strip2[j]=hitsipm2;      hit_pe2[j]=hitpe2;}
-      //
+      if (hitsipm2>=0) {hit_strip2[j]=hitsipm2;
+	hit_sipm2a[j]=spe1;	hit_sipm2b[j]=spe2; 
+      hit_pe2[j]=hitpe2;}
+     //
 	// std::cout << " feb1 strip1 pe1 " << hit_feb1[j] << " " << hit_strip1[j] << " " << 
 	//   hit_pe1[j] << std::endl;
 	// std::cout << " feb2 strip2 pe2 " << hit_feb2[j] << " " << hit_strip2[j] << " " << 
@@ -630,6 +644,10 @@ void TrackDump::beginJob()
   fTree->Branch("hit_strip2",hit_strip2,"hit_strip2[nCRThits]/I");
   fTree->Branch("hit_pe1",hit_pe1,"hit_pe1[nCRThits]/D");
   fTree->Branch("hit_pe2",hit_pe2,"hit_pe2[nCRThits]/D");
+  fTree->Branch("hit_sipm1a",hit_sipm1a,"hit_sipm1a[nCRThits]/D");
+  fTree->Branch("hit_sipm1b",hit_sipm1b,"hit_sipm1b[nCRThits]/D");
+  fTree->Branch("hit_sipm2a",hit_sipm2a,"hit_sipm2a[nCRThits]/D");
+  fTree->Branch("hit_sipm2b",hit_sipm2b,"hit_sipm2b[nCRThits]/D");
   // CRT tzeros
   fTree->Branch("nCRTtzeros",&nCRTtzeros,"nCRTtzeros/I");
   fTree->Branch("tz_time_s",tz_time_s,"tz_time_s[nCRTtzeros]/D");
