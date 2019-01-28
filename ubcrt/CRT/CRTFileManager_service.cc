@@ -317,7 +317,7 @@ gallery::Event& crt::CRTFileManager::openFile(std::string file_name)
 
     try {
       std::cout << "Open file." << std::endl;
-      crt_event = std::move(std::unique_ptr<gallery::Event>(new gallery::Event(xrootd_urls)));
+      crt_event = std::unique_ptr<gallery::Event>(new gallery::Event(xrootd_urls));
       open_ok = true;
     }
     catch(...) {
