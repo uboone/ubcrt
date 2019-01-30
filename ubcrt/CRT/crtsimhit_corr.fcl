@@ -1,3 +1,6 @@
+
+BEGIN_PROLOG
+
 crthitcorr_timebugfix:
 {
     module_type: CRTSimHitCorr
@@ -24,3 +27,5 @@ crthitcorr_filter:
     RemoveBottomHits:  true   #  clean up bottom hits that are removed from data 
     verbose: 0
 }
+
+END_PROLOG
