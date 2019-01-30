@@ -100,12 +100,12 @@ simple_plugin( CRTFileManager service
         art_Persistency_Provenance canvas
         art_Utilities canvas
 	ifdh
-	boost_date_time
         ${ART_FRAMEWORK_SERVICES_REGISTRY}
         ${MF_MESSAGELOGGER}
         ${MF_UTILITIES}
         ${ROOT_BASIC_LIB_LIST}
         cetlib cetlib_except
+	${Boost_DATE_TIME_LIBRARY}
     BASENAME_ONLY
 )
 
