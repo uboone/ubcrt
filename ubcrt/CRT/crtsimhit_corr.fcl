@@ -11,6 +11,8 @@ crthitcorr_timebugfix:
     SiPMThreshold:   0.0    # threshold in PE applied to the individual SiPMs 
     PEscaleFactor:   1.0    # PEs scaled by this factor before applying thresholds
     RemoveBottomHits:  false
+    TimeStart:   -4000.
+     TimeEnd: 6000.
     verbose: 0
 
 }
@@ -25,6 +27,8 @@ crthitcorr_filter:
     SiPMThreshold:   0.0    # threshold in PE applied to the individual SiPMs 
     PEscaleFactor:   -1.0    # PEs scaled by this factor before applying thresholds
     RemoveBottomHits:  true   #  clean up bottom hits that are removed from data 
+    TimeStart:   -1931.   # impose data merge window on simulated hits.  Start and End of window in microseconds
+    TimeEnd: 4069.
     verbose: 0
 }
 

@@ -100,6 +100,8 @@ namespace crt{
     float fStripThreshold;
     float fSiPMThreshold;
     float fPEscaleFactor;
+			   float fTimeStart;
+			   float fTimeEnd;
     bool fRemoveBottomHits;
     bool          fVerbose;             ///< print info
    
@@ -126,6 +128,8 @@ namespace crt{
     fSiPMThreshold           = (p.get<float>("SiPMThreshold",0.0));
     fPEscaleFactor           = (p.get<float>("PEscaleFactor",-1.0));
     fRemoveBottomHits           = (p.get<bool>("RemoveBottomHits",true));
+    fTimeStart           = (p.get<float>("TimeStart",-1931.));
+    fTimeEnd           = (p.get<float>("TimeEnd",4069.));
     fVerbose              = (p.get<bool> ("Verbose",false));
 
   }
@@ -197,6 +201,8 @@ namespace crt{
 	  time5/=5;
 	  time1/=5;
 	}
+	//impose data merge window on simulated hits
+	if (time1<fTimeStart || time1>fTimeEnd) iKeepMe=0;
 	if (fPEscaleFactor>0) {
 	  // scale charge 
 	  pestot*=fPEscaleFactor;

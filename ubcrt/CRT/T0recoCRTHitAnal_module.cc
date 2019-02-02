@@ -117,6 +117,8 @@ private:
   TH1F* hMTime;
   TH1F* hMLength;
   TH1F* hMOpAng;
+  TH1F* hx;
+  TH1F* hMx;
   TH1F* hMlowx;
   TH1F* hMhighx;
   TH1F* hATheta;
@@ -319,7 +321,8 @@ void crt::T0recoCRTHitAnal::analyze(art::Event const & evt)
       hPhi->Fill(t_phi);
       hOpAng->Fill(t_opang);
       hLength->Fill(t_len);
-      
+      hx->Fill(lowx);
+
       double atracktime=0.0;
       bool b_acpt = false;
       if (T0_acpt.size()==1) { 
@@ -347,6 +350,7 @@ void crt::T0recoCRTHitAnal::analyze(art::Event const & evt)
 	hMPhi->Fill(t_phi);
 	hMTime->Fill(ctracktime);
 	hMOpAng->Fill(t_opang);
+	hMx->Fill(lowx);
 	hMlowx->Fill(lowx-ctracktime*driftvel);
 	hMhighx->Fill(highx-ctracktime*driftvel);
 	hMLength->Fill(t_len);
@@ -407,7 +411,11 @@ void crt::T0recoCRTHitAnal::beginJob()
   hMLength->GetXaxis()->SetTitle("Track Length (cm)");
   hMOpAng = tfs->make<TH1F>("hMOpAng","hMOpAng",60,0.85,1.00);
   hMOpAng->GetXaxis()->SetTitle("cos(alpha)");
-  hMlowx = tfs->make<TH1F>("hMlowx","hMlowx",300,-10.,290.);
+  hx = tfs->make<TH1F>("hx","hx",100,-200.,400.);
+  hx->GetXaxis()->SetTitle("x (cm)");
+  hMx = tfs->make<TH1F>("hMx","hMx",100,-200.,400.);
+  hMx->GetXaxis()->SetTitle("x (cm)");
+  hMlowx = tfs->make<TH1F>("hMlowx","hMlowx",300,-200.,400.);
   hMlowx->GetXaxis()->SetTitle("x (cm)");
   hMhighx = tfs->make<TH1F>("hMhighx","hMhighx",300,-10.,290.);
   hMhighx->GetXaxis()->SetTitle("x (cm)");
