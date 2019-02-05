@@ -1,14 +1,42 @@
-#include "ubobj/CRT/CRTSimData.hh"
-#include "ubcrt/CRT/CRTDetSim.hh"
+/**
+ * \class CRTDetSim
+ *
+ * \ingroup crt
+ *
+ * \brief Provides CRTData from simulations
+ *
+ * Converts IDEs from largeant (or whichever producer) to
+ * CRTData. This is meant to mimic the physical detector as much as
+ * possible.
+ *
+ *
+ * \author $Author: Kevin Wierman<kevin.wierman@pnnl.gov>
+ *
+ * \version $Revision: 1.0 $
+ *
+ * \date $Date: 2016/12/12 $
+ *
+ * Contact: kevin.wierman@pnnl.gov
+ *
+ * Created on: Tuesday, December 13, 2016
+ *
+**/
 
-#include "lardata/DetectorInfoServices/DetectorClocksService.h"
+#include "ubobj/CRT/CRTSimData.hh"
+
+#include "art/Framework/Core/ModuleMacros.h"
+#include "art/Framework/Core/EDProducer.h"
+#include "art/Framework/Principal/Event.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h"
+#include "fhiclcpp/ParameterSet.h"
+#include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardataobj/RawData/RawDigit.h"
 #include "lardataobj/Simulation/AuxDetSimChannel.h"
-#include "messagefacility/MessageLogger/MessageLogger.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/Geometry/AuxDetGeometry.h"
 #include "larcorealg/CoreUtils/NumericUtils.h" // util::absDiff()
+#include "lardataalg/DetectorInfo/ElecClock.h"
+#include "messagefacility/MessageLogger/MessageLogger.h"
 #include "nutools/RandomUtils/NuRandomService.h"
 #include "CLHEP/Random/RandFlat.h"
 #include "CLHEP/Random/RandGauss.h"
@@ -21,123 +49,127 @@
 #include <math.h>
 
 namespace crt{
-  /*
-  const double striplength[73] = {
-    346.0, 346.0, 346.0, 259.6, 259.6, 259.6, 259.6, 227.0, 227.0, 346.0, 
-    346.0, 346.0, 346.0, 346.0, 346.0, 346.0, 403.8, 403.8, 403.8, 403.8, 
-    403.8, 403.8, 259.6, 259.6, 259.6, 259.6, 259.6, 259.6, 259.6, 259.6, 
-    259.6, 259.6, 259.6, 259.6, 259.6, 259.6, 396.2, 396.2, 396.2, 227.0, 
-    227.0, 227.0, 227.0, 227.0, 227.0, 227.0, 227.0, 227.0, 227.0, 360.0, 
-    360.0, 360.0, 360.0, 360.0, 360.0, 360.0, 180.0, 180.0, 180.0, 180.0, 
-    180.0, 180.0, 365.0, 365.0, 365.0, 365.0, 365.0, 365.0, 180.0, 180.0, 
-    365.0, 365.0, 365.0};
-    const short mod2plane[73] = {
-      0,0,0,0,0,0,0,0,0,1,  //0-9
-      1,1,1,1,1,1,1,1,1,1,  //10-19
-      1,1,2,2,2,2,2,2,2,2,  //20-29
-      2,2,2,2,2,2,2,2,2,2,  //30-39
-      2,2,2,2,2,2,2,2,2,3,  //40-49
-      3,3,3,3,3,3,3,3,3,3,  //50-59  
-      3,3,3,3,3,3,3,3,3,3,  //60-69  
-      3,3,3};               //70-72 
-  
-    const short mod2feb[73] = {
-      24,23,22,17,14,18,19,12,11,52,  //0-9
-      31,29,28,27,26,30,61,59,57,60,                  //10-19
-      58,56,32,38,36,35,34,33,37,45,                  //20-29
-      44,43,42,41,40,39,55,54,53,51,                  //30-39
-      49,47,21,16,50,48,46,20,15,107,                 //40-49
-      106,105,109,108,112,111,195,123,124,126,        //50-59
-      125,129,115,114,113,116,119,120,127,128,        //60-69
-      117,121,118};                                   //70-72
+  class CRTDetSim :  public art:: EDProducer{
+  public:
+    explicit CRTDetSim(const fhicl::ParameterSet&);
 
-    const short mod2orient[73] = {  // 0=x, 1=y, 2=z
-      2,2,2,0,0,0,0,2,0,1,  //0-9
-      1,1,1,1,1,1,2,2,2,2,  //10-19
-      2,2,1,1,1,1,1,1,1,1,  //20-29
-      1,1,1,1,1,1,2,2,2,2,  //30-39
-      2,2,2,2,2,2,2,2,2,0,  //40-49
-      0,0,0,0,0,0,0,0,0,0,  //50-59
-      0,2,2,2,2,2,2,2,2,0,  //60-69
-      2,2,2};               //70-72
+  private:
+    void produce (art::Event&) override;
+
+    /// Name of the producer of the IDEs
+    std::string fG4ModuleLabel;
+    double fGlobalT0Offset;  //!< Time delay fit: Gaussian normalization
+    double fTDelayNorm;  //!< Time delay fit: Gaussian normalization
+    double fTDelayShift;  //!< Time delay fit: Gaussian x shift
+    double fTDelaySigma;  //!< Time delay fit: Gaussian width
+    double fTDelayOffset;  //!< Time delay fit: Gaussian baseline offset
+    double fTDelayRMSGausNorm;  //!< Time delay RMS fit: Gaussian normalization
+    double fTDelayRMSGausShift;  //!< Time delay RMS fit: Gaussian x shift
+    double fTDelayRMSGausSigma;  //!< Time delay RMS fit: Gaussian width
+    double fTDelayRMSExpNorm;  //!< Time delay RMS fit: Exponential normalization
+    double fTDelayRMSExpShift;  //!< Time delay RMS fit: Exponential x shift
+    double fTDelayRMSExpScale;  //!< Time delay RMS fit: Exponential scale
+    double fNpeScaleNorm;  //!< Npe vs. distance: 1/r^2 scale
+    double fNpeScaleShift;  //!< Npe vs. distance: 1/r^2 x shift
+    double fQ0;  // Average energy deposited for mips, for charge scaling [GeV]
+    double fQPed;  // ADC offset for the single-peak peak mean [ADC]
+    double fQSlope;  // Slope in mean ADC / Npe [ADC]
+    double fQRMS;  // ADC single-pe spectrum width [ADC]
+    double fQThreshold;  //!< ADC charge threshold [ADC]
+    double fTResInterpolator;  // Interpolator time resolution [ns]
+    double fPropDelay;  // Delay in pulse arrival time [ns/m]
+    double fPropDelayError;  // Delay in pulse arrival time, uncertainty [ns/m]
+    bool fUseEdep;  //!< Use the true G4 energy deposited, assume mip if false.
+    bool fModelTransAtten;  //!< simplify electronics response
+    bool fModelLongAtten;  //!< simplify electronics response
+    double fAbsLenEff;  // Effective abs. length for transverse Npe scaling [cm]
+    double fStripCoincidenceWindow;
+    double fTaggerPlaneCoincidenceWindow;
+    double fSipmTimeResponse;
+    double fCRTClockFreq;
+    bool fverbose;
+    bool fSumThresh;
+    CLHEP::HepRandomEngine& fEngine;
+
+    /**
+     * Get the channel trigger time relative to the start of the MC event.
+     *
+     * @param engine The random number generator engine
+     * @param clock The clock to count ticks on
+     * @param t0 The starting time (which delay is added to)
+     * @param npe Number of observed photoelectrons
+     * @param r Distance between the energy deposit and strip readout end [mm]
+     * @return The channel trigger time [ns]
 */
+    double getChannelTriggerTicks(detinfo::ElecClock& clock,
+                                  float t0, float npeMean, float r);
 
+  };
+
+  // Implementation below
   CRTDetSim::CRTDetSim(const fhicl::ParameterSet& pSet)
     : EDProducer{pSet}
+    , fG4ModuleLabel{pSet.get<std::string>("G4ModuleLabel","g4")}
+    , fGlobalT0Offset{pSet.get<double>("GlobalT0Offset",0.0)}
+    , fTDelayNorm{pSet.get<double>("TDelayNorm",4126.)}
+    , fTDelayShift{pSet.get<double>("TDelayShift",-300.)}
+    , fTDelaySigma{pSet.get<double>("TDelaySigma",90.)}
+    , fTDelayOffset{pSet.get<double>("TDelayOffset",-1.5)}
+    , fTDelayRMSGausNorm{pSet.get<double>("TDelayRMSGausNorm",2.09)}
+    , fTDelayRMSGausShift{pSet.get<double>("TDelayRMSGausShift",7.24)}
+    , fTDelayRMSGausSigma{pSet.get<double>("TDelayRMSGausSigma",170.)}
+    , fTDelayRMSExpNorm{pSet.get<double>("TDelayRMSExpNorm",1.65)}
+    , fTDelayRMSExpShift{pSet.get<double>("TDelayRMSExpShift",75.6)}
+    , fTDelayRMSExpScale{pSet.get<double>("TDelayRMSExpScale",79.35)}
+    , fNpeScaleNorm{pSet.get<double>("NpeScaleNorm",5261000.)}
+    , fNpeScaleShift{pSet.get<double>("NpeScaleShift",-1085.)}
+    , fQ0{pSet.get<double>("Q0",0.00175)}
+    , fQPed{pSet.get<double>("QPed",63.6)}
+    , fQSlope{pSet.get<double>("QSlope",131.9)}
+    , fQRMS{pSet.get<double>("QRMS",15.)}
+    , fQThreshold{pSet.get<double>("QThreshold",100.0)}
+    , fTResInterpolator{pSet.get<double>("TResInterpolator",1.268)}
+    , fPropDelay{pSet.get<double>("PropDelay",0.0061)}
+    , fPropDelayError{pSet.get<double>("PropDelayError",0.007)}
+    , fUseEdep{pSet.get<bool>("UseEdep",true)}
+    , fModelTransAtten{pSet.get<bool>("ModelTransAtten",true)}
+    , fModelLongAtten{pSet.get<bool>("ModelLongAtten",true)}
+    , fAbsLenEff{pSet.get<double>("AbsLenEff",8.5)}
+    , fStripCoincidenceWindow{pSet.get<double>("StripCoincidenceWindow", 30.)}
+    , fTaggerPlaneCoincidenceWindow{pSet.get<double>("TaggerPlaneCoincidenceWindow", 100.)}
+    , fSipmTimeResponse{pSet.get<double>("SipmTimeResponse",2.)}
+    , fCRTClockFreq{pSet.get<double>("CRTClockFreq",1.0)}
+    , fverbose{pSet.get<bool>("verbose",0)}
+    , fSumThresh{pSet.get<bool>("SumThresh",false)}
+    , fEngine{art::ServiceHandle<rndm::NuRandomService>{}->createEngine(*this, "HepJamesRandom", "crt", pSet, "Seed")}
   {
-    art::ServiceHandle<rndm::NuRandomService> Seeds;
-    Seeds->createEngine(*this, "HepJamesRandom", "crt", pSet, "Seed");
-    this->reconfigure(pSet);
-    produces< std::vector<CRTSimData> >();
-
-  }
-
-  CRTDetSim::~CRTDetSim()
-  {
-
-  }
-
-  void CRTDetSim::reconfigure(fhicl::ParameterSet const & pSet) {
-    fG4ModuleLabel = pSet.get<std::string>("G4ModuleLabel","g4");
-    fGlobalT0Offset = pSet.get<double>("GlobalT0Offset",0.0);
-    fTDelayNorm = pSet.get<double>("TDelayNorm",4126.);
-    fTDelayShift = pSet.get<double>("TDelayShift",-300.);
-    fTDelaySigma = pSet.get<double>("TDelaySigma",90.);
-    fTDelayOffset = pSet.get<double>("TDelayOffset",-1.5);
-    fTDelayRMSGausNorm = pSet.get<double>("TDelayRMSGausNorm",2.09);
-    fTDelayRMSGausShift = pSet.get<double>("TDelayRMSGausShift",7.24);
-    fTDelayRMSGausSigma = pSet.get<double>("TDelayRMSGausSigma",170.);
-    fTDelayRMSExpNorm = pSet.get<double>("TDelayRMSExpNorm",1.65);
-    fTDelayRMSExpShift = pSet.get<double>("TDelayRMSExpShift",75.6);
-    fTDelayRMSExpScale = pSet.get<double>("TDelayRMSExpScale",79.35);
-    fPropDelay = pSet.get<double>("PropDelay",0.0061);
-    fPropDelayError = pSet.get<double>("PropDelayError",0.007);
-    fTResInterpolator = pSet.get<double>("TResInterpolator",1.268);
-    fNpeScaleNorm = pSet.get<double>("NpeScaleNorm",5261000.);
-    fNpeScaleShift = pSet.get<double>("NpeScaleShift",-1085.);
-    fQ0 = pSet.get<double>("Q0",0.00175);
-    fQPed = pSet.get<double>("QPed",63.6);
-    fQSlope = pSet.get<double>("QSlope",131.9);
-    fQRMS = pSet.get<double>("QRMS",15.);
-    fQThreshold = pSet.get<double>("QThreshold",100.0);
-    fAbsLenEff = pSet.get<double>("AbsLenEff",8.5);
-    fStripCoincidenceWindow = pSet.get<double>("StripCoincidenceWindow", 30.);
-    fTaggerPlaneCoincidenceWindow = pSet.get<double>("TaggerPlaneCoincidenceWindow", 100.);
-    fSipmTimeResponse = pSet.get<double>("SipmTimeResponse",2.);
-    fUseEdep = pSet.get<bool>("UseEdep",true);
-    fverbose = pSet.get<bool>("verbose",0);
-    fSumThresh = pSet.get<bool>("SumThresh",false);
-    fModelTransAtten = pSet.get<bool>("ModelTransAtten",true);
-    fModelLongAtten = pSet.get<bool>("ModelLongAtten",true);
-    fCRTClockFreq = pSet.get<double>("CRTClockFreq",1.0);
-
     if (fQThreshold<fQPed) { 
-      fQThreshold=fQPed;  
       std::cout << " Threshold cannot be lower than pedestal value.  Setting threshold at pedestal" << std::endl;
+      fQThreshold=fQPed;
     }
+
+    produces< std::vector<CRTSimData> >();
   }
-
-  double CRTDetSim::getChannelTriggerTicks(CLHEP::HepRandomEngine* engine,
-                                           detinfo::ElecClock& clock,
-                                           float t0, float npeMean, float r) {
-
       
+  double CRTDetSim::getChannelTriggerTicks(detinfo::ElecClock& clock,
+                                           float t0, float npeMean, float r)
+  {
     // Hit timing, with smearing and NPE dependence
-    double tDelayMean = \
+    double tDelayMean =
       fTDelayNorm *
         exp(-0.5 * pow((npeMean - fTDelayShift) / fTDelaySigma, 2)) +
       fTDelayOffset;
 
-    double tDelayRMS = \
+    double tDelayRMS =
       fTDelayRMSGausNorm *
         exp(-pow(npeMean - fTDelayRMSGausShift, 2) / fTDelayRMSGausSigma) +
       fTDelayRMSExpNorm *
         exp(-(npeMean - fTDelayRMSExpShift) / fTDelayRMSExpScale);
 
-    double tDelay = CLHEP::RandGauss::shoot(engine, tDelayMean, tDelayRMS);
+    double tDelay = CLHEP::RandGauss::shoot(&fEngine, tDelayMean, tDelayRMS);
 
     // Time resolution of the interpolator
-    tDelay += CLHEP::RandGauss::shoot(engine, 0, fTResInterpolator);
+    tDelay += CLHEP::RandGauss::shoot(&fEngine, 0, fTResInterpolator);
 
     // Propagation time
     double tProp = CLHEP::RandGauss::shoot(fPropDelay, fPropDelayError) * r;
@@ -155,10 +187,7 @@ namespace crt{
     << ", tDelay=" << tDelay << ", tDelay(interp)="
     << tDelay << ", tProp=" << tProp << ", t=" << t << ", ticks=" << cticks << "\n";
 
-
-    //    return clock.Ticks();
     return cticks;
-
   }
 
 
@@ -178,12 +207,6 @@ namespace crt{
     // not used
     art::ServiceHandle<detinfo::DetectorClocksService> detClocks;
     detinfo::ElecClock trigClock = detClocks->provider()->TriggerClock();
-
-    art::ServiceHandle<art::RandomNumberGenerator> rng;
-    //CLHEP::HepRandomEngine* engine = &rng->getEngine("crt");
-    CLHEP::HepRandomEngine* engine = &rng->getEngine(art::ScheduleID::first(),
-                                                     moduleDescription().moduleLabel(),
-                                                     "crt");
 
     // Handle for (truth) AuxDetSimChannels
     art::Handle<std::vector<sim::AuxDetSimChannel> > channels;
@@ -277,7 +300,7 @@ namespace crt{
 	long npe0 =0; 
 	long npe1 =0;
         // Time relative to PPS: set to zero instead of random
-	//        uint32_t ppsTicks = CLHEP::RandFlat::shootInt(engine, trigClock.Frequency() * 1e6);
+        //        uint32_t ppsTicks = CLHEP::RandFlat::shootInt(fEngine, trigClock.Frequency() * 1e6);
         uint32_t ppsTicks = 0;
 		
 	if (fModelTransAtten) {
@@ -292,11 +315,11 @@ namespace crt{
 	}
 	if (fModelTransAtten) {  // should be a different flag to turn on/off smearing
 	// Observed PE
-	  npe0 = CLHEP::RandPoisson::shoot(engine, npeExp0);
-	  npe1 = CLHEP::RandPoisson::shoot(engine, npeExp1);
+          npe0 = CLHEP::RandPoisson::shoot(&fEngine, npeExp0);
+          npe1 = CLHEP::RandPoisson::shoot(&fEngine, npeExp1);
 	  // SiPM and ADC response: Npe to ADC counts
-	  q0 = CLHEP::RandGauss::shoot(engine, fQPed + fQSlope * npe0, fQRMS * sqrt(npe0));
-	  q1 = CLHEP::RandGauss::shoot(engine, fQPed + fQSlope * npe1, fQRMS * sqrt(npe1));	  
+          q0 = CLHEP::RandGauss::shoot(&fEngine, fQPed + fQSlope * npe0, fQRMS * sqrt(npe0));
+          q1 = CLHEP::RandGauss::shoot(&fEngine, fQPed + fQSlope * npe1, fQRMS * sqrt(npe1));
 	}
 	else {
 	  npe0=npeExp0;
@@ -312,17 +335,12 @@ namespace crt{
 	//  trigClock not used
 	//  Instead time relative to event time=0 (will include time offset of particles not 
 	//       generated at time=0) in CRT ticks (=1 ns)
-	uint32_t t0 = getChannelTriggerTicks(engine, trigClock, tTrue, npe0, distToReadout);
-	uint32_t t1 = getChannelTriggerTicks(engine, trigClock, tTrue, npe1, distToReadout);
+        uint32_t t0 = getChannelTriggerTicks(trigClock, tTrue, npe0, distToReadout);
+        uint32_t t1 = getChannelTriggerTicks(trigClock, tTrue, npe1, distToReadout);
 
         uint32_t channel0ID = adsc.AuxDetID()*2;
         uint32_t channel1ID = adsc.AuxDetID()*2+1;
 	
-	// if (fverbose) 
-	//   std::cout << adsc.AuxDetID() << " " << ide_i << " " << channel0ID << " " << q0 << 
-	//     " " << t0 <<
-	//     " " << channel1ID << " " << q1 << " " << t1 <<  std::endl;
-
       // Apply ADC threshold and strip-level coincidence (both fibers fire)
 	if (util::absDiff(t0, t1) < fStripCoincidenceWindow) {
 	  if ( (q0 > fQThreshold && q1 > fQThreshold) || ((fSumThresh) && (q0+q1)>fQThreshold)) {
@@ -340,44 +358,6 @@ namespace crt{
 	} //zero energy threshold
     } //loop over ides
     }// loop over channels
-
-    // trigger commented out because it is duplicated in the hit reconstruction code CRTSimHit_module.cc
-    // this code does not work because it is SBND specific, but could be modified easily
-    //
-    // Apply coincidence trigger requirement
-    // Logic: require at least one hit in each perpendicular plane. 
-    
-    /*
-      std::unique_ptr<std::vector<sbnd::crt::CRTData> > triggeredCRTHits(
-      new std::vector<sbnd::crt::CRTData>);
-      // Logic: For normal taggers, require at least one hit in each perpendicular
-      // Plane. For the bottom tagger, any hit triggers read out.
-      for (auto trg : taggers) {
-      bool trigger = false;
-      // Loop over pairs of hits
-      for (auto t1 : trg.second.planesHit) {
-      for (auto t2 : trg.second.planesHit) {
-      if (t1 == t2) {
-      continue;
-      }
-      // Two hits on different planes with proximal t0 times
-      if (t1.first != t2.first && std::abs(t1.second - t2.second) < fTaggerPlaneCoincidenceWindow) {
-      trigger = true;
-      break;
-      }
-      }
-    }
-    if (trigger || trg.first.find("TaggerBot") != std::string::npos) {
-    // Write out all hits on a tagger when there is any coincidence
-    for (auto d : trg.second.data) {
-    triggeredCRTHits->push_back(d);
-    }
-    }
-    } // end loop over hits
-    mf::LogInfo("CRT") << "CRT TRIGGERED HITS: " << triggeredCRTHits->size() << "\n";
-    e.put(std::move(triggeredCRTHits));
-    */
-  
 
     evt.put(std::move(crtHits));
   }
