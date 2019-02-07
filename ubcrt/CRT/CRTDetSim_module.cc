@@ -141,7 +141,7 @@ namespace crt{
     , fCRTClockFreq{pSet.get<double>("CRTClockFreq",1.0)}
     , fverbose{pSet.get<bool>("verbose",0)}
     , fSumThresh{pSet.get<bool>("SumThresh",false)}
-    , fEngine{art::ServiceHandle<rndm::NuRandomService>{}->createEngine(*this, "HepJamesRandom", "crt", pSet, "Seed")}
+    , fEngine(art::ServiceHandle<rndm::NuRandomService>{}->createEngine(*this, "HepJamesRandom", "crt", pSet, "Seed"))
   {
     if (fQThreshold<fQPed) { 
       std::cout << " Threshold cannot be lower than pedestal value.  Setting threshold at pedestal" << std::endl;
