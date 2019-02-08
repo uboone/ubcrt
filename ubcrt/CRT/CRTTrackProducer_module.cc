@@ -157,8 +157,10 @@ bernfebdaq::CRTTrackProducer::CRTTrackProducer(fhicl::ParameterSet const & p)
 
 void bernfebdaq::CRTTrackProducer::produce(art::Event & evt)
 {
-  // Implementation of required member function here.
-  
+
+  //CRTTrack collection on this event                                                                         
+  std::unique_ptr<std::vector<crt::CRTTrack> > CRTTrackCol(new std::vector<crt::CRTTrack>);
+
   art::Handle< std::vector<crt::CRTHit> > rawHandle;
   evt.getByLabel(data_label_hits_, rawHandle); //what is the product instance name? no BernZMQ
   
@@ -168,6 +170,9 @@ void bernfebdaq::CRTTrackProducer::produce(art::Event & evt)
               << ", event " << evt.event() << " has zero"
               << " CRTHits " << " in module " << data_label_hits_ << std::endl;
     std::cout << std::endl;
+
+    if(store_track_ == 1)  evt.put(std::move(CRTTrackCol));
+
     return;
   }
   
@@ -184,6 +189,9 @@ void bernfebdaq::CRTTrackProducer::produce(art::Event & evt)
               << ", event " << evt.event() << " has zero"
               << " CRTTzeros " << " in module " << data_label_tzeros_ << std::endl;
     std::cout << std::endl;
+
+    if(store_track_ == 1) evt.put(std::move(CRTTrackCol));
+
     return;
   }
   
@@ -192,9 +200,6 @@ void bernfebdaq::CRTTrackProducer::produce(art::Event & evt)
 
   //CRTTzero collection on this event                                                                         
   std::unique_ptr<std::vector<crt::CRTTzero> > CRTTzeroCol(new std::vector<crt::CRTTzero>);
-
-  //CRTTrack collection on this event                                                                         
-  std::unique_ptr<std::vector<crt::CRTTrack> > CRTTrackCol(new std::vector<crt::CRTTrack>);
   
     std::vector<art::Ptr<crt::CRTTzero> > tzerolist;
 

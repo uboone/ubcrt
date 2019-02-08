@@ -19,6 +19,7 @@ art_make( BASENAME_ONLY
         CRTDaqSim_module.cc
         CRTHitProducer_module.cc
         CRTSimHitProducer_module.cc
+        CRTSimHitCorr_module.cc
         CRTCalibration_module.cc
         CRTTrackProducer_module.cc
         CRTTzeroProducer_module.cc
@@ -34,9 +35,11 @@ art_make( BASENAME_ONLY
 	CRTRawtoCRTHitGPScorr_source.cc
 	CRTAnalyser_module.cc	
 	CRTeffStd_module.cc			
-        T0recoCRT_module.cc                     
-        T0recoCRTAnal_module.cc 
 	CRTTiming_module.cc
+        T0recoCRT_module.cc                     
+        T0recoCRTHit_module.cc                     
+        T0recoCRTAnal_module.cc 
+        T0recoCRTHitAnal_module.cc 
     LIBRARY_NAME  
         CRTData
     LIB_LIBRARIES
@@ -175,7 +178,27 @@ simple_plugin(CRTSimHitProducer "module"
         cetlib cetlib_except
 )
 
-		  
+simple_plugin(CRTSimHitCorr "module"
+          larcorealg_Geometry
+        larcore_Geometry_Geometry_service
+	  CRT
+	  CRTData
+	          ${ART_FRAMEWORK_CORE}
+        	  ${ART_FRAMEWORK_IO_SOURCES}
+        	  ${ART_FRAMEWORK_PRINCIPAL}
+        art_Persistency_Common canvas
+        art_Persistency_Provenance canvas
+        art_Utilities canvas
+        lardata_DetectorInfoServices_DetectorClocksServiceStandard_service
+        nutools_RandomUtils_NuRandomService_service
+        ${ART_FRAMEWORK_SERVICES_REGISTRY}
+        ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR_SERVICE}
+        ${MF_MESSAGELOGGER}        
+        ${ROOT_BASIC_LIB_LIST}
+        ${CLHEP}
+        cetlib cetlib_except
+    BASENAME_ONLY
+)
 
 
 simple_plugin(CRTHitProducer "module"
@@ -291,7 +314,23 @@ simple_plugin(T0recoCRT "module"
           art_Framework_Services_Optional_TFileService_service
           ${ROOT_BASIC_LIB_LIST} )
 
+simple_plugin(T0recoCRTHit "module"
+            CRT
+          bernfebdaq-core_Overlays
+          art_Framework_Services_Optional
+          art_Framework_Services_Registry
+          art_Framework_Services_Optional_TFileService_service
+          ${ROOT_BASIC_LIB_LIST} )
+
 simple_plugin(T0recoCRTAnal "module"
+            CRT
+          bernfebdaq-core_Overlays
+          art_Framework_Services_Optional
+          art_Framework_Services_Registry
+          art_Framework_Services_Optional_TFileService_service
+          ${ROOT_BASIC_LIB_LIST} )
+
+simple_plugin(T0recoCRTHitAnal "module"
             CRT
           bernfebdaq-core_Overlays
           art_Framework_Services_Optional

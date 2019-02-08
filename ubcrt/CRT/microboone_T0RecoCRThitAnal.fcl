@@ -1,0 +1,27 @@
+# FHiCL document used to run the "driver" executable. To learn more
+#  about the FHiCL language, please look at
+#  cdcvs.fnal.gov/redmine/documents/327 , the "FHiCL Quick Start Guide"
+
+t0recocrthitana:
+    {			
+      module_type: T0recoCRTHitAnal
+      data_label_TPCtrack: "pandoraCosmic"
+      data_label_acptT0: "pandoraCosmicT0Reco"
+      data_label_crtT0:  "match"
+      data_label_CRThit: "merger"
+      data_label_CRTtzero: "crttzero"
+      data_label_flash: "simpleFlashCosmic"
+      data_label_DAQHeader: "daq"
+      fHardDelay: 40000   #BNB data is 35520?
+      TimeZeroOffset: 69200   #used for fTimeSelect=0
+      verbose: false
+	 # set =0 for GPS ref and =1 to use trigger time
+      TimeSelect: 0
+	 # distance of closest approach from track extrapolation to CRT hit 
+	 #   must be less than this to be considered a match
+      MatchCut: 40
+         # Track Quality Cuts for efficiency histograms
+      TQCutLength: 20 
+      TQCutOpAng: 0.95
+     }
+
