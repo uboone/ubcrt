@@ -202,7 +202,7 @@ namespace crt{
 	  time1/=5;
 	}
 	//impose data merge window on simulated hits
-	if (time1<fTimeStart || time1>fTimeEnd) iKeepMe=0;
+	if (time5<(1000.0*fTimeStart) || time5>(1000.0*fTimeEnd) ) iKeepMe=0;
 	if (fPEscaleFactor>0) {
 	  // scale charge 
 	  pestot*=fPEscaleFactor;

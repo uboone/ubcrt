@@ -1,0 +1,74 @@
+
+BEGIN_PROLOG
+
+crtdatahitcorr_align:
+{
+    module_type: CRTDataHitCorr
+    CrtHitsIn_Label1: "merger"
+    CrtHitsIn_Label2: "remerge"
+    CrtHitsIn_Label3: "remergeextra"
+    CrtHitsIn_Label4: "mergeextra"
+    NumberCollections:  2  // only combine label1 and label2
+   # alignment offsets for CRT planes in cm, default is 0.0 for all
+   AlignBotX:    -4.4
+   AlignBotY:     0.0
+   AlignBotZ:    30.2
+   AlignAnodeX:   0.0
+   AlignAnodeY:  20.0
+   AlignAnodeZ:   5.7
+   AlignCathX:    0.0
+   AlignCathY:   -9.8
+   AlignCathZ:    0.4
+   AlignTopX:    20.8
+   AlignTopY:     0.0
+   AlignTopZ:   -28.1
+    verbose: 0
+}
+
+crtdatahitcorr_noalign:
+{
+    module_type: CRTDataHitCorr
+    CrtHitsIn_Label1: "merger"
+    CrtHitsIn_Label2: "remerge"
+    CrtHitsIn_Label3: "mergeextra"
+    CrtHitsIn_Label4: "remergeextra"
+    NumberCollections:  2  // only combine label1 and label2
+    TimeStart:   -10000.
+    TimeEnd: 10000.
+   # alignment offsets for CRT planes in cm, default is 0.0 for all,
+   #  don't set them here
+    verbose: 0
+}
+
+crtsimhitcorr_filter:
+{
+    module_type: CRTSimHitCorr
+    CrtHitsIn_Label: "crthitsim"
+    ScaleMCtime: false
+    HitThreshold:    10.0   # threshold in PE applied to the total of 4 SiPMs in hit
+    StripThreshold:  0.0    # threshold in PE applied to the total of 2 SiPMs in a strip
+    SiPMThreshold:   0.0    # threshold in PE applied to the individual SiPMs 
+    PEscaleFactor:   -1.0    # PEs scaled by this factor before applying thresholds
+    RemoveBottomHits:  true   #  clean up bottom hits that are removed from data 
+    TimeStart:   -10000.   # time window restrictions in us
+    TimeEnd: 10000.
+    verbose: 0
+}
+
+crtsimhitcorr_timebugfix:
+{
+    module_type: CRTSimHitCorr
+    CrtHitsIn_Label: "crthitsim"
+    ScaleMCtime: true
+    HitThreshold:    0.0   # threshold in PE applied to the total of 4 SiPMs in hit
+    StripThreshold:  0.0    # threshold in PE applied to the total of 2 SiPMs in a strip
+    SiPMThreshold:   0.0    # threshold in PE applied to the individual SiPMs 
+    PEscaleFactor:   1.0    # PEs scaled by this factor before applying thresholds
+    RemoveBottomHits:  false
+    TimeStart:   -10000.   # time window restrictions in us.
+     TimeEnd: 10000.
+    verbose: 0
+
+}
+
+END_PROLOG
