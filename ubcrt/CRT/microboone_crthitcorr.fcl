@@ -4,7 +4,7 @@ BEGIN_PROLOG
 crtdatahitcorr_align:
 {
     module_type: CRTDataHitCorr
-    CrtHitsIn_Label1: "merger"
+    CrtHitsIn_Label1: "remerge"
     CrtHitsIn_Label2: "remergeextra"
     NumberCollections:  1  // only combine label1 and label2
     TimeStart:   -10000.
@@ -32,7 +32,7 @@ crtdatahitcorr_align:
 crtdatahitcorr_noalign:
 {
     module_type: CRTDataHitCorr
-    CrtHitsIn_Label1: "remerger"
+    CrtHitsIn_Label1: "remerge"
     CrtHitsIn_Label2: "remergeextra"
     NumberCollections:  1  // only combine label1 and label2
     TimeStart:   -10000.
