@@ -229,9 +229,15 @@ void T0recoCRTHit::produce(art::Event & evt)
   //  art::FindMany<recob::OpFlash> trk_flash_assn_v(trackListHandle, evt, "t0reco" );
 
   
+  std::unique_ptr< std::vector<anab::T0> > T0_v(new std::vector<anab::T0>);
+  std::unique_ptr< art::Assns <recob::Track, anab::T0> >       trk_t0_assn_v_new   ( new art::Assns<recob::Track, anab::T0>);
+  //  std::unique_ptr< art::Assns<recob::Track, recob::OpFlash> > trk_flash_assn_v (new art::Assns<recob::Track, recob::OpFlash>);
+  std::unique_ptr< art::Assns <recob::Track, crt::CRTTzero > > trk_crttzero_assn_v( new art::Assns<recob::Track, crt::CRTTzero > );
+
+
   double evt_timeGPS_nsec=0.0;   double evt_timeGPS_sec=0.0;
   if (!fIsMC) {  // this is data
-    
+
     //check to make sure the data we asked for is valid 
     //get DAQ Header                                                                  
     art::Handle< raw::DAQHeaderTimeUBooNE > rawHandle_DAQHeader;  
@@ -241,6 +247,9 @@ void T0recoCRTHit::produce(art::Event & evt)
       std::cout << "Run " << evt.run() << ", subrun " << evt.subRun()
 		<< ", event " << evt.event() << " has zero"
 		<< " DAQHeaderTimeUBooNE  " << " in with label " << data_label_DAQHeader_ << std::endl;    
+      evt.put(std::move(T0_v));
+      evt.put(std::move(trk_t0_assn_v_new));
+      evt.put(std::move(trk_crttzero_assn_v));
       return;
     }
     
@@ -253,6 +262,7 @@ void T0recoCRTHit::produce(art::Event & evt)
     // double evt_timeNTP_nsec = (double)evtTimeNTP.timeLow();
     // double timstp_diff = std::abs(evt_timeGPS_nsec - evt_timeNTP_nsec);
   }// end if data
+
   if(fverbose){
     std::cout<< "Run:  "<<frunNum << "   subRun: " <<fsubRunNum<<std::endl;
     std::cout<<"event: "<<fEvtNum <<std::endl;
@@ -280,6 +290,9 @@ void T0recoCRTHit::produce(art::Event & evt)
               << ", event " << evt.event() << " has zero"
               << " CRTTzeros " << " in module " << data_label_CRTtzero_ << std::endl;
     std::cout << std::endl;
+    evt.put(std::move(T0_v));
+    evt.put(std::move(trk_t0_assn_v_new));
+    evt.put(std::move(trk_crttzero_assn_v));
     return;
   }
   std::vector<art::Ptr<crt::CRTTzero> > tzerolist;
@@ -289,11 +302,6 @@ void T0recoCRTHit::produce(art::Event & evt)
   
 
   // produce data-product to be filled within module
-  std::unique_ptr< std::vector<anab::T0> > T0_v(new std::vector<anab::T0>);
-  std::unique_ptr< art::Assns <recob::Track, anab::T0> >       trk_t0_assn_v_new   ( new art::Assns<recob::Track, anab::T0>);
-  //  std::unique_ptr< art::Assns<recob::Track, recob::OpFlash> > trk_flash_assn_v (new art::Assns<recob::Track, recob::OpFlash>);
-  std::unique_ptr< art::Assns <recob::Track, crt::CRTTzero > > trk_crttzero_assn_v( new art::Assns<recob::Track, crt::CRTTzero > );
-
   art::PtrMaker<recob::Track> trackPtrMaker(evt, trackListHandle.id());
   //art::PtrMaker<recob::OpFlash> flashPtrMaker(evt, rawHandle_OpFlash.id());
   art::PtrMaker<crt::CRTTzero> crttzPtrMaker(evt, rawHandletzero.id());
