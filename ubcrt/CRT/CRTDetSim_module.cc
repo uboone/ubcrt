@@ -66,7 +66,7 @@ namespace crt{
     : EDProducer{pSet}
   {
     art::ServiceHandle<rndm::NuRandomService> Seeds;
-    Seeds->createEngine(*this, "HepJamesRandom", "crt", pSet, "Seed");
+    (void)Seeds->createEngine(*this, "HepJamesRandom", "crt", pSet, "Seed");
     this->reconfigure(pSet);
     produces< std::vector<CRTSimData> >();
 
