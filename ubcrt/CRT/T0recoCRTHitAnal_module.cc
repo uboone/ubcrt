@@ -99,11 +99,11 @@ private:
   std::string  data_label_acptT0;
   float fTQCutOpAng;
   float fTQCutLength;
+  float fDriftVelocity;
   int fTimeSelect;
   int fHardDelay;
   int fTimeZeroOffset;
   bool fverbose;
-  bool fIsMC;
   
   TH1F* hDiffT_CRT_Flash;
   TH1F* hDiffT_CRT_AFlash;
@@ -146,16 +146,16 @@ crt::T0recoCRTHitAnal::T0recoCRTHitAnal(fhicl::ParameterSet const & p)
   data_label_DAQHeader(p.get<std::string>("data_label_DAQHeader")),
   data_label_flash(p.get<std::string>("data_label_flash","simpleFlashCosmic")),
   data_label_crttzero(p.get<std::string>("data_label_CRTtzero","crttzero")),
-  data_label_TPCTrack(p.get<std::string>("data_label_TPCtrack","pandoraCosmic")),
+  data_label_TPCTrack(p.get<std::string>("data_label_TPCtrack","pandoraTrack")),
   data_label_crtT0(p.get<std::string>("data_label_crtT0","t0recocrthit")),
   data_label_acptT0(p.get<std::string>("data_label_acptT0","pandoraCosmicT0Reco")),
   fTQCutOpAng(p.get<float>("TQCutOpAng",0.95)),
   fTQCutLength(p.get<float>("TQCutLength",20)),
+  fDriftVelocity(p.get<float>("DriftVelocity",0.11436)),   //   units  cm/us 
   fTimeSelect(p.get<int>("TimeSelect",0)),
-  fHardDelay(p.get<int>("HardDelay",40000)),
-  fTimeZeroOffset(p.get<int>("TimeZeroOffset",60000)),
-  fverbose(p.get<bool>("verbose",false)),
-  fIsMC(p.get<bool>("IsMC",false))
+  fHardDelay(p.get<int>("HardDelay",40000)),   // units ns
+  fTimeZeroOffset(p.get<int>("TimeZeroOffset",60000)),   // units ns
+  fverbose(p.get<bool>("verbose",false))
  // More initializers here.
 {}
 
@@ -165,7 +165,7 @@ void crt::T0recoCRTHitAnal::analyze(art::Event const & evt)
   double evt_timeGPS_sec = 0.0;
   double evt_timeGPS_nsec = 0.0;
 
-  if (!fIsMC) {  // this is data
+  if (evt.isRealData()) {  // this is data
     
     //check to make sure the data we asked for is valid 
     //get DAQ Header                                                                  
@@ -283,7 +283,8 @@ void crt::T0recoCRTHitAnal::analyze(art::Event const & evt)
    
 
   // 1.11436 mm/us   
-  double driftvel = 0.11436; //   units  cm/us 
+  double driftvel = fDriftVelocity; //   units  cm/us 
+  //  double driftvel = 0.11436; //   units  cm/us 
   // const detinfo::DetectorProperties *_detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
   // double const vdrift =  _detprop->DriftVelocity();  
 

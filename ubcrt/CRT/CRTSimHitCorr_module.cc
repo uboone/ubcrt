@@ -100,8 +100,6 @@ namespace crt{
     float fStripThreshold;
     float fSiPMThreshold;
     float fPEscaleFactor;
-			   float fTimeStart;
-			   float fTimeEnd;
     bool fRemoveBottomHits;
     bool          fVerbose;             ///< print info
    
@@ -128,8 +126,6 @@ namespace crt{
     fSiPMThreshold           = (p.get<float>("SiPMThreshold",0.0));
     fPEscaleFactor           = (p.get<float>("PEscaleFactor",-1.0));
     fRemoveBottomHits           = (p.get<bool>("RemoveBottomHits",true));
-    fTimeStart           = (p.get<float>("TimeStart",-1931.));
-    fTimeEnd           = (p.get<float>("TimeEnd",4069.));
     fVerbose              = (p.get<bool> ("Verbose",false));
 
   }
@@ -201,8 +197,6 @@ namespace crt{
 	  time5/=5;
 	  time1/=5;
 	}
-	//impose data merge window on simulated hits
-	if (time5<(1000.0*fTimeStart) || time5>(1000.0*fTimeEnd) ) iKeepMe=0;
 	if (fPEscaleFactor>0) {
 	  // scale charge 
 	  pestot*=fPEscaleFactor;
@@ -247,15 +241,15 @@ namespace crt{
 	    
       } // if this is a MC hit
       if (iKeepMe) {
-	     
-	      // Create a corrected CRT hit
-	      crt::CRTHit crtHit = FillCrtHit(tfeb_id, tpesmap, pestot, time1,  time2,  time3,  time4,  time5, 
-					      plane, x, ex,y,ey,z,ez );
-	      
-	      CRTHitOutCol->push_back(crtHit);
-	      nHits++;
-	      if (fVerbose) std::cout << "hit created: time " << time5 << " x " <<  x << 
-			      " y " << y << " z " <<  z << std::endl;
+	
+	// Create a corrected CRT hit
+	crt::CRTHit crtHit = FillCrtHit(tfeb_id, tpesmap, pestot, time1,  time2,  time3,  time4,  time5, 
+					plane, x, ex,y,ey,z,ez );
+	
+	CRTHitOutCol->push_back(crtHit);
+	nHits++;
+	if (fVerbose) std::cout << "hit created: time " << time5 << " x " <<  x << 
+			" y " << y << " z " <<  z << std::endl;
       }  // keep this hit	    
     } // loop over hits
     
