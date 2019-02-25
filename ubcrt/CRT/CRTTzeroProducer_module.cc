@@ -170,7 +170,7 @@ void CRTTzeroProducer::produce(art::Event & evt)
       // 
       CRTcanTzero.ts0_s=CRTHiteventA.ts0_s;
       CRTcanTzero.ts0_s_err=0;
-      planeA = CRTHiteventA.plane;
+      planeA = CRTHiteventA.plane%10;
       CRTcanTzero.nhits[planeA]=1;      
       int icount=1;
       CRTcanTzero.pes[planeA]=CRTHiteventA.peshit;
@@ -184,7 +184,7 @@ void CRTTzeroProducer::produce(art::Event & evt)
 	  if( (time_s_A == time_s_B) && (abs(time_diff)<max_time_difference_)  ){//D
 	    art::Ptr<crt::CRTHit> hptr = hitPtrMaker(j);
 	    CRTHitCol.push_back(hptr);
-	    planeB = CRTHiteventB.plane; 
+	    planeB = CRTHiteventB.plane%10; 
 	    CRTcanTzero.nhits[planeB]+=1;
 	    CRTcanTzero.pes[planeB]+=CRTHiteventB.peshit;
 	    iflag[j]=1;

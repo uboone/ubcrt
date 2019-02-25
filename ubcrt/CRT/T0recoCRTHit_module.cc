@@ -89,9 +89,7 @@ private:
   int fTimeSelect;
   int fMatchCut;
   float fDriftVel;
-  bool fstoreAssn;
   bool fverbose;
-  bool fIsMC;
   //alignment params
   float fAlignBotX;
   float fAlignBotY;
@@ -183,9 +181,7 @@ T0recoCRTHit::T0recoCRTHit(fhicl::ParameterSet const & p)
     fTimeSelect(p.get<int>("TimeSelect",0)),
     fMatchCut(p.get<int>("MatchCut",40)),
     fDriftVel(p.get<float>("DriftVel",0.11436)),   // cm/us
-    fstoreAssn(p.get<bool>("storeAssn",true)),
     fverbose(p.get<bool>("verbose",false)),
-    fIsMC(p.get<bool>("IsMC",false)),
     fAlignBotX(p.get<float>("AlignBotX",0.0)),
     fAlignBotY(p.get<float>("AlignBotY",0.0)),
     fAlignBotZ(p.get<float>("AlignBotZ",0.0)),
@@ -217,6 +213,12 @@ void T0recoCRTHit::produce(art::Event & evt)
   fsubRunNum = evt.subRun();
   fEvtNum = evt.event();
   
+   
+  // produce data-product to be filled within module
+  std::unique_ptr< std::vector<anab::T0> > T0_v(new std::vector<anab::T0>);
+  std::unique_ptr< art::Assns <recob::Track, anab::T0> >       trk_t0_assn_v_new   ( new art::Assns<recob::Track, anab::T0>);
+  std::unique_ptr< art::Assns <recob::Track, crt::CRTTzero > > trk_crttzero_assn_v( new art::Assns<recob::Track, crt::CRTTzero > );
+
   // get TPC Track List 
   art::Handle< std::vector<recob::Track>  > trackListHandle;
   std::vector<art::Ptr<recob::Track> >  tracklist;
@@ -228,10 +230,9 @@ void T0recoCRTHit::produce(art::Event & evt)
   art::FindMany<anab::T0> trk_t0_assn_v(trackListHandle, evt, "t0reco" );
   //  art::FindMany<recob::OpFlash> trk_flash_assn_v(trackListHandle, evt, "t0reco" );
 
-  
   double evt_timeGPS_nsec=0.0;   double evt_timeGPS_sec=0.0;
-  if (!fIsMC) {  // this is data
-    
+  if (evt.isRealData() ) {  // this is data
+
     //check to make sure the data we asked for is valid 
     //get DAQ Header                                                                  
     art::Handle< raw::DAQHeaderTimeUBooNE > rawHandle_DAQHeader;  
@@ -241,6 +242,9 @@ void T0recoCRTHit::produce(art::Event & evt)
       std::cout << "Run " << evt.run() << ", subrun " << evt.subRun()
 		<< ", event " << evt.event() << " has zero"
 		<< " DAQHeaderTimeUBooNE  " << " in with label " << data_label_DAQHeader_ << std::endl;    
+      evt.put(std::move(T0_v));
+      evt.put(std::move(trk_t0_assn_v_new));
+      evt.put(std::move(trk_crttzero_assn_v));
       return;
     }
     
@@ -273,13 +277,15 @@ void T0recoCRTHit::produce(art::Event & evt)
 
   // fetch tzeros 
   art::Handle< std::vector<crt::CRTTzero> > rawHandletzero;
-  evt.getByLabel(data_label_CRTtzero_, rawHandletzero); //what is the product instance name? no BernZMQ
-  //check to make sure the data we asked for is valid                                           
+  evt.getByLabel(data_label_CRTtzero_, rawHandletzero);  //check to make sure the data we asked for is valid                                           
   if(!rawHandletzero.isValid()){
     std::cout << "Run " << evt.run() << ", subrun " << evt.subRun()
               << ", event " << evt.event() << " has zero"
               << " CRTTzeros " << " in module " << data_label_CRTtzero_ << std::endl;
     std::cout << std::endl;
+    evt.put(std::move(T0_v));
+    evt.put(std::move(trk_t0_assn_v_new));
+    evt.put(std::move(trk_crttzero_assn_v));
     return;
   }
   std::vector<art::Ptr<crt::CRTTzero> > tzerolist;
@@ -287,12 +293,6 @@ void T0recoCRTHit::produce(art::Event & evt)
     art::fill_ptr_vector(tzerolist, rawHandletzero);
   art::FindManyP<crt::CRTHit> fmht(rawHandletzero, evt, data_label_CRTtzero_);
   
-
-  // produce data-product to be filled within module
-  std::unique_ptr< std::vector<anab::T0> > T0_v(new std::vector<anab::T0>);
-  std::unique_ptr< art::Assns <recob::Track, anab::T0> >       trk_t0_assn_v_new   ( new art::Assns<recob::Track, anab::T0>);
-  //  std::unique_ptr< art::Assns<recob::Track, recob::OpFlash> > trk_flash_assn_v (new art::Assns<recob::Track, recob::OpFlash>);
-  std::unique_ptr< art::Assns <recob::Track, crt::CRTTzero > > trk_crttzero_assn_v( new art::Assns<recob::Track, crt::CRTTzero > );
 
   art::PtrMaker<recob::Track> trackPtrMaker(evt, trackListHandle.id());
   //art::PtrMaker<recob::OpFlash> flashPtrMaker(evt, rawHandle_OpFlash.id());
@@ -373,7 +373,7 @@ void T0recoCRTHit::produce(art::Event & evt)
     for (size_t trkIter = 0; trkIter < tracklist.size(); ++trkIter) {
       
       //    int TrackGood=0;
-      float dist_besthit = 99999999.; int plane_besthit=11;
+      float dist_besthit = 99999999.; int plane_besthit=111;
       double time_besthit=999999999.; 
       double theta,phi,trklen;
       // fetch track length, start and end points, theta and phi
@@ -425,7 +425,7 @@ void T0recoCRTHit::produce(art::Event & evt)
 		  double crt_y=hitlist[ah]->y_pos;
 		  double crt_z=hitlist[ah]->z_pos;
 		  
-		  int crt_plane = hitlist[ah]->plane;
+		  int crt_plane = (hitlist[ah]->plane)%10;
 		  if (crt_plane==0) {
 		    crt_x+=fAlignBotX;
 		    crt_y+=fAlignBotY;
@@ -466,7 +466,7 @@ void T0recoCRTHit::produce(art::Event & evt)
 		  if (dca<dist_besthit) {
 		    besttz = tzIter;
 		    dist_besthit=dca;
-		    plane_besthit=hitlist[ah]->plane;
+		    plane_besthit=(hitlist[ah]->plane)%10;
 		    //	    art::Ptr<recob::OpFlash> flashptr = flashPtrMaker(j);
 		    //	    art::Ptr<crt::CRTHit> crthitptr = crthitPtrMaker(k);
 		    
@@ -537,12 +537,9 @@ void T0recoCRTHit::produce(art::Event & evt)
     } //loop over tracks
   }  // if tracks
   
-  if(fstoreAssn){
     evt.put(std::move(T0_v));
     evt.put(std::move(trk_t0_assn_v_new));
-    //    evt.put(std::move(trk_flash_assn_v));
     evt.put(std::move(trk_crttzero_assn_v));
-  }
   
 
 }

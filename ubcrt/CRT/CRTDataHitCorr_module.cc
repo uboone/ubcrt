@@ -96,8 +96,6 @@ namespace crt{
     // Params got from fcl file.......
     art::InputTag fCrtHitsIn_Label1;      ///< name of crt producer
     art::InputTag fCrtHitsIn_Label2;      ///< name of crt producer
-    art::InputTag fCrtHitsIn_Label3;      ///< name of crt producer
-    art::InputTag fCrtHitsIn_Label4;      ///< name of crt producer
     int fNumberCollections;
 
     //for later
@@ -105,9 +103,6 @@ namespace crt{
     // art::InputTag fPMTflashLabel;         ///< name of flash producer
     // art::InputTag fTPCtrackLabel;         ///< name of flash producer
 
-			   // //restrict time window			   
-			   // float fTimeStart;
-			   // float fTimeEnd;
     //alignment params
   float fAlignBotX;
   float fAlignBotY;
@@ -142,8 +137,6 @@ namespace crt{
   {
     fCrtHitsIn_Label1       = (p.get<art::InputTag> ("CrtHitsIn_Label1","merger")); 
     fCrtHitsIn_Label2       = (p.get<art::InputTag> ("CrtHitsIn_Label2","remerge")); 
-    fCrtHitsIn_Label3       = (p.get<art::InputTag> ("CrtHitsIn_Label3","remergeextra")); 
-    fCrtHitsIn_Label4       = (p.get<art::InputTag> ("CrtHitsIn_Label4","mergeextra")); 
     fNumberCollections      = (p.get<int> ("NumberCollections",2));
     //alignment params
 			       fAlignBotX = (p.get<float>("AlignBotX",0.0));
@@ -218,35 +211,6 @@ namespace crt{
     crtHitInList.insert(crtHitInList.end(), crtHitInList2.begin(), crtHitInList2.end());
     if(fVerbose) std::cout<<"Number of CRT hits read in= "<<crtHitInList.size()<< " after second collection" << std::endl;
     }
-    if (fNumberCollections>2) {
-    // Retrieve third list of CRT hits
-    event.getByLabel(fCrtHitsIn_Label3, crtHitsInHandle);
-    //check to make sure the data we asked for is valid
-    if(!crtHitsInHandle.isValid()){
-      std::cout << "Run " << event.run() << ", subrun " << event.subRun()
-		<< ", event " << event.event() << " has zero"
-		<< " CRTHits " << " in module " << fCrtHitsIn_Label3 << std::endl;
-      std::cout << " Skipping this CRT hit collection " << std::endl;
-    }
-    std::vector<crt::CRTHit> const& crtHitInList3(*crtHitsInHandle);
-    crtHitInList.insert(crtHitInList.end(), crtHitInList3.begin(), crtHitInList3.end());
-    if(fVerbose) std::cout<<"Number of CRT hits read in= "<<crtHitInList.size()<< " after third collection" << std::endl;
-    }      
-    if (fNumberCollections>3) {
-    // Retrieve third list of CRT hits
-    event.getByLabel(fCrtHitsIn_Label4, crtHitsInHandle);
-    //check to make sure the data we asked for is valid
-    if(!crtHitsInHandle.isValid()){
-      std::cout << "Run " << event.run() << ", subrun " << event.subRun()
-		<< ", event " << event.event() << " has zero"
-		<< " CRTHits " << " in module " << fCrtHitsIn_Label4 << std::endl;
-      std::cout << " Skipping this CRT hit collection " << std::endl;
-      
-    }
-    std::vector<crt::CRTHit> const& crtHitInList4(*crtHitsInHandle);
-    crtHitInList.insert(crtHitInList.end(), crtHitInList4.begin(), crtHitInList4.end());
-    if(fVerbose) std::cout<<"Number of CRT hits read in= "<<crtHitInList.size()<< " after fourth collection" << std::endl;
-    }      
 
     for (size_t i = 0; i < crtHitInList.size(); i++){
 
@@ -273,10 +237,6 @@ namespace crt{
       int iKeepMe = 1;
       std::vector<std::pair<int,float>> test = tpesmap.find(tfeb_id[0])->second; 
       if (test.size()==32)  { // this is data
-	// restrict time window
-	// Needs GPS time correction here!
-	// double ttest = 0.001*time3;
-	// if (ttest<fTimeStart || ttest>fTimeEnd) iKeepMe=0;
 	    
       } // if this is a data hit
       if (iKeepMe) {
