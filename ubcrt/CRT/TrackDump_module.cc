@@ -413,7 +413,7 @@ void TrackDump::analyze(art::Event const & evt)
     hit_time0[j]=(double)my_CRTHit.ts0_ns - (double)evt_timeGPS_nsec + (double)fTimeZeroOffset;
     hit_time1[j]=(double)my_CRTHit.ts1_ns + (double)fHardDelay_; 
     hit_charge[j]=my_CRTHit.peshit;
-    hit_plane[j]=my_CRTHit.plane;
+    hit_plane[j]=(my_CRTHit.plane)%10;
     hit_posx[j]=my_CRTHit.x_pos;
     hit_posy[j]=my_CRTHit.y_pos;
     hit_posz[j]=my_CRTHit.z_pos;
@@ -505,10 +505,11 @@ void TrackDump::analyze(art::Event const & evt)
     
 
     //fillhistograms
-    if (my_CRTHit.plane==0) HitDistBot->Fill(my_CRTHit.z_pos,my_CRTHit.x_pos);
-    else if (my_CRTHit.plane==1) HitDistFT->Fill(my_CRTHit.z_pos,my_CRTHit.y_pos);
-    else if (my_CRTHit.plane==2) HitDistPipe->Fill(my_CRTHit.z_pos,my_CRTHit.y_pos);
-    else if (my_CRTHit.plane==3) HitDistTop->Fill(my_CRTHit.z_pos,my_CRTHit.x_pos);
+    int thisplane = my_CRTHit.plane%10;
+    if (thisplane==0) HitDistBot->Fill(my_CRTHit.z_pos,my_CRTHit.x_pos);
+    else if (thisplane==1) HitDistFT->Fill(my_CRTHit.z_pos,my_CRTHit.y_pos);
+    else if (thisplane==2) HitDistPipe->Fill(my_CRTHit.z_pos,my_CRTHit.y_pos);
+    else if (thisplane==3) HitDistTop->Fill(my_CRTHit.z_pos,my_CRTHit.x_pos);
   }// loop over hits
 
 
@@ -597,7 +598,7 @@ void TrackDump::analyze(art::Event const & evt)
     ct_z2[j]=my_CRTTrack.z2_pos;
 
     //fill histograms
-    hplavspla->Fill(my_CRTTrack.plane1,my_CRTTrack.plane2);
+    hplavspla->Fill(my_CRTTrack.plane1%10,my_CRTTrack.plane2%10);
     hTlength->Fill(my_CRTTrack.length);
     double time_diff = my_CRTTrack.ts0_ns_h1-my_CRTTrack.ts0_ns_h2;
     double time_diffABS = fabs(time_diff);

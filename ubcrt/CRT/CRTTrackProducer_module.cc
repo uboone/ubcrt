@@ -228,9 +228,9 @@ void bernfebdaq::CRTTrackProducer::produce(art::Event & evt)
 	for (size_t ah = 0; ah< hitlist.size()-1; ++ah){	
 	  crt::CRTHit temphit=*hitlist[ah];
 	  CRTavehit Ahit = copyme(temphit);
-	  int planeA = hitlist[ah]->plane;
+	  int planeA = hitlist[ah]->plane%10;
 	  for (size_t bh = ah+1; bh< hitlist.size(); ++bh){	
-	    int planeB = hitlist[bh]->plane;
+	    int planeB = hitlist[bh]->plane%10;
 	    if (planeB!=planeA) {  // make a track	       
 	      temphit=*hitlist[bh];
 	      CRTavehit Bhit = copyme(temphit);
@@ -257,7 +257,7 @@ void bernfebdaq::CRTTrackProducer::produce(art::Event & evt)
 	
 	//loop over hits for this tzero, sort by plane
 	for (size_t ah = 0; ah< hitlist.size(); ++ah){	
-	  int ip = hitlist[ah]->plane;       
+	  int ip = hitlist[ah]->plane%10;       
 	  thittime0[ip].push_back(hitlist[ah]->ts0_ns-time0_ns_A);
 	  thittime1[ip].push_back(hitlist[ah]->ts1_ns-time1_ns_A);
 	  tx[ip].push_back(hitlist[ah]->x_pos);
@@ -440,7 +440,7 @@ CRTavehit copyme(crt::CRTHit myhit)
   h.z_pos=myhit.z_pos;
   h.z_err=myhit.z_err;
   h.pe=myhit.peshit;
-  h.plane=myhit.plane;
+  h.plane=myhit.plane%10;
   return(h);
 
 
@@ -481,8 +481,8 @@ crt::CRTTrack shcut(CRTavehit ppA,CRTavehit ppB,uint32_t time0s,uint16_t terr)
   newtr.length=sqrt(deltax*deltax+deltay*deltay+deltaz*deltaz);
   newtr.thetaxy=atan2(deltax,deltay);
   newtr.phizy=atan2(deltaz,deltay);
-  newtr.plane1=ppA.plane;
-  newtr.plane2=ppB.plane;
+  newtr.plane1=ppA.plane%10;
+  newtr.plane2=ppB.plane%10;
   return(newtr);
 
 }
