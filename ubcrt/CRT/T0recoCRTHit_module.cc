@@ -381,7 +381,7 @@ void T0recoCRTHit::produce(art::Event & evt)
     for (size_t trkIter = 0; trkIter < tracklist.size(); ++trkIter) {
       
       //    int TrackGood=0;
-      float dist_besthit = 99999999.; int plane_besthit=11;
+      float dist_besthit = 99999999.; int plane_besthit=111;
       double time_besthit=999999999.; 
       double theta,phi,trklen;
       // fetch track length, start and end points, theta and phi
@@ -433,7 +433,7 @@ void T0recoCRTHit::produce(art::Event & evt)
 		  double crt_y=hitlist[ah]->y_pos;
 		  double crt_z=hitlist[ah]->z_pos;
 		  
-		  int crt_plane = hitlist[ah]->plane;
+		  int crt_plane = (hitlist[ah]->plane)%10;
 		  if (crt_plane==0) {
 		    crt_x+=fAlignBotX;
 		    crt_y+=fAlignBotY;
@@ -474,7 +474,7 @@ void T0recoCRTHit::produce(art::Event & evt)
 		  if (dca<dist_besthit) {
 		    besttz = tzIter;
 		    dist_besthit=dca;
-		    plane_besthit=hitlist[ah]->plane;
+		    plane_besthit=(hitlist[ah]->plane)%10;
 		    //	    art::Ptr<recob::OpFlash> flashptr = flashPtrMaker(j);
 		    //	    art::Ptr<crt::CRTHit> crthitptr = crthitPtrMaker(k);
 		    
