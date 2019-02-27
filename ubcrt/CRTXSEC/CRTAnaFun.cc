@@ -114,6 +114,8 @@ int crtana::auxfunc::test2(int a){
 
       for (const art::Ptr<recob::PFParticle> &pParticle : particles)
       {
+        //const TLorentzVector& momentumStart = **pParticle.Momentum(0);
+        //std::cout << "Momentum: " << momentumStart << std::endl;
           const std::vector< art::Ptr<recob::Track> > associatedTracks(pfPartToTrackAssoc.at(pParticle.key()));
           const std::vector< art::Ptr<recob::Shower> > associatedShowers(pfPartToShowerAssoc.at(pParticle.key()));
           const unsigned int nTracks(associatedTracks.size());

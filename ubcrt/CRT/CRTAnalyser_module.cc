@@ -281,6 +281,7 @@ void crt::CRTAnalyser::analyze(art::Event const & evt)
       //std::cout << std::endl;
       //return;
     }
+    /*
     for(std::vector<int>::size_type i = 0; i != CRTTrackCollection.size(); i++) {//A 
       feb_id01 = CRTTrackCollection[i].feb_id[0];
       feb_id02 = CRTTrackCollection[i].feb_id[1];
@@ -364,6 +365,7 @@ void crt::CRTAnalyser::analyze(art::Event const & evt)
       my_tracks_->Fill();
 
     }
+    */
   }
   
 }

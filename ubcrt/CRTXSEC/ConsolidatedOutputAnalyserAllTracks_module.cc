@@ -1,5 +1,5 @@
 /**
- *  @file   larpandora/LArPandoraEventBuilding/ConsolidatedOutputAnalyser.cc
+ *  @file   larpandora/LArPandoraEventBuilding/ConsolidatedOutputAnalyserAllTracks.cc
  *
  *  @brief  module for lar pandora external event building
  */
@@ -26,7 +26,6 @@
 //#include "larpandora/LArPandoraEventBuilding/NeutrinoIdBaseTool.h"
 #include "ubcrt/CRTXSEC/CRTNeutrinoIdBaseTool.h"
 #include "larpandora/LArPandoraEventBuilding/LArPandoraEvent.h"
-//#include "larpandora/LArPandoraEventBuilding/Slice.h"
 
 #include "lardataobj/RecoBase/PFParticle.h"
 //#include "larpandora/LArPandoraObjects/PFParticleMetadata.h"
@@ -40,8 +39,7 @@
 #include "ubobj/RawData/DAQHeaderTimeUBooNE.h"
 
 #include "lardataobj/RecoBase/Track.h"                                                                
-#include "lardataobj/RecoBase/Hit.h"
-//#include "lardataobj/RecoBase/Slice.h"
+#include "lardataobj/RecoBase/Hit.h"     
 #include "lardataobj/RecoBase/MCSFitResult.h"
 #include "lardataobj/AnalysisBase/T0.h" 
 #include "lardataobj/AnalysisBase/ParticleID.h" 
@@ -63,15 +61,15 @@
 namespace lar_pandora
 {
 
-class ConsolidatedOutputAnalyser : public art::EDAnalyzer
+class ConsolidatedOutputAnalyserAllTracks : public art::EDAnalyzer
 {
 public:
-    explicit ConsolidatedOutputAnalyser(fhicl::ParameterSet const & pset);
+    explicit ConsolidatedOutputAnalyserAllTracks(fhicl::ParameterSet const & pset);
     
-    ConsolidatedOutputAnalyser(ConsolidatedOutputAnalyser const &) = delete;
-    ConsolidatedOutputAnalyser(ConsolidatedOutputAnalyser &&) = delete;
-    ConsolidatedOutputAnalyser & operator = (ConsolidatedOutputAnalyser const &) = delete;
-    ConsolidatedOutputAnalyser & operator = (ConsolidatedOutputAnalyser &&) = delete;
+    ConsolidatedOutputAnalyserAllTracks(ConsolidatedOutputAnalyserAllTracks const &) = delete;
+    ConsolidatedOutputAnalyserAllTracks(ConsolidatedOutputAnalyserAllTracks &&) = delete;
+    ConsolidatedOutputAnalyserAllTracks & operator = (ConsolidatedOutputAnalyserAllTracks const &) = delete;
+    ConsolidatedOutputAnalyserAllTracks & operator = (ConsolidatedOutputAnalyserAllTracks &&) = delete;
 
     void analyze(art::Event const &evt) override;
     
@@ -92,8 +90,6 @@ private:
     
     std::vector<anab::Calorimetry> calo_vec;
     std::vector<recob::MCSFitResult> MCSfit_vec;
-    
-    SliceVector slice_vec;
     
     int crthit_counter; // # crt hits assigned to a tpc track
     int crttrack_counter; // # crt tracks assigned to a tpc track
@@ -158,21 +154,6 @@ private:
     double phi_track;
     double zenith_angle;
     double azimuth_angle;
-    
-    int nr_muon;
-    int nr_electron;
-    double max_track_length;
-    double slice_center_x;
-    double slice_center_y;
-    double slice_center_z;
-    double slice_end1_x;
-    double slice_end2_x;
-    double slice_end1_y;
-    double slice_end2_y;
-    double slice_end1_z;
-    double slice_end2_z;
-    
-    
     
     //double fvdrift_;
     //double crthitmatch_;
@@ -240,6 +221,8 @@ private:
     
     int verbose_;
     int saveTTree_ = 0;
+    
+    int track_selection = -1;
 
     std::string                         m_inputProducerLabel;  ///< Label for the Pandora instance that produced the collections we want to consolidated
     std::string                         m_crthitLabel;
@@ -262,7 +245,7 @@ private:
     std::unique_ptr<CRTNeutrinoIdBaseTool> m_neutrinoIdTool;      ///< The neutrino id tool
 };
 
-DEFINE_ART_MODULE(ConsolidatedOutputAnalyser)
+DEFINE_ART_MODULE(ConsolidatedOutputAnalyserAllTracks)
 
 } // namespace lar_pandora
 
@@ -274,7 +257,7 @@ DEFINE_ART_MODULE(ConsolidatedOutputAnalyser)
 namespace lar_pandora
 {
 
-ConsolidatedOutputAnalyser::ConsolidatedOutputAnalyser(fhicl::ParameterSet const &pset) :
+ConsolidatedOutputAnalyserAllTracks::ConsolidatedOutputAnalyserAllTracks(fhicl::ParameterSet const &pset) :
   EDAnalyzer(pset),
     m_inputProducerLabel(pset.get<std::string>("InputProducerLabel")),
     m_crthitLabel(pset.get<std::string>("CRTHitLabel")),
@@ -287,6 +270,7 @@ ConsolidatedOutputAnalyser::ConsolidatedOutputAnalyser(fhicl::ParameterSet const
 {
     verbose_ = pset.get<int>("verbose");
     saveTTree_ = pset.get<int>("saveTTree");
+    track_selection = pset.get<int>("track_selection");
     data_label_CRTtzero_ = pset.get<std::string>("data_label_CRTtzero");
       
     data_label_assohits_ = pset.get<std::string>("data_label_assohits");
@@ -308,7 +292,7 @@ ConsolidatedOutputAnalyser::ConsolidatedOutputAnalyser(fhicl::ParameterSet const
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-void ConsolidatedOutputAnalyser::analyze(art::Event const &evt)
+void ConsolidatedOutputAnalyserAllTracks::analyze(art::Event const &evt)
 {
   
   /*
@@ -317,9 +301,8 @@ void ConsolidatedOutputAnalyser::analyze(art::Event const &evt)
   
   //anab::Calorimetry my_Calo;
   //std::cout << "Size of my_Calo: " << sizeof(my_Calo) << std::endl;
-  //lar_pandora::Slice::Slice //
-  SliceVector my_Slice;
-  std::cout << "Size of my_Slice: " << sizeof(my_Slice) << std::endl;
+  //recob::MCSFitResult my_MCS;
+  //std::cout << "Size of my_MCS: " << sizeof(my_MCS) << std::endl;
   
   
   
@@ -359,7 +342,7 @@ void ConsolidatedOutputAnalyser::analyze(art::Event const &evt)
               << ", event " << evt.event() << " has " << "\033[32m" << OpFlashCollection.size() << "\033[0m"
               << " TPCFlashes " << " in module " << data_label_flash_ << std::endl;
     }
-  
+    
     PFParticleVector particles;
     PFParticleToMetadata particlesToMetadata;
     this->CollectPFParticles(evt, particlesToMetadata, particles);
@@ -369,6 +352,12 @@ void ConsolidatedOutputAnalyser::analyze(art::Event const &evt)
 
     PFParticleVector clearCosmics;
     this->CollectClearCosmicRays(particles, particlesToMetadata, particleMap, clearCosmics);
+    std::vector< art::Ptr<recob::Track> > tracks_clearcosmic;
+    std::vector< art::Ptr<recob::Shower> > showers_clearcosmic;
+    art::Handle<std::vector<recob::PFParticle> > pfParticleHandle;
+    evt.getByLabel(m_inputProducerLabel, pfParticleHandle);
+    crtana::auxfunc::CollectTracksAndShowers(clearCosmics, pfParticleHandle, evt, tracks_clearcosmic, showers_clearcosmic, m_trackProducerLabel, m_showerProducerLabel);
+
 
     SliceVector slices;
     this->CollectSlices(particles, particlesToMetadata, particleMap, slices);
@@ -377,17 +366,21 @@ void ConsolidatedOutputAnalyser::analyze(art::Event const &evt)
     // tag neutrino candidates ///////////////////////////////////////////
     max_slice = slices.size();
     if(verbose_!=0) std::cout << "Number of Slices: " << max_slice << std::endl;
-    if (slices.empty()) return;
-
+    //if (slices.empty()) return;
+    /*
     // Find the most probable slice
     float highestNuScore(-std::numeric_limits<float>::max());
     unsigned int mostProbableSliceIndex(std::numeric_limits<unsigned int>::max());
-  
+    */
     // prepare all objects you want to use (track, CRT hits, crt tracks,crt t0..
-    art::Handle<std::vector<recob::PFParticle> > pfParticleHandle;
-    evt.getByLabel(m_inputProducerLabel, pfParticleHandle);
+    //art::Handle<std::vector<recob::PFParticle> > pfParticleHandle;
+    //evt.getByLabel(m_inputProducerLabel, pfParticleHandle);
     art::Handle<std::vector<recob::Track> > rawHandle_TPCtrack;
     evt.getByLabel(m_trackProducerLabel, rawHandle_TPCtrack);
+  
+    art::Handle<std::vector<recob::Track> > rawHandle_TPCtrackMum;
+    evt.getByLabel(data_label_trackForMum_, rawHandle_TPCtrackMum);
+  
     art::FindMany<crt::CRTTrack> trk_crttrack_assn_v(rawHandle_TPCtrack, evt, data_label_assotracks_);
     // to grab the crt hits associated to a tpc track we need to go over crt t0 objects
     // since the association is only between tpc tracks - crt t0 and crt t0 - crt hits
@@ -398,96 +391,81 @@ void ConsolidatedOutputAnalyser::analyze(art::Event const &evt)
     std::vector<crt::CRTTzero> const& CRTT0Collection(*rawHandle_CRTtzero);
     art::FindMany<crt::CRTHit> trk_crthit_assn_v(rawHandle_CRTtzero, evt, data_label_assohits_);
   
-    //slice_counter = 0;
-    //nuScore_ = 0;
-    //nuScore_max =0;
+    slice_counter = 0;
+    nuScore_ = 0;
+    nuScore_max =0;
   
-    art::Handle< std::vector<recob::Track> > rawHandle_TrackForMum;
-    evt.getByLabel(data_label_trackForMum_, rawHandle_TrackForMum);
-    std::vector<recob::Track> const& TrackForMumCollection(*rawHandle_TrackForMum);   
+    //art::Handle< std::vector<recob::Track> > rawHandle_Track;
+    //evt.getByLabel(data_label_track_, rawHandle_Track);
+    
+  //std::vector<recob::Track> const& TrackCollection(*rawHandle_TPCtrack);   
+  std::vector< art::Ptr<recob::Track> > TrackCollection;   
   
-    art::FindMany<anab::Calorimetry> trk_calo_assn_v(rawHandle_TrackForMum, evt, data_label_assotrackForMum_);
+  //std::vector<recob::Track> TrackCollection; 
+  if(track_selection == 0 || track_selection ==3){
+    TrackCollection.insert(TrackCollection.end(), tracks_clearcosmic.begin(), tracks_clearcosmic.end());
+  }
+  
+  if(track_selection !=0 ){
+    for(unsigned int sliceIndex = 0; sliceIndex < slices.size(); sliceIndex++){
+      PFParticleVector nu_pfparticle;
+      if(track_selection == 1) nu_pfparticle = slices.at(sliceIndex).GetNeutrinoHypothesis();
+      if(track_selection == 2 || track_selection ==3) nu_pfparticle = slices.at(sliceIndex).GetCosmicRayHypothesis();
+      std::vector< art::Ptr<recob::Track> > tracks_slice;
+      std::vector< art::Ptr<recob::Shower> > showers_slice;
+      crtana::auxfunc::CollectTracksAndShowers(nu_pfparticle, pfParticleHandle, evt, tracks_slice, showers_slice, m_trackProducerLabel, m_showerProducerLabel);
+
+      TrackCollection.insert(TrackCollection.end(), tracks_slice.begin(), tracks_slice.end());
+
+    }
+  }
+  
+  std::cout << "Size of track_vector: " << TrackCollection.size() << std::endl;
+  
+  std::vector<recob::Track> const& TrackForMumCollection(*rawHandle_TPCtrackMum);   
+  
+  
+    art::FindMany<anab::Calorimetry> trk_calo_assn_v(rawHandle_TPCtrackMum, evt, data_label_assotrackForMum_);
   
     art::Handle< std::vector<recob::MCSFitResult> > rawHandle_MCSfit;
     evt.getByLabel(data_label_MCSfit_, rawHandle_MCSfit);
     std::vector<recob::MCSFitResult> const& MCSfitCollection(*rawHandle_MCSfit);
-    
+    /*
     for (unsigned int sliceIndex = 0; sliceIndex < slices.size(); sliceIndex++)
     { // A: Loop over slices
       const float nuScore(slices.at(sliceIndex).GetNeutrinoScore());
       if (nuScore > highestNuScore){
-        highestNuScore = nuScore;
-        mostProbableSliceIndex = sliceIndex;
-        
-        //if(saveTTree_ >=2) slice_vec.push_back(*slices.at(sliceIndex));
+          highestNuScore = nuScore;
+          mostProbableSliceIndex = sliceIndex;
       }
     }
-    nuScore_max = highestNuScore;
+    */
+    nuScore_max = 0;//highestNuScore;
 
-    for (unsigned int sliceIndex = 0; sliceIndex < slices.size(); sliceIndex++)
-    { // A: Loop over slices
+    //for (unsigned int sliceIndex = 0; sliceIndex < slices.size(); sliceIndex++)
+    //{ // A: Loop over slices
+      //const float nuScore(slices.at(sliceIndex).GetNeutrinoScore());
+      //slice_counter = sliceIndex;
+      //nuScore_ = nuScore;
+      //if(verbose_!=0) std::cout << "Slice " << sliceIndex << " has a nuScore of " << nuScore << std::endl;
+      //PFParticleVector nu_pfparticle = slices.at(sliceIndex).GetNeutrinoHypothesis();
+      //if(verbose_!=0) std::cout << "Slice has " << nu_pfparticle.size() << " Pfparticles" << std::endl;
       
-      const float nuScore(slices.at(sliceIndex).GetNeutrinoScore());
-      slice_counter = sliceIndex;
-      nuScore_ = nuScore;
-      /*
-      slice_center_x = slices.at(sliceIndex).get().Center().X();
-      slice_center_y = slices.at(sliceIndex).Center().Y();
-      slice_center_z = slices.at(sliceIndex).Center().Z();
-      slice_end1_x = slices.at(sliceIndex).End0Pos().X();
-      slice_end2_x = slices.at(sliceIndex).End1Pos().X();
-      slice_end1_y = slices.at(sliceIndex).End0Pos().Y();
-      slice_end2_y = slices.at(sliceIndex).End1Pos().Y();
-      slice_end1_z = slices.at(sliceIndex).End0Pos().Z();
-      slice_end2_z = slices.at(sliceIndex).End1Pos().Z();
-      */
-      max_track_length = 0;
-      nr_electron = 0;
-      nr_muon = 0;
-      
-      if(saveTTree_ >=2) slice_vec.push_back(slices.at(sliceIndex));
-      if(verbose_!=0) std::cout << "Slice " << sliceIndex << " has a nuScore of " << nuScore << std::endl;
-      PFParticleVector nu_pfparticle = slices.at(sliceIndex).GetNeutrinoHypothesis();
-      if(verbose_!=0){
-        std::cout << "Slice has " << nu_pfparticle.size() << " Pfparticles" << std::endl;
-        for(std::vector<int>::size_type i = 0; i != nu_pfparticle.size(); i++) {   
-          std::string name = "unknown";
-          if(nu_pfparticle.at(i)->PdgCode() == 11){
-            name = "electron";
-            nr_electron++;
-          }
-          if(nu_pfparticle.at(i)->PdgCode() == 12) name = "electron neutrino";
-          if(nu_pfparticle.at(i)->PdgCode() == 13){
-            name = "muon";
-            nr_muon++;
-          }
-          if(nu_pfparticle.at(i)->PdgCode() == 14) name = "muon neutrino";
-          if(nu_pfparticle.at(i)->PdgCode() == 111) name = "Pi zero";
-          if(nu_pfparticle.at(i)->PdgCode() == 211) name = "Pion";
-          if(nu_pfparticle.at(i)->PdgCode() == 2212) name = "proton";
-          if(nu_pfparticle.at(i)->PdgCode() == 2214) name = "delta+";
-          std::cout << "Number: " << i << " has PDG code: " << nu_pfparticle.at(i)->PdgCode() << " = " << name << std::endl;
-          //PdgCode ()
-        }
-      }
-      
-      std::vector< art::Ptr<recob::Track> > tracks;
-      std::vector< art::Ptr<recob::Shower> > showers;
+      //std::vector< art::Ptr<recob::Track> > tracks;
+      //std::vector< art::Ptr<recob::Shower> > showers;
       
       //const TLorentzVector& momentumStart = nu_pfparticle.at(0).Momentum(0);
       //std::cout << "Momentum: " << momentumStart << std::endl;
       
-      crtana::auxfunc::CollectTracksAndShowers(nu_pfparticle, pfParticleHandle, evt, tracks, showers, m_trackProducerLabel, m_showerProducerLabel);
-      if(verbose_!=0) std::cout << "Of which are " << tracks.size() << " track like" << std::endl;
-      if(verbose_!=0) std::cout << "Of which are " << showers.size() << " shower like" << std::endl;
+      //crtana::auxfunc::CollectTracksAndShowers(nu_pfparticle, pfParticleHandle, evt, tracks, showers, m_trackProducerLabel, m_showerProducerLabel);
+      //if(verbose_!=0) std::cout << "Of which are " << tracks.size() << " track like" << std::endl;
+      //if(verbose_!=0) std::cout << "Of which are " << showers.size() << " shower like" << std::endl;
       
-      for(std::vector<int>::size_type i = 0; i != tracks.size(); i++) {
-        tpctrack_match = *tracks.at(i);
-        if(max_track_length<tpctrack_match.Length() ) max_track_length = tpctrack_match.Length();
-      }
+      //std::vector<recob::Track> const& TrackCollection_tmp(*rawHandle_TPCtrack); 
       
       
-      for(std::vector<int>::size_type i = 0; i != tracks.size(); i++) {    //start loop over tpc tracks
+      for(std::vector<int>::size_type i = 0; i != TrackCollection.size(); i++) {    //start loop over tpc tracks
+      //for(std::vector<int>::size_type i = 0; i != TrackCollection_tmp.size(); i++) {    //start loop over tpc tracks
         track_counter++;
         //reset all counters
         crthit_counter = 0;
@@ -507,8 +485,14 @@ void ConsolidatedOutputAnalyser::analyze(art::Event const &evt)
         calo_counter = 0;
         mcs_counter = 0;
         track_mcs_mom = 0;
-        tpctrack_match = *tracks.at(i);
+        
+        //tpctrack_match = TrackCollection_tmp.at(i);
+        
+        tpctrack_match = *TrackCollection.at(i).get();
         track_length = tpctrack_match.Length();
+        
+        //int key = TrackCollection.at(i).key();
+        //std::cout<< "Key vs loopcounter: " << key << " - " << i << std::endl;
         
         //recob::MCSFitResult fitMcs(const recob::Track& track,          int pid, bool momDepConst = true)
         
@@ -538,8 +522,8 @@ void ConsolidatedOutputAnalyser::analyze(art::Event const &evt)
         if(verbose_!=0) std::cout << "Track properties: theta_track=" << theta_track << " phi_track=" << phi_track << " zenith_angle:" << zenith_angle << " azimuth_angle= " << azimuth_angle << std::endl;
         
         
-        //get assoziated CRT tracks
-        const std::vector<const crt::CRTTrack*>& CRTtrack_v = trk_crttrack_assn_v.at(i);
+        //get assoziated CRT track s
+        const std::vector<const crt::CRTTrack*>& CRTtrack_v = trk_crttrack_assn_v.at(TrackCollection.at(i).key());
         if(CRTtrack_v.size()>0){
           auto crttrack_tmp = CRTtrack_v.at(0);
           if(verbose_!=0){
@@ -557,7 +541,7 @@ void ConsolidatedOutputAnalyser::analyze(art::Event const &evt)
             auto my_flash = OpFlashCollection.at(j);
             auto Timeflash = my_flash.Time(); //in us from trigger time
             auto flash_time = fTriTim_nsec + (Timeflash * 1000);
-            if( abs(flash_time - crttrack_ts0 - fCRTT0off_) < 10e3){
+            if( abs(flash_time - crttrack_ts0 - fCRTT0off_) < 4e3){
               fAbsTimFla = flash_time;
               flash_PE = my_flash.TotalPE();
               flash_y = my_flash.YCenter();
@@ -568,7 +552,7 @@ void ConsolidatedOutputAnalyser::analyze(art::Event const &evt)
             
         }
         //get assoziated crt t0 objects
-        const std::vector<const crt::CRTTzero*>& CRTtzero_v = trk_crtT0_assn_v.at(i);
+        const std::vector<const crt::CRTTzero*>& CRTtzero_v = trk_crtT0_assn_v.at(TrackCollection.at(i).key());
         if(verbose_!=0) std::cout << "found CRTT0 assoziation, Size: " << CRTtzero_v.size() << std::endl;
         for(std::vector<int>::size_type j = 0; j != CRTtzero_v.size(); j++){
           if(verbose_!=0) std::cout << "found CRTT0 assoziation" << std::endl;
@@ -601,7 +585,7 @@ void ConsolidatedOutputAnalyser::analyze(art::Event const &evt)
             auto my_flash = OpFlashCollection.at(j_fl);
             auto Timeflash = my_flash.Time(); //in us from trigger time
             auto flash_time = fTriTim_nsec + (Timeflash * 1000);
-            if( abs(Timeflash*1000 - (crthit_ts0 + fCRTT0off_ - fTriTim_nsec)) < 4000){
+            if( abs(Timeflash*1000 - (crthit_ts0 + fCRTT0off_ - fTriTim_nsec)) < 10000){
               if(verbose_!=0 ) std::cout << "Found flash in flashvector!" << std::endl;
               //std::cout << "CRT T0 time: " << crtT0_tmp->ts0_ns << std::endl;
               //std::cout << "Hit time - offset: " << (crthit_ts0 + fCRTT0off_ - fTriTim_nsec)/1000 << std::endl;
@@ -651,26 +635,30 @@ void ConsolidatedOutputAnalyser::analyze(art::Event const &evt)
         for(std::vector<int>::size_type i_pandoraTrack = 0; i_pandoraTrack != TrackForMumCollection.size(); i_pandoraTrack++) {    //find according pandoraTrack track for calometric info
           recob::Track my_pandoraTrack = TrackForMumCollection[i_pandoraTrack];
           
-          //if( abs(tpctrack_match.Start().X() - my_pandoraTrack.Start().X())<10 && abs(tpctrack_match.End().X() - my_pandoraTrack.End().X())<10){
+          if( abs(tpctrack_match.Start().X() - my_pandoraTrack.Start().X())<10 && abs(tpctrack_match.End().X() - my_pandoraTrack.End().X())<10){ //tpctrack_match
           if( tpctrack_match.Length() == my_pandoraTrack.Length() ){
             pandoraTrack_found++;
             if(verbose_!=0){
+              std::cout << "Found corresponding pandoraTrack!" << std::endl;
               std::cout << "Track properties: mytrack=" << track_start_x << " end=" << track_end_x << " start=" << track_start_y << " end=" << track_end_y <<std::endl;
               std::cout << "Track properties: pandora track=" << my_pandoraTrack.Start().X() << " end=" << my_pandoraTrack.End().X() << " start=" << my_pandoraTrack.Start().Y() << " end=" << my_pandoraTrack.End().Y() <<std::endl;
             }
+        //printf("get Calo info...\n");
+        //std::cout << "Length vector asso: " << trk_calo_assn_v.size() << " Length vector MCSvec: " << MCSfitCollection.size() << " And index i= " << i << std::endl;
             const std::vector<const anab::Calorimetry*>& Calo_v = trk_calo_assn_v.at(i_pandoraTrack);
             recob::MCSFitResult my_MCSfit = MCSfitCollection[i_pandoraTrack];
             if( saveTTree_>=2) MCSfit_vec.push_back(my_MCSfit);
+            track_mcs_mom = my_MCSfit.bestMomentum();
             mcs_counter++;
             //*calo_vec = Calo_v;
             calo_counter++;
             for(std::vector<int>::size_type j = 0; j < Calo_v.size(); j++){
               if( saveTTree_>=2) calo_vec.push_back(*Calo_v.at(j));
-              track_mcs_mom = my_MCSfit.bestMomentum();
+              
               if(verbose_>5){
               printf("found Calo info...\n");
               std::cout << "Track properties: startX =" << tpctrack_match.MomentumVectorAtPoint(0).X() << " eY=" << tpctrack_match.MomentumVectorAtPoint(0).Y() << " momentum Z:" << tpctrack_match.MomentumVectorAtPoint(0).Z() << " Length: " << tpctrack_match.Length() <<std::endl;
-              std::cout << "Track properties: startX =" << my_pandoraTrack.MomentumVectorAtPoint(0).X() << " eY=" << my_pandoraTrack.MomentumVectorAtPoint(0).Y() << " momentum Z:" << my_pandoraTrack.MomentumVectorAtPoint(0).Z() << " Length: " << my_pandoraTrack.Length() <<std::endl;
+              //std::cout << "Track properties: startX =" << my_pandoraTrack.MomentumVectorAtPoint(0).X() << " eY=" << my_pandoraTrack.MomentumVectorAtPoint(0).Y() << " momentum Z:" << my_pandoraTrack.MomentumVectorAtPoint(0).Z() << " Length: " << my_pandoraTrack.Length() <<std::endl;
               std::cout << "Track properties: HasMom =" << my_MCSfit.bestMomentum() << std::endl;
               std::cout << "Track properties: Calo =" << Calo_v[j]->KineticEnergy() << std::endl;
               std::cout << "Track properties: plane =" << Calo_v[j]->PlaneID() << std::endl;
@@ -679,19 +667,22 @@ void ConsolidatedOutputAnalyser::analyze(art::Event const &evt)
             }
             continue;
           }
-          
+          }
         }
+        
+          
+        
         if(pandoraTrack_found ==0  ){ 
           track_nopandora_counter++;
           
           if(verbose_!=0) std::cout << "Error: Not corresponding track in pandoraTrack found!" << std::endl;
-          /*
-          std::cout << "Track properties: mytrack=" << track_start_x << " end=" << track_end_x << " start=" << track_start_y << " end=" << track_end_y <<std::endl;
+          
+          //std::cout << "Track properties: mytrack=" << track_start_x << " end=" << track_end_x << " start=" << track_start_y << " end=" << track_end_y <<std::endl;
           for(std::vector<int>::size_type i_pandoraTrack = 0; i_pandoraTrack != TrackForMumCollection.size(); i_pandoraTrack++) {    //find according pandoraTrack track for calometric info
             recob::Track my_pandoraTrack = TrackForMumCollection[i_pandoraTrack];
-            std::cout << "Track properties: pandora track=" << my_pandoraTrack.Start().X() << " end=" << my_pandoraTrack.End().X() << " start=" << my_pandoraTrack.Start().Y() << " end=" << my_pandoraTrack.End().Y() <<std::endl;
+            //std::cout << "Track properties: pandora track=" << my_pandoraTrack.Start().X() << " end=" << my_pandoraTrack.End().X() << " start=" << my_pandoraTrack.Start().Y() << " end=" << my_pandoraTrack.End().Y() <<std::endl;
             
-          }*/
+          }
         }
         if(pandoraTrack_found >1  ){
           if(verbose_!=0) std::cout << "Error: More than one track in pandoraTrack found!" << std::endl;
@@ -714,13 +705,13 @@ void ConsolidatedOutputAnalyser::analyze(art::Event const &evt)
         //particleid_vec.clear();
       } // End loop over TPC tracks
       if(verbose_!=0) std::cout << "End loop over tracks..." << std::endl;
-      slice_vec.clear();
-    } // End A: Loop over slices
+      
+    //} // End A: Loop over slices
     if(verbose_!=0) std::cout << "End loop over slices..." << std::endl;
     //std::cout << "Tagging slice " << mostProbableSliceIndex << std::endl;
 
     // Tag the most probable slice as a neutrino
-    slices.at(mostProbableSliceIndex).TagAsNeutrino();
+    //slices.at(mostProbableSliceIndex).TagAsNeutrino();
   
     // end tag neutrino canditates ///////////////////////////////////////
 
@@ -733,7 +724,7 @@ void ConsolidatedOutputAnalyser::analyze(art::Event const &evt)
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-void ConsolidatedOutputAnalyser::CollectPFParticles(const art::Event &evt, PFParticleToMetadata &particlesToMetadata, PFParticleVector &particles) const
+void ConsolidatedOutputAnalyserAllTracks::CollectPFParticles(const art::Event &evt, PFParticleToMetadata &particlesToMetadata, PFParticleVector &particles) const
 {
     if(verbose_>1) std::cout << "Enter CollectPFParticles function" << std::endl;
     art::Handle<std::vector<recob::PFParticle> > pfParticleHandle;
@@ -749,28 +740,28 @@ void ConsolidatedOutputAnalyser::CollectPFParticles(const art::Event &evt, PFPar
         particles.push_back(part);
 
         if (metadata.size() != 1) 
-            throw cet::exception("LArPandora") << " ConsolidatedOutputAnalyser::CollectPFParticles -- Found a PFParticle without exactly 1 metadata associated." << std::endl;
+            throw cet::exception("LArPandora") << " ConsolidatedOutputAnalyserAllTracks::CollectPFParticles -- Found a PFParticle without exactly 1 metadata associated." << std::endl;
 
         if (!particlesToMetadata.insert(PFParticleToMetadata::value_type(part, metadata.front())).second)
-            throw cet::exception("ConsolidatedOutputAnalyser") << "Repeated PFParticles" << std::endl;
+            throw cet::exception("ConsolidatedOutputAnalyserAllTracks") << "Repeated PFParticles" << std::endl;
     }
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-void ConsolidatedOutputAnalyser::BuildPFParticleMap(const PFParticleToMetadata &particlesToMetadata, PFParticleMap &particleMap) const
+void ConsolidatedOutputAnalyserAllTracks::BuildPFParticleMap(const PFParticleToMetadata &particlesToMetadata, PFParticleMap &particleMap) const
 {
     if(verbose_>1) std::cout << "Enter BuildPFParticleMap function" << std::endl;
     for (const auto &entry : particlesToMetadata)
     {
         if (!particleMap.insert(PFParticleMap::value_type(entry.first->Self(), entry.first)).second)
-            throw cet::exception("ConsolidatedOutputAnalyser") << "Repeated PFParticles" << std::endl;
+            throw cet::exception("ConsolidatedOutputAnalyserAllTracks") << "Repeated PFParticles" << std::endl;
     }
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-void ConsolidatedOutputAnalyser::CollectClearCosmicRays(const PFParticleVector &allParticles, const PFParticleToMetadata &particlesToMetadata, const PFParticleMap &particleMap, PFParticleVector &clearCosmics) const
+void ConsolidatedOutputAnalyserAllTracks::CollectClearCosmicRays(const PFParticleVector &allParticles, const PFParticleToMetadata &particlesToMetadata, const PFParticleMap &particleMap, PFParticleVector &clearCosmics) const
 {
     if(verbose_>1) std::cout << "Enter CollectClearCosmicRays function" << std::endl;
     for (const auto &part : allParticles)
@@ -778,7 +769,7 @@ void ConsolidatedOutputAnalyser::CollectClearCosmicRays(const PFParticleVector &
         // Get the parent of the particle
         const auto parentIt(particlesToMetadata.find(LArPandoraHelper::GetParentPFParticle(particleMap, part)));
         if (parentIt == particlesToMetadata.end())
-            throw cet::exception("ConsolidatedOutputAnalyser") << "Found PFParticle without metadata" << std::endl;
+            throw cet::exception("ConsolidatedOutputAnalyserAllTracks") << "Found PFParticle without metadata" << std::endl;
 
         // ATTN particles without the "IsClearCosmic" parameter are not clear cosmics
         try
@@ -794,7 +785,7 @@ void ConsolidatedOutputAnalyser::CollectClearCosmicRays(const PFParticleVector &
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-void ConsolidatedOutputAnalyser::CollectSlices(const PFParticleVector &allParticles, const PFParticleToMetadata &particlesToMetadata, const PFParticleMap &particleMap, SliceVector &slices) const
+void ConsolidatedOutputAnalyserAllTracks::CollectSlices(const PFParticleVector &allParticles, const PFParticleToMetadata &particlesToMetadata, const PFParticleMap &particleMap, SliceVector &slices) const
 {
     if(verbose_>1) std::cout << "Enter CollectSlices function" << std::endl;
     std::map<unsigned int, float> nuScores;
@@ -807,7 +798,7 @@ void ConsolidatedOutputAnalyser::CollectSlices(const PFParticleVector &allPartic
         // Find the parent PFParticle
         const auto parentIt(particlesToMetadata.find(LArPandoraHelper::GetParentPFParticle(particleMap, part)));
         if (parentIt == particlesToMetadata.end())
-            throw cet::exception("ConsolidatedOutputAnalyser") << "Found PFParticle without metadata" << std::endl;
+            throw cet::exception("ConsolidatedOutputAnalyserAllTracks") << "Found PFParticle without metadata" << std::endl;
        
         // Skip PFParticles that are clear cosmics
         try
@@ -849,7 +840,7 @@ void ConsolidatedOutputAnalyser::CollectSlices(const PFParticleVector &allPartic
         // Get the neutrino score
         const auto nuScoresIter(nuScores.find(sliceId));
         if (nuScoresIter == nuScores.end()){}
-            //throw cet::exception("ConsolidatedOutputAnalyser") << "Scrambled slice information - can't find nuScore with id = " << sliceId << std::endl;
+            //throw cet::exception("ConsolidatedOutputAnalyserAllTracks") << "Scrambled slice information - can't find nuScore with id = " << sliceId << std::endl;
 
         PFParticleVector nuPFParticleVector, crPFParticleVector;
         // Get the neutrino hypothesis
@@ -866,21 +857,21 @@ void ConsolidatedOutputAnalyser::CollectSlices(const PFParticleVector &allPartic
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-float ConsolidatedOutputAnalyser::GetMetadataValue(const art::Ptr<larpandoraobj::PFParticleMetadata> &metadata, const std::string &key) const
+float ConsolidatedOutputAnalyserAllTracks::GetMetadataValue(const art::Ptr<larpandoraobj::PFParticleMetadata> &metadata, const std::string &key) const
 {
     if(verbose_>1) std::cout << "Enter GetMetadataValue function" << std::endl;
     const auto &propertiesMap(metadata->GetPropertiesMap());
     const auto &it(propertiesMap.find(key));
 
     if (it == propertiesMap.end())
-        throw cet::exception("ConsolidatedOutputAnalyser") << "No key \"" << key << "\" found in metadata properties map" << std::endl;
+        throw cet::exception("ConsolidatedOutputAnalyserAllTracks") << "No key \"" << key << "\" found in metadata properties map" << std::endl;
 
     return it->second;
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-void ConsolidatedOutputAnalyser::CollectConsolidatedParticles(const PFParticleVector &allParticles, const PFParticleVector &clearCosmics, const SliceVector &slices, PFParticleVector &consolidatedParticles) const
+void ConsolidatedOutputAnalyserAllTracks::CollectConsolidatedParticles(const PFParticleVector &allParticles, const PFParticleVector &clearCosmics, const SliceVector &slices, PFParticleVector &consolidatedParticles) const
 {
     if(verbose_>1) std::cout << "Enter CollectConsolidatedParticles function" << std::endl;
     PFParticleVector collectedParticles;
@@ -901,7 +892,7 @@ void ConsolidatedOutputAnalyser::CollectConsolidatedParticles(const PFParticleVe
     }
 }
 //------------------------------------------------------------------------------------------------------
-void ConsolidatedOutputAnalyser::initialize_tmyevent()
+void ConsolidatedOutputAnalyserAllTracks::initialize_tmyevent()
 {
   // Implementation of optional member function here.
   std::cout << "Initialize variables and histograms for root tree output" << std::endl;
@@ -919,8 +910,6 @@ void ConsolidatedOutputAnalyser::initialize_tmyevent()
   //int bufsize_particleid = 96*10;//*10?
   int bufsize_calorimetry = 200*3;//*10?
   int bufsize_MCSfit = 80;//*10?
-  
-  int bufsize_slice = 24;
 
   int splitlevel = 99;
   if( saveTTree_>=2) my_event_->Branch("crthits", &crthit_vec, bufsize_crthit, splitlevel);
@@ -928,7 +917,6 @@ void ConsolidatedOutputAnalyser::initialize_tmyevent()
   if( saveTTree_>=2) my_event_->Branch("crtt0", &crtt0_vec, bufsize_crtt0, splitlevel);
   
   if( saveTTree_>=2) my_event_->Branch("flashes", &flash_vec, bufsize_flash, splitlevel);
-  if( saveTTree_>=2) my_event_->Branch("slices", &slice_vec, bufsize_slice, splitlevel);
   /*
   my_event_->Branch("cosmictag", &cosmictag_vec, bufsize_cosmictag, splitlevel);
   my_event_->Branch("t0", &t0_vec, bufsize_t0, splitlevel);
@@ -939,7 +927,7 @@ void ConsolidatedOutputAnalyser::initialize_tmyevent()
   if( saveTTree_>=2) my_event_->Branch("calorimetry", &calo_vec, bufsize_calorimetry, splitlevel);
   if( saveTTree_>=2) my_event_->Branch("MCSfit", &MCSfit_vec, bufsize_MCSfit, splitlevel);
   //my_event_->Branch("distance", &tpc_crthit_dist, "distance cm/D");
-  if( saveTTree_>=2) my_event_->Branch("track_length", &track_length, "track_length cm/D");
+  my_event_->Branch("track_length", &track_length, "track_length cm/D");
   
   my_event_->Branch("track_start_x", &track_start_x, "track_start_x cm/D");
   my_event_->Branch("track_start_y", &track_start_y, "track_start_y cm/D");
@@ -993,10 +981,6 @@ void ConsolidatedOutputAnalyser::initialize_tmyevent()
   my_event_->Branch("max_slice", &max_slice, "max_slice/I");
   my_event_->Branch("nuScore", &nuScore_, "nuScore/D");
   my_event_->Branch("nuScore_max", &nuScore_max, "nuScore_max/D");
-  
-  my_event_->Branch("nr_muon", &nr_muon, "nr_muon/I");
-  my_event_->Branch("nr_electron", &nr_electron, "nr_electron/I");
-  my_event_->Branch("max_track_length", &max_track_length, "max_track_length/D");
 
   my_event_->Branch("frunNum", &frunNum, "Run Number/i");
   my_event_->Branch("fsubRunNum", &fsubRunNum, "SubRun Number/i");
@@ -1004,7 +988,7 @@ void ConsolidatedOutputAnalyser::initialize_tmyevent()
 
 }
   
-void ConsolidatedOutputAnalyser::beginJob()
+void ConsolidatedOutputAnalyserAllTracks::beginJob()
 {
   // Implementation of optional member function here.
   //initialize_tpandora();
@@ -1013,7 +997,7 @@ void ConsolidatedOutputAnalyser::beginJob()
   //std::cout << "crthitmatch_ = " << crthitmatch_ << std::endl;
 
 }
-void ConsolidatedOutputAnalyser::endJob()
+void ConsolidatedOutputAnalyserAllTracks::endJob()
 {
   // Implementation of optional member function here.
   std::cout << "Number of tracks: " << track_counter << " Number of not assigned pandoratracks: " << track_nopandora_counter << std::endl;
