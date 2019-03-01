@@ -373,24 +373,24 @@ void crt::MergeTest::analyze(art::Event const & evt)
 	    hTFvsTH_t0_2d->Fill(diff_sec , diffT0_nsecABS);	                
 
 	    hTFvsTH_t0_t1->Fill(diffT0_nsecABS, diffT1_nsecABS);
-            hTFvsTH_plane_t0->Fill(my_CRTHit.plane, diffT0_nsecABS);
+            hTFvsTH_plane_t0->Fill(my_CRTHit.plane%10, diffT0_nsecABS);
 	    
 	    hTFvsBM_2d->Fill(Timeflash,diffT1_nsecABS);
 	    hTFvsGPSM_2d->Fill(Timeflash,diffT0_nsecABS);
 
-	    if(my_CRTHit.plane == 0){
+	    if(my_CRTHit.plane%10 == 0){
 	      Hmatchcounter0++;
 	      hBot->Fill(my_CRTHit.z_pos, my_CRTHit.x_pos);
 	    }
-	    if(my_CRTHit.plane == 1){
+	    if(my_CRTHit.plane%10 == 1){
 	      Hmatchcounter1++;
 	      hFT->Fill(my_CRTHit.z_pos, my_CRTHit.y_pos);
 	    }
-	    if(my_CRTHit.plane == 2){
+	    if(my_CRTHit.plane%10 == 2){
 	      Hmatchcounter2++;
 	      hPipe->Fill(my_CRTHit.z_pos, my_CRTHit.y_pos);
 	    }
-	    if(my_CRTHit.plane == 3){
+	    if(my_CRTHit.plane%10 == 3){
 	      Hmatchcounter3++;
 	      hTop->Fill(my_CRTHit.z_pos, my_CRTHit.x_pos);  	    
 	    }
@@ -527,24 +527,24 @@ void crt::MergeTest::analyze(art::Event const & evt)
 	  hTFvsTH_t0_2d_extra->Fill(diff_sec_extra , diffT0_nsecABS_extra);	                
 	  
 	  hTFvsTH_t0_t1_extra->Fill(diffT0_nsecABS_extra, diffT1_nsecABS_extra);
-	  hTFvsTH_plane_t0_extra->Fill(my_CRTHit.plane, diffT0_nsecABS_extra);
+	  hTFvsTH_plane_t0_extra->Fill(my_CRTHit.plane%10, diffT0_nsecABS_extra);
 	  
 	  hTFvsBM_2d_extra->Fill(Timeflash,diffT1_nsecABS_extra);
 	  hTFvsGPSM_2d_extra->Fill(Timeflash,diffT0_nsecABS_extra);
 	  
-	  if(my_CRTHit.plane == 0){
+	  if(my_CRTHit.plane%10 == 0){
 	    Hmatchcounter0_extra++;
 	    hBot_extra->Fill(my_CRTHit.z_pos, my_CRTHit.x_pos);
 	  }
-	  if(my_CRTHit.plane == 1){
+	  if(my_CRTHit.plane%10 == 1){
 	    Hmatchcounter1_extra++;
 	    hFT_extra->Fill(my_CRTHit.z_pos, my_CRTHit.y_pos);
 	  }
-	  if(my_CRTHit.plane == 2){
+	  if(my_CRTHit.plane%10 == 2){
 	    Hmatchcounter2_extra++;
 	    hPipe_extra->Fill(my_CRTHit.z_pos, my_CRTHit.y_pos);
 	  }
-	  if(my_CRTHit.plane == 3){
+	  if(my_CRTHit.plane%10 == 3){
 	    Hmatchcounter3_extra++;
 	    hTop_extra->Fill(my_CRTHit.z_pos, my_CRTHit.x_pos);  	    
 	  }
