@@ -122,19 +122,19 @@ void crt::CRTTiming::analyze(art::Event const & evt)
       
       hCRTHits_T1dis->Fill(Hit_T1_nsec);
       
-      if(my_CRTHit.plane == 0){
+      if(my_CRTHit.plane%10 == 0){
 	hCRTHits_T1dis_B->Fill(Hit_T1_nsec);
       }
 
-      if(my_CRTHit.plane == 1){
+      if(my_CRTHit.plane%10 == 1){
 	hCRTHits_T1dis_F->Fill(Hit_T1_nsec);
       }
 
-      if(my_CRTHit.plane == 2){
+      if(my_CRTHit.plane%10 == 2){
 	hCRTHits_T1dis_P->Fill(Hit_T1_nsec);
       }
 
-      if(my_CRTHit.plane == 3){
+      if(my_CRTHit.plane%10 == 3){
 	hCRTHits_T1dis_T->Fill(Hit_T1_nsec);
       }
 

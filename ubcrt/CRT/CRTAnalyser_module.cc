@@ -241,7 +241,7 @@ void crt::CRTAnalyser::analyze(art::Event const & evt)
       beam_time_ns = CRTHitCollection[i].ts1_ns;
       //beam_time_ns_err = CRTHitCollection[i].ts1_ns_err;
 
-      plane = CRTHitCollection[i].plane;
+      plane = CRTHitCollection[i].plane%10;
       peshit = CRTHitCollection[i].peshit;
 
       xtot = CRTHitCollection[i].x_pos;

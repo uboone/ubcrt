@@ -429,7 +429,7 @@ void crt::CRTeffStd::analyze(art::Event const & evt)
 	    
 	    Hitcounter++;
 	    
-	    if(my_CRTHit.plane==0){//Bottom Hits
+	    if(my_CRTHit.plane%10==0){//Bottom Hits
 	      
 	      double BotY = -261; //Intersection with Bottom
 	      
@@ -450,7 +450,7 @@ void crt::CRTeffStd::analyze(art::Event const & evt)
 	    }//Bottom Hits
 	    
 	    
-	    if(my_CRTHit.plane==1){//FT Hits
+	    if(my_CRTHit.plane%10==1){//FT Hits
 	      
 	      double FT_X = -142.484;//Intersection with Feedthrough
 	      
@@ -466,7 +466,7 @@ void crt::CRTeffStd::analyze(art::Event const & evt)
 	    }//Intersection with Feedthrough
 	    
 	    
-	    if(my_CRTHit.plane==2){//Pipe Hits
+	    if(my_CRTHit.plane%10==2){//Pipe Hits
 	      
 	      double Pipe_X = 383.016;//Intersection with Pipe //average->3 layers, 2 intersections
 	      
@@ -487,7 +487,7 @@ void crt::CRTeffStd::analyze(art::Event const & evt)
 	      
 	    }//Pipe Hits
 	    
-	    if(my_CRTHit.plane==3){//Top Hits
+	    if(my_CRTHit.plane%10==3){//Top Hits
 	      
 	      double TopY = 658.25;
 	      
