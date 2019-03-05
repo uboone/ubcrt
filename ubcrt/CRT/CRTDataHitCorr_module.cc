@@ -1,14 +1,13 @@
 ////////////////////////////////////////////////////////////////////////////
-/// Class:       CRTSimHitCorr
+/// Class:       CRTDataHitCorr
 /// Module Type: producer
-/// File:        CRTSimHitCorr_module.cc
+/// File:        CRTDataHitCorr_module.cc
 ///
 /// Author:         Michelle Stancari
 /// E-mail address: mstancar@fnal.gov
 ///
 /////////////////////////////////////////////////////////////////////////////
 
-#include "ubobj/CRT/CRTSimData.hh"
 #include "ubobj/CRT/CRTHit.hh"
 
 // Framework includes
