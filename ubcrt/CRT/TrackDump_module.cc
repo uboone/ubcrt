@@ -54,6 +54,7 @@ const int kMaxCRThits = 1000;
 const int kMaxCRTtzs = 1000;
 const int kMaxCRTtracks = 1000;
 const int kMaxTPCtracks = 100;
+const int kMaxPMTflash = 100;
 
 
  // namespace crt {
@@ -91,6 +92,7 @@ private:
   uint32_t fsubRunNum;             //Subrun Number taken from event         
   std::string  fTrackModuleLabel;
   bool fSaveTPCTrackInfo;
+  bool fSavePMTFlashInfo;
   std::string  data_labeltrack_;
   std::string  data_labeltzero_;
   std::string  data_label_t0A_;
@@ -199,6 +201,13 @@ private:
   double trklen[kMaxTPCtracks];
   double tzeroACPT[kMaxTPCtracks];
   double tzeroCRT[kMaxTPCtracks];
+  // PMT flash
+  int nPMTflash;
+  double fl_time[kMaxPMTflash];
+  double fl_pe[kMaxPMTflash];
+  double fl_y[kMaxPMTflash];
+  double fl_z[kMaxPMTflash];
+
   
 };
 
@@ -207,6 +216,7 @@ TrackDump::TrackDump(fhicl::ParameterSet const & p)
   : EDAnalyzer(p),
     fTrackModuleLabel(p.get<std::string>("TrackModuleLabel")),
     fSaveTPCTrackInfo(p.get< bool >("SaveTPCTrackInfo", false)), 
+    fSavePMTFlashInfo(p.get< bool >("SavePMTFlashInfo", false)), 
     data_labeltrack_(p.get<std::string>("data_labeltrack")),
     data_labeltzero_(p.get<std::string>("data_labeltzero")),
     data_label_t0A_(p.get<std::string>("data_label_t0ACPT", "pandoraCosmicT0Reco" )),
@@ -364,7 +374,6 @@ void TrackDump::analyze(art::Event const & evt)
     }  // loop over tracks
   }   //  if (saveTPCtrackinfo)
   
-  /*
   
   //get Optical Flash
   art::Handle< std::vector<recob::OpFlash> > rawHandle_OpFlash;
@@ -376,14 +385,25 @@ void TrackDump::analyze(art::Event const & evt)
     std::cout<<"  OpFlashCollection.size()  "<<OpFlashCollection.size()<<std::endl; 
   }  //get Optical Flash
   
-  */
-
 
   //  fill tree
   run=frunNum;
   event=fEvtNum;
   subrun=fsubRunNum;
   
+
+  // flashinfo
+  nPMTflash = OpFlashCollection.size();
+  if (nPMTflash>kMaxPMTflash) nPMTflash=kMaxPMTflash;
+  for(int j = 0; j < nPMTflash; j++) {
+    recob::OpFlash my_flash = OpFlashCollection[j];
+    fl_time[j]=my_flash.Time();
+    fl_pe[j]=my_flash.TotalPE();
+    fl_y[j]=my_flash.YCenter();
+    fl_z[j]=my_flash.ZCenter();
+  }    
+  
+
   //get CRTHits
   art::Handle< std::vector<crt::CRTHit> > rawHandle_hit;
   evt.getByLabel(data_labelhit_, rawHandle_hit); //
@@ -696,7 +716,13 @@ void TrackDump::beginJob()
   fTree->Branch("tzeroACPT",tzeroACPT,"tzeroACPT[nTPCtracks]/D");
   fTree->Branch("tzeroCRT",tzeroCRT,"tzeroCRT[nTPCtracks]/D");
   }
-
+  if (fSavePMTFlashInfo) {
+    fTree->Branch("nPMTflash",&nPMTflash,"nPMTflash/I");
+    fTree->Branch("fl_time",fl_time,"fl_time[nPMTflash]/D");
+    fTree->Branch("fl_pe",fl_pe,"fl_pe[nPMTflash]/D");
+    fTree->Branch("fl_y",fl_y,"fl_y[nPMTflash]/D");
+    fTree->Branch("fl_z",fl_z,"fl_z[nPMTflash]/D");
+  }
 
   hplavspla = tfs->make<TH2F>("hplavspla","PlanevsPlane",4,0,4,4,0,4);
   hplavspla->GetXaxis()->SetTitle("Plane (0=Bottom, 1=FT, 2=Pipe, 3=Top)");
