@@ -37,9 +37,9 @@ art_make( BASENAME_ONLY
 	CRTAnalyser_module.cc	
 	CRTeffStd_module.cc			
 	CRTTiming_module.cc
-        T0recoCRT_module.cc                     
+        T0recoCRTTrack_module.cc                     
         T0recoCRTHit_module.cc                     
-        T0recoCRTAnal_module.cc 
+        T0recoCRTTrackAnal_module.cc 
         T0recoCRTHitAnal_module.cc 
         T0recoCRTHitAna2_module.cc 
     LIBRARY_NAME  
@@ -331,7 +331,7 @@ simple_plugin(CRTeffStd "module"
           art_Framework_Services_Optional_TFileService_service
           ${ROOT_BASIC_LIB_LIST} )
 
-simple_plugin(T0recoCRT "module"
+simple_plugin(T0recoCRTTrack "module"
             CRT
           bernfebdaq-core_Overlays
           art_Framework_Services_Optional
@@ -347,7 +347,7 @@ simple_plugin(T0recoCRTHit "module"
           art_Framework_Services_Optional_TFileService_service
           ${ROOT_BASIC_LIB_LIST} )
 
-simple_plugin(T0recoCRTAnal "module"
+simple_plugin(T0recoCRTTrackAnal "module"
             CRT
           bernfebdaq-core_Overlays
           art_Framework_Services_Optional

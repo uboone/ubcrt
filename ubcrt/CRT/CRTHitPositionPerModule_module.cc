@@ -228,19 +228,19 @@ void CRTHitPositionPerModule::analyze(art::Event const & evt)
     hit_time0[j]          = (double)my_CRTHit.ts0_ns - (double)evt_timeGPS_nsec; // Time in the TPC reference frame (or PMT) 
     hit_time1[j]          = (double)my_CRTHit.ts1_ns + (double)fHardDelay_;      // Time in the TPC reference frame (or PMT)
     hit_charge[j]         = my_CRTHit.peshit;
-    hit_plane[j]          = my_CRTHit.plane;
+    hit_plane[j]          = my_CRTHit.plane%10;
     hit_posx[j]           = my_CRTHit.x_pos;
     hit_posy[j]           = my_CRTHit.y_pos;
     hit_posz[j]           = my_CRTHit.z_pos;
     
     // Bottom   
-    if (my_CRTHit.plane == 0) HitDistBot->Fill(my_CRTHit.z_pos,my_CRTHit.x_pos); 
+    if (my_CRTHit.plane%10 == 0) HitDistBot->Fill(my_CRTHit.z_pos,my_CRTHit.x_pos); 
     // FT Side
-    if (my_CRTHit.plane == 1) HitDistFT->Fill(my_CRTHit.z_pos,my_CRTHit.y_pos);
+    if (my_CRTHit.plane%10 == 1) HitDistFT->Fill(my_CRTHit.z_pos,my_CRTHit.y_pos);
     // Pipe Side
-    if (my_CRTHit.plane == 2) HitDistPipe->Fill(my_CRTHit.z_pos,my_CRTHit.y_pos);
+    if (my_CRTHit.plane%10 == 2) HitDistPipe->Fill(my_CRTHit.z_pos,my_CRTHit.y_pos);
     // Top
-    if (my_CRTHit.plane == 3) HitDistTop->Fill(my_CRTHit.z_pos,my_CRTHit.x_pos);
+    if (my_CRTHit.plane%10 == 3) HitDistTop->Fill(my_CRTHit.z_pos,my_CRTHit.x_pos);
     
     // Every hit is composed by 2 FEBs: the horizontal and vertical one
     auto febID_v = my_CRTHit.feb_id;
