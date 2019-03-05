@@ -18,7 +18,7 @@ crttrack: {
 }
 t0recocrthit_data:  {			
    module_type: T0recoCRTHit
-   data_label_TPCtrack: "pandoraCosmic"
+   data_label_TPCtrack: "pandora"
    data_label_CRTtzero: "crttzero"
    data_label_CRThit: "merger"
    data_label_flash: "simpleFlashCosmic"
@@ -65,7 +65,7 @@ crttrack_sim: {
 t0recocrthit_sim:		
 {			
    module_type: T0recoCRTHit
-   data_label_TPCtrack: "pandoraCosmic"
+   data_label_TPCtrack: "pandora"
    data_label_CRTtzero: "crttzero"
    data_label_CRThit: "crthitsim"
    data_label_flash: "opflashCosmic"
