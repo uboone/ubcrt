@@ -449,22 +449,6 @@ void T0recoCRTHitAna2::analyze(art::Event const & evt)
 	    double test1 = startP.X()-xshift; double test2 = endP.X()-xshift;
 	    if (test1>-10. && test1<270. && test2>-10 && test2<270.) {
 	      
-	      //  Correct start and end point for space charge with this tzero
-	      if(sce->EnableCalSpatialSCE()) {
-	      geo::Point_t fTrackPos = startP;  fTrackPos.SetX(startP.X()-xshift);
-	      geo::Vector_t fPosOffsets = sce->GetCalPosOffsets(geo::Point_t{fTrackPos.X(),fTrackPos.Y(),fTrackPos.Z()});
-	      geo::Point_t newStartP = geo::Point_t{fTrackPos.X() - fPosOffsets.X(), fTrackPos.Y() + fPosOffsets.Y(), 
-						    fTrackPos.Z() + fPosOffsets.Z()};
-	      std::cout << fPosOffsets.X() << " " <<   fPosOffsets.Y() << " " <<  fPosOffsets.Z() << std::endl;
-
-	      fTrackPos = endP;  fTrackPos.SetX(endP.X()-xshift);
-	      fPosOffsets = sce->GetCalPosOffsets(geo::Point_t{fTrackPos.X(),fTrackPos.Y(),fTrackPos.Z()});
-	      geo::Point_t newEndP = geo::Point_t{fTrackPos.X() - fPosOffsets.X(), fTrackPos.Y() + fPosOffsets.Y(), 
-						    fTrackPos.Z() + fPosOffsets.Z()};
-
-	      std::cout << fPosOffsets.X() << " " <<   fPosOffsets.Y() << " " <<  fPosOffsets.Z() << std::endl;
-	      }
-
 	      //  loop over CRT hits for this tzero
 	      std::vector<art::Ptr<crt::CRTHit> > hitlist=fmht.at(tzIter);
 	      if (hitlist.size()>0) {
@@ -505,10 +489,29 @@ void T0recoCRTHitAna2::analyze(art::Event const & evt)
 		  else //fTimeSelect_==1 for BNB data
 		    xshift = ((double)(hitlist[ah]->ts1_ns) + fHardDelay)*vdrift;	      
 		  
+		  //  Correct start and end point for space charge with this tzero
+		  geo::Point_t newStartP; geo::Point_t newEndP;
+		  if(sce->EnableCalSpatialSCE()) {
+		    geo::Point_t fTrackPos = startP;  fTrackPos.SetX(startP.X()-xshift);
+		    geo::Vector_t fPosOffsets = sce->GetCalPosOffsets(geo::Point_t{fTrackPos.X(),fTrackPos.Y(),fTrackPos.Z()});
+		    newStartP = geo::Point_t{fTrackPos.X() - fPosOffsets.X(), fTrackPos.Y() + fPosOffsets.Y(), 
+							  fTrackPos.Z() + fPosOffsets.Z()};
+		    std::cout << fPosOffsets.X() << " " <<   fPosOffsets.Y() << " " <<  fPosOffsets.Z() << std::endl;
+		    
+		    fTrackPos = endP;  fTrackPos.SetX(endP.X()-xshift);
+		    fPosOffsets = sce->GetCalPosOffsets(geo::Point_t{fTrackPos.X(),fTrackPos.Y(),fTrackPos.Z()});
+		    newEndP = geo::Point_t{fTrackPos.X() - fPosOffsets.X(), fTrackPos.Y() + fPosOffsets.Y(), 
+							fTrackPos.Z() + fPosOffsets.Z()};
+		    
+		    std::cout << fPosOffsets.X() << " " <<   fPosOffsets.Y() << " " <<  fPosOffsets.Z() << std::endl;
+		  }
+		  else {
+		    newStartP = startP;  newStartP.SetX(startP.X()-xshift);
+		    newEndP = startP;  newEndP.SetX(endP.X()-xshift);
+		  }
+
 		  TVector3 trackstart(newStartP.X(),newStartP.Y(),newStartP.Z());
 		  TVector3 trackend(newEndP.X(),newEndP.Y(),newEndP.Z());
-		  // TVector3 trackstart(startP.X()-xshift,startP.Y(),startP.Z());
-		  // TVector3 trackend(endP.X()-xshift,endP.Y(),endP.Z());
 		  
 		  // calculate the distance of closest approach (DCA) of track to CRT hit
 		  TVector3 denom = trackend-trackstart;
@@ -553,15 +556,25 @@ void T0recoCRTHitAna2::analyze(art::Event const & evt)
 	  //calculate track shift in x for the time  of this CRT hit
 	  double xshift = time_besthit*vdrift;
 	  //  Correct start and end point for space charge with this tzero
-	  geo::Point_t fTrackPos = startP;  fTrackPos.SetX(startP.X()-xshift);
-	  geo::Vector_t fPosOffsets = sce->GetCalPosOffsets(geo::Point_t{fTrackPos.X(),fTrackPos.Y(),fTrackPos.Z()});
-	  geo::Point_t newStartP = geo::Point_t{fTrackPos.X() - fPosOffsets.X(), fTrackPos.Y() + fPosOffsets.Y(), 
-						fTrackPos.Z() + fPosOffsets.Z()};
-	  fTrackPos = endP;  fTrackPos.SetX(endP.X()-xshift);
-	  fPosOffsets = sce->GetCalPosOffsets(geo::Point_t{fTrackPos.X(),fTrackPos.Y(),fTrackPos.Z()});
-	  geo::Point_t newEndP = geo::Point_t{fTrackPos.X() - fPosOffsets.X(), fTrackPos.Y() + fPosOffsets.Y(), 
-					      fTrackPos.Z() + fPosOffsets.Z()};
-
+	  geo::Point_t newStartP; geo::Point_t newEndP;
+	  if(sce->EnableCalSpatialSCE()) {
+	    geo::Point_t fTrackPos = startP;  fTrackPos.SetX(startP.X()-xshift);
+	    geo::Vector_t fPosOffsets = sce->GetCalPosOffsets(geo::Point_t{fTrackPos.X(),fTrackPos.Y(),fTrackPos.Z()});
+	    newStartP = geo::Point_t{fTrackPos.X() - fPosOffsets.X(), fTrackPos.Y() + fPosOffsets.Y(), 
+				     fTrackPos.Z() + fPosOffsets.Z()};
+	    std::cout << fPosOffsets.X() << " " <<   fPosOffsets.Y() << " " <<  fPosOffsets.Z() << std::endl;
+	    
+	    fTrackPos = endP;  fTrackPos.SetX(endP.X()-xshift);
+	    fPosOffsets = sce->GetCalPosOffsets(geo::Point_t{fTrackPos.X(),fTrackPos.Y(),fTrackPos.Z()});
+	    newEndP = geo::Point_t{fTrackPos.X() - fPosOffsets.X(), fTrackPos.Y() + fPosOffsets.Y(), 
+				   fTrackPos.Z() + fPosOffsets.Z()};
+	    std::cout << fPosOffsets.X() << " " <<   fPosOffsets.Y() << " " <<  fPosOffsets.Z() << std::endl;
+	  }
+	  else {
+	    newStartP = startP;  newStartP.SetX(startP.X()-xshift);
+	    newEndP = startP;  newEndP.SetX(endP.X()-xshift);
+	  }
+	  
 	  TVector3 trackstart(newStartP.X(),newStartP.Y(),newStartP.Z());
 	  TVector3 trackend(newEndP.X(),newEndP.Y(),newEndP.Z());
 	  
