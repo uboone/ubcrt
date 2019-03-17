@@ -317,7 +317,7 @@ void TrackDump::analyze(art::Event const & evt)
     if(rawHandle_Tzero.isValid()) { iT0acpt=true;
       // grab flashes associated with tracks (anode or cathode crossers)
       //      art::FindMany<anab::T0> trk_t0A_assn_v(trackListHandle, evt, data_label_t0A_);
-      std::cout << "found data product for acpt times" << std::endl;
+      //      std::cout << "found data product for acpt times" << std::endl;
     }
     evt.getByLabel(data_label_t0C_, rawHandle_Tzero);
     if(rawHandle_Tzero.isValid()) {iT0crt=true;

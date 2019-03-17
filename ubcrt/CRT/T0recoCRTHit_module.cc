@@ -399,7 +399,7 @@ void T0recoCRTHit::produce(art::Event & evt)
 	trackCosStart.Z()*trackCosEnd.Z();
       
       //reject tracks that are too short and bend too much
-      if (trklen>5 && opang>0.8)  {
+      if (trklen>20 && opang>0.95)  {
 	
 	if (fverbose) {
 	  std::cout << "Event " << evt.event() <<  " Track " << trkIter << " cos(opening angle) " << 
