@@ -1,40 +1,14 @@
 BEGIN_PROLOG
 
-crtdatahitcorr_align:
+crtdatahitcorr:
 {
     module_type: CRTDataHitCorr
     CrtHitsIn_Label1: "remerge"
     CrtHitsIn_Label2: "remergeextra"
     NumberCollections:  1  // only combine label1 and label2
 # alignment offsets for CRT planes in cm, default is 0.0 for all
-    AlignBotX:    -4.4
-    AlignBotY:     0.0
-    AlignBotZ:    30.2
-    AlignAnodeX:   0.0
-    AlignAnodeY:  20.0
-    AlignAnodeZ:   5.7
-    AlignCathX:    0.0
-    AlignCathY:   -9.8
-    AlignCathZ:    0.4
-    AlignTopX:    20.8
-    AlignTopY:     0.0
-    AlignTopZ:   -28.1
+    CorrecrAlignmnet: true
 #Option to increase threshold
-    HitThreshold:    0.0   # threshold in PE applied to the total of 4 SiPMs in hit
-    StripThreshold:  0.0    # threshold in PE applied to the total of 2 SiPMs in a strip
-    SiPMThreshold:   0.0    # threshold in PE applied to the individual SiPMs 
-    verbose: 0
-}
-
-crtdatahitcorr_noalign:
-{
-    module_type: CRTDataHitCorr
-    CrtHitsIn_Label1: "remerge"
-    CrtHitsIn_Label2: "remergeextra"
-    NumberCollections:  1  // only combine label1 and label2
-   # alignment offsets for CRT planes in cm, default is 0.0 for all,
-   #  don't set them here
-   #  Option to increase threshold
     HitThreshold:    0.0   # threshold in PE applied to the total of 4 SiPMs in hit
     StripThreshold:  0.0    # threshold in PE applied to the total of 2 SiPMs in a strip
     SiPMThreshold:   0.0    # threshold in PE applied to the individual SiPMs 
@@ -54,7 +28,7 @@ crtsimhitcorr_filter:
     verbose: 0
 }
 
-# below for Nov2018 test samples where CRT times need to be divided by 5
+# below for Nov2018 test samples ONLY where CRT times need to be divided by 5
 crtsimhitcorr_timebugfix:
 {
     module_type: CRTSimHitCorr

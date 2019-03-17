@@ -128,15 +128,36 @@ private:
   TH1F *dca1;
   TH1F *dca2;
   TH1F *dca3;
+  TH1F *dla0;
+  TH1F *dla1;
+  TH1F *dla2;
+  TH1F *dla3;
+  TH1F *dcn0;
+  TH1F *dcn1;
+  TH1F *dcn2;
+  TH1F *dcn3;
   TH1F *dcab;
   TH1F *botx;
   TH1F *botz;
+  TH1F *botx1;
+  TH1F *botz1;
+  TH1F *botx2;
+  TH1F *botz2;
   TH1F *any;
   TH1F *anz;
   TH1F *caty;
   TH1F *catz;
+  TH1F *caty1;
+  TH1F *catz2;
+  TH1F *caty3;
+  TH1F *catz4;
+  TH1F *caty5;
   TProfile *catyp;
   TProfile *catzp;
+  TH1F *topx11;
+  TH1F *topx22;
+  TH1F *topx33;
+  TH1F *topx44;
   TH1F *topx;
   TH1F *topz;
   TH1F *topxc;
@@ -145,12 +166,65 @@ private:
   TH2F *topz2;
   TProfile *topxp;
   TProfile *topzp;
-
   TH1F *pe;
   TH1F *pe2;
   TProfile *peave;
   TH2F *pefull;
   TH1F *inang;
+  TH1F *topz109;
+  TH1F *topz105;
+  TH1F *topz106;
+  TH1F *topz107;
+  TH1F *topz108;
+  TH1F *topz112;
+  TH1F *topz111;
+  TH1F *topz128;
+  TH1F *topz126;
+  TH1F *topz125;
+  TH1F *topz195;
+  TH1F *topz123;
+  TH1F *topz124;
+  TH1F *topx113;
+  TH1F *topx114;
+  TH1F *topx115;
+  TH1F *topx116;
+  TH1F *topx117;
+  TH1F *topx118;
+  TH1F *topx119;
+  TH1F *topx120;
+  TH1F *topx121;
+  TH1F *topx129;
+  TH1F *topx127;
+  //
+  TH2F *top2z109;
+  TH2F *top2z105;
+  TH2F *top2z106;
+  TH2F *top2z107;
+  TH2F *top2z108;
+  TH2F *top2z112;
+  TH2F *top2z111;
+  TH2F *top2z128;
+  TH2F *top2z126;
+  TH2F *top2z125;
+  TH2F *top2z195;
+  TH2F *top2z123;
+  TH2F *top2z124;
+  TH2F *top2x113;
+  TH2F *top2x114;
+  TH2F *top2x115;
+  TH2F *top2x116;
+  TH2F *top2x117;
+  TH2F *top2x118;
+  TH2F *top2x119;
+  TH2F *top2x120;
+  TH2F *top2x121;
+  TH2F *top2x129;
+  TH2F *top2x127;
+
+  TH2F *hTop;
+  TH2F *hPipe;
+  TH2F *hFT;
+  TH2F *hBot;
 
   /*
   TH1F* hTrackLengthACPT;
@@ -215,10 +289,10 @@ T0recoCRTHitAna2::T0recoCRTHitAna2(fhicl::ParameterSet const & p)
     data_label_flash_(p.get<std::string>("data_label_flash")),
     data_label_DAQHeader_(p.get<std::string>("data_label_DAQHeader")),
     fHardDelay(p.get<int>("HardDelay",40000)),
-    fTimeZeroOffset(p.get<int>("TimeZeroOffset",60000)),
+    fTimeZeroOffset(p.get<int>("TimeZeroOffset",69000)),
     fTimeSelect(p.get<int>("TimeSelect",0)),
     fMatchCut(p.get<int>("MatchCut",40)),
-    fDriftVel(p.get<float>("DriftVel",0.11436)),   // cm/us
+    fDriftVel(p.get<float>("DriftVel",0.111436)),   // cm/us
     fverbose(p.get<bool>("verbose",false)),
     fAlignBotX(p.get<float>("AlignBotX",0.0)),
     fAlignBotY(p.get<float>("AlignBotY",0.0)),
@@ -341,6 +415,8 @@ void T0recoCRTHitAna2::analyze(art::Event const & evt)
   }  //get Optical Flash
   
 
+
+
   // look for match between CRT and flashes   
   for(std::vector<int>::size_type i = 0; i != OpFlashCollection.size(); i++) {//B
       
@@ -357,6 +433,11 @@ void T0recoCRTHitAna2::analyze(art::Event const & evt)
       
     //    hFlashTimeDis->Fill(Timeflash);
     
+    if (tzerolist.size()<=0) {
+      std::cout << "no tzeros so no crt hits " << std::endl;
+      return;
+    }
+
     //loop over CRT tzeros
     float min_deltat = 3000.0; int best_time_match = -1;
     if (tzerolist.size()>0) {   
@@ -395,10 +476,11 @@ void T0recoCRTHitAna2::analyze(art::Event const & evt)
   } // loop over flashes
    
   
-  double const vdrift = fDriftVel*0.001;  // in cm/ns
+    double const vdrift = fDriftVel*0.001;  // in cm/ns
   // const detinfo::DetectorProperties *_detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
   // double const vdrift =  _detprop->DriftVelocity();  
   // std::cout << "drift velocity is " << vdrift << std::endl;
+  //     vdrift*=0.001;  // in cm/ns
 
   // loop over tracks  
   if (tracklist.size()>0) {
@@ -406,7 +488,8 @@ void T0recoCRTHitAna2::analyze(art::Event const & evt)
       
       //    int TrackGood=0;
       float dist_besthit = 99999999.; int plane_besthit=111;
-      double time_besthit=999999999.; float pe_besthit=0;
+      double time_besthit=999999999.; float pe_besthit=0; float dla_besthit = 999.;
+      int feb1_besthit=-1; int feb2_besthit=-1;
       TVector3 bestCRTpoint;
       double theta,phi,trklen;
       // fetch track length, start and end points, theta and phi
@@ -425,7 +508,8 @@ void T0recoCRTHitAna2::analyze(art::Event const & evt)
 	trackCosStart.Z()*trackCosEnd.Z();
       
       //reject tracks that are too short and bend too much
-      if (trklen>5 && opang>0.8)  {
+      if (trklen>20 && opang>0.95)  {
+	//      if (trklen>5 && opang>0.8)  {
 	
 	if (fverbose) {
 	  std::cout << "Event " << evt.event() <<  " Track " << trkIter << " cos(opening angle) " << 
@@ -490,24 +574,23 @@ void T0recoCRTHitAna2::analyze(art::Event const & evt)
 		    xshift = ((double)(hitlist[ah]->ts1_ns) + fHardDelay)*vdrift;	      
 		  
 		  //  Correct start and end point for space charge with this tzero
-		  geo::Point_t newStartP; geo::Point_t newEndP;
+		  geo::Point_t newStartP = startP; geo::Point_t newEndP = endP;
 		  if(sce->EnableCalSpatialSCE()) {
 		    geo::Point_t fTrackPos = startP;  fTrackPos.SetX(startP.X()-xshift);
 		    geo::Vector_t fPosOffsets = sce->GetCalPosOffsets(geo::Point_t{fTrackPos.X(),fTrackPos.Y(),fTrackPos.Z()});
 		    newStartP = geo::Point_t{fTrackPos.X() - fPosOffsets.X(), fTrackPos.Y() + fPosOffsets.Y(), 
 							  fTrackPos.Z() + fPosOffsets.Z()};
-		    std::cout << fPosOffsets.X() << " " <<   fPosOffsets.Y() << " " <<  fPosOffsets.Z() << std::endl;
+		    // std::cout << fPosOffsets.X() << " " <<   fPosOffsets.Y() << " " <<  fPosOffsets.Z() << std::endl;
 		    
 		    fTrackPos = endP;  fTrackPos.SetX(endP.X()-xshift);
 		    fPosOffsets = sce->GetCalPosOffsets(geo::Point_t{fTrackPos.X(),fTrackPos.Y(),fTrackPos.Z()});
 		    newEndP = geo::Point_t{fTrackPos.X() - fPosOffsets.X(), fTrackPos.Y() + fPosOffsets.Y(), 
 							fTrackPos.Z() + fPosOffsets.Z()};
 		    
-		    std::cout << fPosOffsets.X() << " " <<   fPosOffsets.Y() << " " <<  fPosOffsets.Z() << std::endl;
+		    // std::cout << fPosOffsets.X() << " " <<   fPosOffsets.Y() << " " <<  fPosOffsets.Z() << std::endl;
 		  }
 		  else {
-		    newStartP = startP;  newStartP.SetX(startP.X()-xshift);
-		    newEndP = startP;  newEndP.SetX(endP.X()-xshift);
+		    newStartP.SetX(startP.X()-xshift); newEndP.SetX(endP.X()-xshift);
 		  }
 
 		  TVector3 trackstart(newStartP.X(),newStartP.Y(),newStartP.Z());
@@ -519,14 +602,23 @@ void T0recoCRTHitAna2::analyze(art::Event const & evt)
 		  TVector3 numer = a.Cross(b);
 		  double dca = numer.Mag()/denom.Mag();
 		  
+		  // calculate distance from track end to hit.  
+		  float dla = a.Mag();  float d2 = b.Mag();
+		  if (d2<dla) dla=d2;
+		  
+		  
 		  // if (dca<200.) {
 		  // }
 
 		  if (dca<dist_besthit) {
+		    dla_besthit = dla;
 		    besttz = tzIter;
 		    dist_besthit=dca;
 		    plane_besthit=(hitlist[ah]->plane)%10;
 		    pe_besthit=hitlist[ah]->peshit;
+		    feb1_besthit=hitlist[ah]->feb_id[0];  
+		    feb2_besthit=hitlist[ah]->feb_id[1];
+
 		    //	    art::Ptr<recob::OpFlash> flashptr = flashPtrMaker(j);
 		    //	    art::Ptr<crt::CRTHit> crthitptr = crthitPtrMaker(k);
 		    if (fTimeSelect==0)
@@ -556,23 +648,22 @@ void T0recoCRTHitAna2::analyze(art::Event const & evt)
 	  //calculate track shift in x for the time  of this CRT hit
 	  double xshift = time_besthit*vdrift;
 	  //  Correct start and end point for space charge with this tzero
-	  geo::Point_t newStartP; geo::Point_t newEndP;
+	  geo::Point_t newStartP = startP; geo::Point_t newEndP = endP;
 	  if(sce->EnableCalSpatialSCE()) {
 	    geo::Point_t fTrackPos = startP;  fTrackPos.SetX(startP.X()-xshift);
 	    geo::Vector_t fPosOffsets = sce->GetCalPosOffsets(geo::Point_t{fTrackPos.X(),fTrackPos.Y(),fTrackPos.Z()});
 	    newStartP = geo::Point_t{fTrackPos.X() - fPosOffsets.X(), fTrackPos.Y() + fPosOffsets.Y(), 
 				     fTrackPos.Z() + fPosOffsets.Z()};
-	    std::cout << fPosOffsets.X() << " " <<   fPosOffsets.Y() << " " <<  fPosOffsets.Z() << std::endl;
+	    //	    std::cout << fPosOffsets.X() << " " <<   fPosOffsets.Y() << " " <<  fPosOffsets.Z() << std::endl;
 	    
 	    fTrackPos = endP;  fTrackPos.SetX(endP.X()-xshift);
 	    fPosOffsets = sce->GetCalPosOffsets(geo::Point_t{fTrackPos.X(),fTrackPos.Y(),fTrackPos.Z()});
 	    newEndP = geo::Point_t{fTrackPos.X() - fPosOffsets.X(), fTrackPos.Y() + fPosOffsets.Y(), 
 				   fTrackPos.Z() + fPosOffsets.Z()};
-	    std::cout << fPosOffsets.X() << " " <<   fPosOffsets.Y() << " " <<  fPosOffsets.Z() << std::endl;
+	    //	    std::cout << fPosOffsets.X() << " " <<   fPosOffsets.Y() << " " <<  fPosOffsets.Z() << std::endl;
 	  }
 	  else {
-	    newStartP = startP;  newStartP.SetX(startP.X()-xshift);
-	    newEndP = startP;  newEndP.SetX(endP.X()-xshift);
+	    newStartP.SetX(startP.X()-xshift); newEndP.SetX(endP.X()-xshift);
 	  }
 	  
 	  TVector3 trackstart(newStartP.X(),newStartP.Y(),newStartP.Z());
@@ -587,10 +678,12 @@ void T0recoCRTHitAna2::analyze(art::Event const & evt)
 	      hDistCa->Fill(dist_besthit); 
 	  }	  
 	  hTimeBest->Fill(time_besthit*0.001);
-	  if (plane_besthit==3) dca3->Fill(dist_besthit);
-	  else if (plane_besthit==2) dca2->Fill(dist_besthit);
-	  else if (plane_besthit==1) dca1->Fill(dist_besthit);
-	  else if (plane_besthit==0) dca0->Fill(dist_besthit);
+	  if (plane_besthit==3) { dca3->Fill(dist_besthit);dla3->Fill(dla_besthit);dcn3->Fill(100.0*dist_besthit/dla_besthit);}
+	  else if (plane_besthit==2) {dca2->Fill(dist_besthit);dla2->Fill(dla_besthit);dcn2->Fill(100.0*dist_besthit/dla_besthit);}
+	  else if (plane_besthit==1) {dca1->Fill(dist_besthit);dla1->Fill(dla_besthit);dcn1->Fill(100.0*dist_besthit/dla_besthit);}
+	  else if (plane_besthit==0) {dca0->Fill(dist_besthit);dla0->Fill(dla_besthit);dcn0->Fill(100.0*dist_besthit/dla_besthit);}
+
+
 
 
 	  if (dist_besthit<fMatchCut) {
@@ -614,6 +707,7 @@ void T0recoCRTHitAna2::analyze(art::Event const & evt)
 	  inang->Fill(iang);
 
 	  if (plane_besthit==3) { 
+	    hTop->Fill(bestCRTpoint.Z(),bestCRTpoint.X());
 	    double dx = (bestCRTpoint.Y()-trackend.Y())*(trackstart.X()-trackend.X())/(trackstart.Y()-trackend.Y());
 	    dx += trackend.X(); dx-=bestCRTpoint.X(); dx*=-1.0;
 	    topx->Fill(dx);
@@ -626,8 +720,43 @@ void T0recoCRTHitAna2::analyze(art::Event const & evt)
 	    topzp->Fill(bestCRTpoint.Z(),dz);
 	    topz2->Fill(bestCRTpoint.Z(),dz);
 	    topzc->Fill(bestCRTpoint.Z());
+	    if (feb1_besthit==113 || feb1_besthit==116) topx11->Fill(dx);
+	    if (feb2_besthit==113 || feb2_besthit==116) topx11->Fill(dx);
+	    if (feb1_besthit==114 || feb1_besthit==117 ||feb1_besthit==119) topx22->Fill(dx);
+	    if (feb2_besthit==114 || feb2_besthit==117 ||feb2_besthit==119) topx22->Fill(dx);
+	    if (feb1_besthit==115 || feb1_besthit==118 ||feb1_besthit==129 ||feb1_besthit==120) topx33->Fill(dx);
+	    if (feb2_besthit==115 || feb2_besthit==118 ||feb2_besthit==129 ||feb2_besthit==120) topx33->Fill(dx);
+	    if (feb1_besthit==127 || feb1_besthit==121) topx44->Fill(dx);
+	    if (feb2_besthit==127 || feb2_besthit==121) topx44->Fill(dx);
+	    //
+	    if (feb1_besthit==109 || feb2_besthit==109)  {topz109->Fill(dz);top2z109->Fill(dz,bestCRTpoint.Z());}
+	    if (feb1_besthit==105 || feb2_besthit==105)   {topz105->Fill(dz);top2z105->Fill(dz,bestCRTpoint.Z());}
+	    if (feb1_besthit==106 || feb2_besthit==106)   {topz106->Fill(dz);top2z106->Fill(dz,bestCRTpoint.Z());}
+	    if (feb1_besthit==107 || feb2_besthit==107)   {topz107->Fill(dz);top2z107->Fill(dz,bestCRTpoint.Z());}
+	    if (feb1_besthit==108 || feb2_besthit==108)   {topz108->Fill(dz);top2z108->Fill(dz,bestCRTpoint.Z());}
+	    if (feb1_besthit==112 || feb2_besthit==112)   {topz112->Fill(dz);top2z112->Fill(dz,bestCRTpoint.Z());}
+	    if (feb1_besthit==111 || feb2_besthit==111)   {topz111->Fill(dz);top2z111->Fill(dz,bestCRTpoint.Z());}
+	    if (feb1_besthit==128 || feb2_besthit==128)   {topz128->Fill(dz);top2z128->Fill(dz,bestCRTpoint.Z());}
+	    if (feb1_besthit==126 || feb2_besthit==126)   {topz126->Fill(dz);top2z126->Fill(dz,bestCRTpoint.Z());}
+	    if (feb1_besthit==125 || feb2_besthit==125)   {topz125->Fill(dz);top2z125->Fill(dz,bestCRTpoint.Z());}
+	    if (feb1_besthit==195 || feb2_besthit==195)   {topz195->Fill(dz);top2z195->Fill(dz,bestCRTpoint.Z());}
+	    if (feb1_besthit==123 || feb2_besthit==123)   {topz123->Fill(dz);top2z123->Fill(dz,bestCRTpoint.Z());}
+	    if (feb1_besthit==124 || feb2_besthit==124)   {topz124->Fill(dz);top2z124->Fill(dz,bestCRTpoint.Z());}
+	    if (feb1_besthit==113 || feb2_besthit==113)   {topx113->Fill(dx);top2x113->Fill(dx,bestCRTpoint.X());}
+	    if (feb1_besthit==114 || feb2_besthit==114)   {topx114->Fill(dx);top2x114->Fill(dx,bestCRTpoint.X());}
+	    if (feb1_besthit==115 || feb2_besthit==115)   {topx115->Fill(dx);top2x115->Fill(dx,bestCRTpoint.X());}
+	    if (feb1_besthit==116 || feb2_besthit==116)   {topx116->Fill(dx);top2x116->Fill(dx,bestCRTpoint.X());}
+	    if (feb1_besthit==117 || feb2_besthit==117)   {topx117->Fill(dx);top2x117->Fill(dx,bestCRTpoint.X());}
+	    if (feb1_besthit==118 || feb2_besthit==118)   {topx118->Fill(dx);top2x118->Fill(dx,bestCRTpoint.X());}
+	    if (feb1_besthit==119 || feb2_besthit==119)   {topx119->Fill(dx);top2x119->Fill(dx,bestCRTpoint.X());}
+	    if (feb1_besthit==120 || feb2_besthit==120)   {topx120->Fill(dx);top2x120->Fill(dx,bestCRTpoint.X());}
+	    if (feb1_besthit==121 || feb2_besthit==121)   {topx121->Fill(dx);top2x121->Fill(dx,bestCRTpoint.X());}
+	    if (feb1_besthit==129 || feb2_besthit==129)   {topx129->Fill(dx);top2x129->Fill(dx,bestCRTpoint.X());}
+	    if (feb1_besthit==127 || feb2_besthit==127)   {topx127->Fill(dx);top2x127->Fill(dx,bestCRTpoint.X());}
+
 	  }
 	  else if (plane_besthit==2) { 
+	    hPipe->Fill(bestCRTpoint.Z(),bestCRTpoint.Y());
 	    double dy = (bestCRTpoint.X()-trackend.X())*(trackstart.Y()-trackend.Y())/(trackstart.X()-trackend.X());
 	    dy += trackend.Y(); dy-=bestCRTpoint.Y(); dy*=-1.0;
 	    caty->Fill(dy);
@@ -636,8 +765,17 @@ void T0recoCRTHitAna2::analyze(art::Event const & evt)
 	    dz += trackend.Z(); dz-=bestCRTpoint.Z(); dz*=-1.0;
 	    catz->Fill(dz);
 	    catzp->Fill(bestCRTpoint.Z(),dz);
+	    if  (feb1_besthit==15 ||  feb1_besthit==20 ||  feb1_besthit==46 ||  feb1_besthit==48 ||  feb1_besthit==50  ) caty1->Fill(dy);
+	    if  (feb2_besthit==15 ||  feb2_besthit==20 ||  feb2_besthit==46 ||  feb2_besthit==48 ||  feb2_besthit==50  ) caty1->Fill(dy);
+	    if  (feb1_besthit==16 ||  feb1_besthit==21 ||  feb1_besthit==47 ||  feb1_besthit==49 ||  feb1_besthit==51  ) caty3->Fill(dy);
+	    if  (feb2_besthit==16 ||  feb2_besthit==21 ||  feb2_besthit==47 ||  feb2_besthit==49 ||  feb2_besthit==51  ) caty3->Fill(dy);
+	    if  ((feb1_besthit>52 && feb1_besthit<56) || (feb2_besthit>52 && feb2_besthit<56)) caty5->Fill(dy);
+	    if  ((feb1_besthit>31 && feb1_besthit<39) || (feb2_besthit>31 && feb2_besthit<39)) catz2->Fill(dz);
+	    if  ((feb1_besthit>38 && feb1_besthit<46) || (feb2_besthit>38 && feb2_besthit<46)) catz4->Fill(dz);
+
 	  }
 	  else if (plane_besthit==1) { 
+	    hFT->Fill(bestCRTpoint.Z(),bestCRTpoint.Y());
 	    double dy = (bestCRTpoint.X()-trackend.X())*(trackstart.Y()-trackend.Y())/(trackstart.X()-trackend.X());
 	    dy += trackend.Y(); dy-=bestCRTpoint.Y(); dy*=-1.0;
 	    any->Fill(dy);
@@ -646,13 +784,22 @@ void T0recoCRTHitAna2::analyze(art::Event const & evt)
 	    anz->Fill(dz);
 	  }
 	  else if (plane_besthit==0) { 
+	    hBot->Fill(bestCRTpoint.Z(),bestCRTpoint.X());
 	    double dx = (bestCRTpoint.Y()-trackend.Y())*(trackstart.X()-trackend.X())/(trackstart.Y()-trackend.Y());
 	    dx += trackend.X(); dx-=bestCRTpoint.X(); dx*=-1.0;
 	    botx->Fill(dx);
 	    double dz = (bestCRTpoint.Y()-trackend.Y())*(trackstart.Z()-trackend.Z())/(trackstart.Y()-trackend.Y());
 	    dz += trackend.Z(); dz-=bestCRTpoint.Z(); dz*=-1.0;
 	    botz->Fill(dz);
+	    if (feb1_besthit==11 || feb2_besthit==11) botz2->Fill(dz);
+	    if (feb1_besthit==12 || feb2_besthit==12) botx2->Fill(dx);
+	    if (feb1_besthit==14 || feb1_besthit==17 || feb1_besthit==18 || feb1_besthit==19 ) botz1->Fill(dz);
+	    if (feb2_besthit==14 || feb2_besthit==17 || feb2_besthit==18 || feb2_besthit==19 ) botz1->Fill(dz);
+	    if (feb1_besthit==24 || feb1_besthit==23 || feb1_besthit==22 ) botx1->Fill(dx);
+	    if (feb2_besthit==24 || feb2_besthit==23 || feb2_besthit==22 ) botx1->Fill(dx);
 	  }
+
+
 	  }  // end if dca<matchcut
 	  else hDistNone->Fill(100.);
 	  //
@@ -708,29 +855,61 @@ void T0recoCRTHitAna2::beginJob()
   dca2->GetXaxis()->SetTitle("distance (cm)");
   dca3 = tfs->make<TH1F>("dca3","dca3",200,0.,200.);
   dca3->GetXaxis()->SetTitle("distance (cm)");
+  dla0 = tfs->make<TH1F>("dla0","dla0",200,0.,800.); 
+  dla0->GetXaxis()->SetTitle("distance (cm)");
+  dla1 =tfs->make<TH1F>("dla1","dla1",200,0.,800.);
+  dla1->GetXaxis()->SetTitle("distance (cm)");
+  dla2 = tfs->make<TH1F>("dla2","dla2",200,0.,800.);
+  dla2->GetXaxis()->SetTitle("distance (cm)");
+  dla3 = tfs->make<TH1F>("dla3","dla3",200,0.,2000.);
+  dla3->GetXaxis()->SetTitle("distance (cm)");
+  dcn0 = tfs->make<TH1F>("dcn0","dca/el",200,0.,40.); 
+  dcn0->GetXaxis()->SetTitle("distance (cm)");
+  dcn1 =tfs->make<TH1F>("dcn1","dca/el",200,0.,40.);
+  dcn1->GetXaxis()->SetTitle("distance (cm)");
+  dcn2 = tfs->make<TH1F>("dcn2","dca/el",200,0.,40.);
+  dcn2->GetXaxis()->SetTitle("dca/el");
+  dcn3 = tfs->make<TH1F>("dcn3","dcn3",200,0.,40.);
+  dcn3->GetXaxis()->SetTitle("distance (cm)");
   dcab = tfs->make<TH1F>("dcab","dcab",200,0.,200.);
   dcab->GetXaxis()->SetTitle("distance (cm)");
-  botx = tfs->make<TH1F>("botx","botx",200,-200.,200.);
+  botx = tfs->make<TH1F>("botx","botx",200,-100.,100.);
   botx->GetXaxis()->SetTitle("x separation track projection and CRT hit (cm)");
-  botz = tfs->make<TH1F>("botz","botz",200,-200.,200.);
+  botz = tfs->make<TH1F>("botz","botz",200,-100.,100.);
   botz->GetXaxis()->SetTitle("z separation track projection and CRT hit (cm)");
-  any = tfs->make<TH1F>("any","any",200,-200.,200.);
+  botx1 = tfs->make<TH1F>("botx1","botx1",200,-100.,100.);
+  botx1->GetXaxis()->SetTitle("x separation track projection and CRT hit (cm)");
+  botz1 = tfs->make<TH1F>("botz1","botz1",200,-100.,100.);
+  botz1->GetXaxis()->SetTitle("z separation track projection and CRT hit (cm)");
+  botx2 = tfs->make<TH1F>("botx2","botx2",200,-100.,100.);
+  botx2->GetXaxis()->SetTitle("x separation track projection and CRT hit (cm)");
+  botz2 = tfs->make<TH1F>("botz2","botz2",200,-100.,100.);
+  botz2->GetXaxis()->SetTitle("z separation track projection and CRT hit (cm)");
+  any = tfs->make<TH1F>("any","any",200,-100.,100.);
   any->GetXaxis()->SetTitle("y separation track projection and CRT hit (cm)");
-  anz = tfs->make<TH1F>("anz","anz",200,-200.,200.);
+  anz = tfs->make<TH1F>("anz","anz",200,-100.,100.);
   anz->GetXaxis()->SetTitle("z separation track projection and CRT hit (cm)");
-  caty = tfs->make<TH1F>("caty","caty",200,-200.,200.);
+  caty = tfs->make<TH1F>("caty","caty",200,-100.,100.);
   caty->GetXaxis()->SetTitle("y separation track projection and CRT hit (cm)");
-  catz = tfs->make<TH1F>("catz","catz",200,-200.,200.);
+  catz = tfs->make<TH1F>("catz","catz",200,-100.,100.);
   catz->GetXaxis()->SetTitle("z separation track projection and CRT hit (cm)");
-  catyp = tfs->make<TProfile>("catyp","catyp",100,-300.,300.,-200.,200.,"s");
+  catyp = tfs->make<TProfile>("catyp","catyp",100,-300.,300.,-200.,200.);
   catyp->GetXaxis()->SetTitle("y of CRT hit (cm)");
   catyp->GetYaxis()->SetTitle("y different hit-track");
-  catzp = tfs->make<TProfile>("catzp","catzp",175,-200.,1200.,-200.,200.,"s");
+  catzp = tfs->make<TProfile>("catzp","catzp",50,-200.,1200.,-200.,200.);
   catzp->GetXaxis()->SetTitle("z of CRT hit (cm)");
   catzp->GetYaxis()->SetTitle("z different hit-track");
-  topx = tfs->make<TH1F>("topx","topx",200,-200.,200.);
+  topx11 = tfs->make<TH1F>("topx11","topx11",200,-100.,100.);
+  topx11->GetXaxis()->SetTitle("x separation track projection and CRT hit (cm)");
+  topx22 = tfs->make<TH1F>("topx22","topx22",200,-100.,100.);
+  topx22->GetXaxis()->SetTitle("x separation track projection and CRT hit (cm)");
+  topx33 = tfs->make<TH1F>("topx33","topx33",200,-100.,100.);
+  topx33->GetXaxis()->SetTitle("x separation track projection and CRT hit (cm)");
+  topx44 = tfs->make<TH1F>("topx44","topx44",200,-100.,100.);
+  topx44->GetXaxis()->SetTitle("x separation track projection and CRT hit (cm)");
+  topx = tfs->make<TH1F>("topx","topx",200,-100.,100.);
   topx->GetXaxis()->SetTitle("x separation track projection and CRT hit (cm)");
-  topz = tfs->make<TH1F>("topz","topz",200,-200.,200.);
+  topz = tfs->make<TH1F>("topz","topz",200,-100.,100.);
   topz->GetXaxis()->SetTitle("z separation track projection and CRT hit (cm)");
   topxc = tfs->make<TH1F>("topxc","topxc",100,-300.,600.);
   topxc->GetXaxis()->SetTitle("x of matched CRT hits (cm)");
@@ -739,15 +918,25 @@ void T0recoCRTHitAna2::beginJob()
   topx2 = tfs->make<TH2F>("topx2","topx2",100,-300,600,50,-200,200);
   topx2->GetXaxis()->SetTitle("x of CRT hit (cm)");
   topx2->GetYaxis()->SetTitle("x different hit-track");
-  topz2 = tfs->make<TH2F>("topz2","topz2",175,-200,1200,50,-200,200);
+  topz2 = tfs->make<TH2F>("topz2","topz2",100,-200,1200,50,-200,200);
   topz2->GetXaxis()->SetTitle("z of CRT hit (cm)");
   topz2->GetYaxis()->SetTitle("z different hit-track");
-  topxp = tfs->make<TProfile>("topxp","topxp",100,-300.,600.,-200.,200.,"s");
+  topxp = tfs->make<TProfile>("topxp","topxp",100,-300.,600.,-200.,200.);
   topxp->GetXaxis()->SetTitle("x of CRT hit (cm)");
   topxp->GetYaxis()->SetTitle("x different hit-track");
-  topzp = tfs->make<TProfile>("topzp","topzp",175,-200.,1200.,-200.,200.,"s");
+  topzp = tfs->make<TProfile>("topzp","topzp",100,-200.,1200.,-200.,200.);
   topzp->GetXaxis()->SetTitle("z of CRT hit (cm)");
   topzp->GetYaxis()->SetTitle("z different hit-track");
+  caty1 = tfs->make<TH1F>("caty1","caty1",200,-100.,100.);
+  caty1->GetXaxis()->SetTitle("y separation track projection and CRT hit (cm)");
+  catz2 = tfs->make<TH1F>("catz2","catz2",200,-100.,100.);
+  catz2->GetXaxis()->SetTitle("z separation track projection and CRT hit (cm)");
+  caty3 = tfs->make<TH1F>("caty3","caty3",200,-100.,100.);
+  caty3->GetXaxis()->SetTitle("y separation track projection and CRT hit (cm)");
+  catz4 = tfs->make<TH1F>("catz4","catz4",200,-100.,100.);
+  catz4->GetXaxis()->SetTitle("z separation track projection and CRT hit (cm)");
+  caty5 = tfs->make<TH1F>("caty5","caty5",200,-100.,100.);
+  caty5->GetXaxis()->SetTitle("y separation track projection and CRT hit (cm)");
   //
   pe = tfs->make<TH1F>("pe","pe",100,0.,500.);
   pe->GetXaxis()->SetTitle("hit pe");
@@ -761,6 +950,57 @@ void T0recoCRTHitAna2::beginJob()
   pefull->GetYaxis()->SetTitle("hit pe");
   inang = tfs->make<TH1F>("inang","inang",100,0.,1.571);
   inang->GetXaxis()->SetTitle("incident angle of track (rad)");
+  //
+  topz109 = tfs->make<TH1F>("topz109","topz109",50,-100,100);
+  topz105 = tfs->make<TH1F>("topz105","topz105",50,-100,100);
+  topz106 = tfs->make<TH1F>("topz106","topz106",50,-100,100);
+  topz107 = tfs->make<TH1F>("topz107","topz107",50,-100,100);
+  topz108 = tfs->make<TH1F>("topz108","topz108",50,-100,100);
+  topz112 = tfs->make<TH1F>("topz112","topz112",50,-100,100);
+  topz111 = tfs->make<TH1F>("topz111","topz111",50,-100,100);
+  topz128 = tfs->make<TH1F>("topz128","topz128",50,-100,100);
+  topz126 = tfs->make<TH1F>("topz126","topz126",50,-100,100);
+  topz125 = tfs->make<TH1F>("topz125","topz125",50,-100,100);
+  topz195 = tfs->make<TH1F>("topz195","topz195",50,-100,100);
+  topz123 = tfs->make<TH1F>("topz123","topz123",50,-100,100);
+  topz124 = tfs->make<TH1F>("topz124","topz124",50,-100,100);
+  topx113 = tfs->make<TH1F>("topx113","topx113",50,-100,100);
+  topx114 = tfs->make<TH1F>("topx114","topx114",50,-100,100);
+  topx115 = tfs->make<TH1F>("topx115","topx115",50,-100,100);
+  topx116 = tfs->make<TH1F>("topx116","topx116",50,-100,100);
+  topx117 = tfs->make<TH1F>("topx117","topx117",50,-100,100);
+  topx118 = tfs->make<TH1F>("topx118","topx118",50,-100,100);
+  topx119 = tfs->make<TH1F>("topx119","topx119",50,-100,100);
+  topx120 = tfs->make<TH1F>("topx120","topx120",50,-100,100);
+  topx121 = tfs->make<TH1F>("topx121","topx121",50,-100,100);
+  topx129 = tfs->make<TH1F>("topx129","topx129",50,-100,100);
+  topx127 = tfs->make<TH1F>("topx127","topx127",50,-100,100);
+  //
+  top2z109 = tfs->make<TH2F>("top2z109","top2z109",50,-100,100,50,900,1200);
+  top2z105 = tfs->make<TH2F>("top2z105","top2z105",50,-100,100,50,750,1000);
+  top2z106 = tfs->make<TH2F>("top2z106","top2z106",50,-100,100,50,500,850);
+  top2z107 = tfs->make<TH2F>("top2z107","top2z107",50,-100,100,50,400,600);
+  top2z108 = tfs->make<TH2F>("top2z108","top2z108",50,-100,100,50,400,600);
+  top2z112 = tfs->make<TH2F>("top2z112","top2z112",50,-100,100,50,160,450);
+  top2z111 = tfs->make<TH2F>("top2z111","top2z111",50,-100,100,50,-20,250);
+  top2z128 = tfs->make<TH2F>("top2z128","top2z128",50,-100,100,50,-170,70);
+  top2z126 = tfs->make<TH2F>("top2z126","top2z126",50,-100,100,50,-20,250);
+  top2z125 = tfs->make<TH2F>("top2z125","top2z125",50,-100,100,50,160,450);
+  top2z195 = tfs->make<TH2F>("top2z195","top2z195",50,-100,100,50,900,1200);
+  top2z123 = tfs->make<TH2F>("top2z123","top2z123",50,-100,100,50,750,1000);
+  top2z124 = tfs->make<TH2F>("top2z124","top2z124",50,-100,100,50,500,850);
+  top2x113 = tfs->make<TH2F>("top2x113","top2x113",50,-100,100,50,-260,0);
+  top2x114 = tfs->make<TH2F>("top2x114","top2x114",50,-100,100,50,-100,200);
+  top2x115 = tfs->make<TH2F>("top2x115","top2x115",50,-100,100,50,100,350);
+  top2x116 = tfs->make<TH2F>("top2x116","top2x116",50,-100,100,50,-260,0);
+  top2x117 = tfs->make<TH2F>("top2x117","top2x117",50,-100,100,50,-100,200);
+  top2x118 = tfs->make<TH2F>("top2x118","top2x118",50,-100,100,50,100,350);
+  top2x119 = tfs->make<TH2F>("top2x119","top2x119",50,-100,100,50,-100,200);
+  top2x120 = tfs->make<TH2F>("top2x120","top2x120",50,-100,100,50,100,350);
+  top2x121 = tfs->make<TH2F>("top2x121","top2x121",50,-100,100,50,300,520);
+  top2x129 = tfs->make<TH2F>("top2x129","top2x129",50,-100,100,50,100,350);
+  top2x127 = tfs->make<TH2F>("top2x127","top2x127",50,-100,100,50,300,520);
+
 
   /*
   hThetaAll = tfs->make<TH1F>("hThetaAll","hThetaAll",100,0.,3.1416);
@@ -946,32 +1186,34 @@ void T0recoCRTHitAna2::beginJob()
   hYdiff = tfs->make<TH1F>("hYdiff","hYdiff",100,-500,500);
   hYdiff->GetXaxis()->SetTitle("YTrack - YFlash (cm)");
   hYdiff->GetYaxis()->SetTitle("Entries/bin");
- 
+    */ 
+
   double inch =2.54; //inch in cm
   hBot = tfs->make<TH2F>("hBottom","Bottom",125,-700+205*inch,-700+205*inch+125*10.89,60,-300+50.4*inch,-300+50.4*inch+60*10.89);
-  hBot->GetXaxis()->SetTitle("Lenght along the beam (cm)");
-  hBot->GetYaxis()->SetTitle("Lenght along the drift (cm)");
+  hBot->GetXaxis()->SetTitle("Length along the beam (cm)");
+  hBot->GetYaxis()->SetTitle("Length along the drift (cm)");
   hBot->GetZaxis()->SetTitle("Entries/bin");
   hBot->SetOption("COLZ");
 
   hFT = tfs->make<TH2F>("hFeedthroughSide","Feedthrough Side",125,-704+205*inch,-704+205*inch+125*10.89,60,-308-19.1*inch,-308-19.1*inch+60*10.89);
-  hFT->GetXaxis()->SetTitle("Lenght along the beam (cm)");
+  hFT->GetXaxis()->SetTitle("Length along the beam (cm)");
   hFT->GetYaxis()->SetTitle("Height (cm)");
   hFT->GetZaxis()->SetTitle("Entries/bin");
   hFT->SetOption("COLZ");
 
   hPipe = tfs->make<TH2F>("hPipeSide","Pipe Side",125,-704+205*inch,-704+205*inch+125*10.89,60,-294-19.1*inch,-294-19.1*inch+60*10.89);
-  hPipe->GetXaxis()->SetTitle("Lenght along the beam (cm)");
+  hPipe->GetXaxis()->SetTitle("Length along the beam (cm)");
   hPipe->GetYaxis()->SetTitle("Height (cm)");
   hPipe->GetZaxis()->SetTitle("Entries/bin");
   hPipe->SetOption("COLZ");
 
   hTop = tfs->make<TH2F>("hTop","Top",125,-701+205*inch,-701+205*inch+125*11.38,80,2-170-300+50.4*inch,2-170-300+50.4*inch+80*11.38);
-  hTop->GetXaxis()->SetTitle("Lenght along the beam (cm)");
-  hTop->GetYaxis()->SetTitle("Lenght along the drift (cm)"); 
+  hTop->GetXaxis()->SetTitle("Length along the beam (cm)");
+  hTop->GetYaxis()->SetTitle("Length along the drift (cm)"); 
   hTop->GetZaxis()->SetTitle("Entries/bin"); 
   hTop->SetOption("COLZ");
 
+  /*
 
   hTFvsTT = tfs->make<TH1F>("hTFvsTT","hTFvsTT",1000000,0,10000000);//1ms max
   hTFvsTT->GetXaxis()->SetTitle("Track time - Flash time (ns)");

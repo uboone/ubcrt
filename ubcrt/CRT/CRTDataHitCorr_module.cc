@@ -103,6 +103,7 @@ namespace crt{
     // art::InputTag fTPCtrackLabel;         ///< name of flash producer
 
     //alignment params
+			   bool fCorrectAlignment;
   float fAlignBotX;
   float fAlignBotY;
   float fAlignBotZ;
@@ -118,7 +119,6 @@ namespace crt{
 			   //
     bool          fVerbose;             ///< print info
    
-
   }; // class CRTDataHitCorr
     
   CRTDataHitCorr::CRTDataHitCorr(fhicl::ParameterSet const & p)
@@ -136,8 +136,9 @@ namespace crt{
   {
     fCrtHitsIn_Label1       = (p.get<art::InputTag> ("CrtHitsIn_Label1","merger")); 
     fCrtHitsIn_Label2       = (p.get<art::InputTag> ("CrtHitsIn_Label2","remerge")); 
-    fNumberCollections      = (p.get<int> ("NumberCollections",2));
+    fNumberCollections      = (p.get<int> ("NumberCollections",1));
     //alignment params
+    fCorrectAlignment       = (p.get<bool> ("CorrectAlignment",true));
 			       fAlignBotX = (p.get<float>("AlignBotX",0.0));
 			       fAlignBotY = (p.get<float>("AlignBotY",0.0));
 			       fAlignBotZ = (p.get<float>("AlignBotZ",0.0));
@@ -234,31 +235,30 @@ namespace crt{
       float pestot = thisCrtHit.peshit;      
 
       int iKeepMe = 1;
-      std::vector<std::pair<int,float>> test = tpesmap.find(tfeb_id[0])->second; 
-      if (test.size()==32)  { // this is data
-	    
-      } // if this is a data hit
+      // std::vector<std::pair<int,float>> test = tpesmap.find(tfeb_id[0])->second; 
+      // if (test.size()==32)  { // this is data	    
+      // } // if this is a data hit
       if (iKeepMe) {
+	int feb1=thisCrtHit.feb_id[0];
+	int feb2=thisCrtHit.feb_id[1];
 	// apply alignment offsets
-	if (plane==3) {
-	  x+=fAlignTopX;
-	  y+=fAlignTopY;
-	  z+=fAlignTopZ;
-	}
-	else if (plane==2) {
-	  x+=fAlignCathX;
-	  y+=fAlignCathY;
-	  z+=fAlignCathZ;
-	}
-	else if (plane==1) {
-	  x+=fAlignAnodeX;
-	  y+=fAlignAnodeY;
-	  z+=fAlignAnodeZ;
-	}
-	else if (plane==0) {
-	  x+=fAlignBotX;
-	  y+=fAlignBotY;
-	  z+=fAlignBotZ;
+	if (fCorrectAlignment) {
+	  if (plane==3) {x+=12.1;  y-=40.0;  z-=31.1;}
+	  else if (plane==2) {
+	    if  (feb1==15 ||  feb1==20 ||  feb1==46 ||  feb1==48 ||  feb1==50  ) y-=5.0;
+	    if  (feb2==15 ||  feb2==20 ||  feb2==46 ||  feb2==48 ||  feb2==50  ) y-=5.0;
+	    if  (feb1==16 ||  feb1==21 ||  feb1==47 ||  feb1==49 ||  feb1==51  ) y+=3.0;
+	    if  (feb2==16 ||  feb2==21 ||  feb2==47 ||  feb2==49 ||  feb2==51  ) y+=3.0;
+	    if  ((feb1>52 && feb1<56) || (feb2>52 && feb2<56)) y-=17.1;
+	    if ((feb1>31 && feb1<39) || (feb2>31 && feb2<39) ) z+=5.2;
+	    if ((feb1>38 && feb1<46) || (feb2>38 && feb2<46) ) z-=5.5;
+	  }
+	  else if (plane==1) {	  y+=20.7; z+=5.7;}
+	  else if (plane==0) {
+	    x-=4.4; 	  z+=32.8;
+	    if (feb1==11 || feb2==11) z-=10.4;
+	    if (feb1==12 || feb2==12) x-=4.9;
+	  }
 	}
 		
 	// Create a corrected CRT hit
