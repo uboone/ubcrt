@@ -96,6 +96,7 @@ private:
   int fTimeZeroOffset;
   int fTimeSelect;
   int fMatchCut;
+  int fMatchCutTop;
   float fDriftVel;
   bool fverbose;
   //alignment params
@@ -291,7 +292,8 @@ T0recoCRTHitAna2::T0recoCRTHitAna2(fhicl::ParameterSet const & p)
     fHardDelay(p.get<int>("HardDelay",40000)),
     fTimeZeroOffset(p.get<int>("TimeZeroOffset",69000)),
     fTimeSelect(p.get<int>("TimeSelect",0)),
-    fMatchCut(p.get<int>("MatchCut",40)),
+    fMatchCut(p.get<int>("MatchCut",25)),
+    fMatchCutTop(p.get<int>("MatchCutTop",40)),
     fDriftVel(p.get<float>("DriftVel",0.111436)),   // cm/us
     fverbose(p.get<bool>("verbose",false)),
     fAlignBotX(p.get<float>("AlignBotX",0.0)),
@@ -593,8 +595,10 @@ void T0recoCRTHitAna2::analyze(art::Event const & evt)
 		    newStartP.SetX(startP.X()-xshift); newEndP.SetX(endP.X()-xshift);
 		  }
 
+		    
 		  TVector3 trackstart(newStartP.X(),newStartP.Y(),newStartP.Z());
 		  TVector3 trackend(newEndP.X(),newEndP.Y(),newEndP.Z());
+
 		  
 		  // calculate the distance of closest approach (DCA) of track to CRT hit
 		  TVector3 denom = trackend-trackstart;
@@ -686,7 +690,7 @@ void T0recoCRTHitAna2::analyze(art::Event const & evt)
 
 
 
-	  if (dist_besthit<fMatchCut) {
+	  if ((dist_besthit<fMatchCut) || (dist_besthit<fMatchCutTop && plane_besthit==3)) {
 
 	  // angle between track extrap and CRT plane
 	  TVector3 trackdir = trackstart-trackend;

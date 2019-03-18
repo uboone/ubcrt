@@ -190,6 +190,7 @@ namespace crt{
       float pestot = thisCrtHit.peshit;      
 
       int iKeepMe = 1;
+      // only change/remove MC hits
       std::vector<std::pair<int,float>> test = tpesmap.find(tfeb_id[0])->second; 
       if (test.size()==2)  { // this is simulation
 	//  apply corrections to fix bug in simulation

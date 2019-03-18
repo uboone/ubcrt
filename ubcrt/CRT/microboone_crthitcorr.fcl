@@ -5,10 +5,9 @@ crtdatahitcorr:
     module_type: CRTDataHitCorr
     CrtHitsIn_Label1: "remerge"
     CrtHitsIn_Label2: "remergeextra"
-    NumberCollections:  1  // only combine label1 and label2
-# alignment offsets for CRT planes in cm, default is 0.0 for all
-    CorrecrAlignmnet: true
-#Option to increase threshold
+    NumberCollections:  2  # if =2 then combine hit collections in label1 and label2
+    Plane3Only_Coll2: true  # if false, use all hits from collection2. IF true, use only plane 3 hits
+    CorrectAlignment: true
     HitThreshold:    0.0   # threshold in PE applied to the total of 4 SiPMs in hit
     StripThreshold:  0.0    # threshold in PE applied to the total of 2 SiPMs in a strip
     SiPMThreshold:   0.0    # threshold in PE applied to the individual SiPMs 
