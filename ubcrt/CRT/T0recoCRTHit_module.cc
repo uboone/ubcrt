@@ -184,7 +184,7 @@ T0recoCRTHit::T0recoCRTHit(fhicl::ParameterSet const & p)
     fTimeSelect(p.get<int>("TimeSelect",0)),
     fMatchCutTop(p.get<int>("MatchCutTop",50)),
     fMatchCut(p.get<int>("MatchCut",25)),
-    fDriftVel(p.get<float>("DriftVel",0.11436)),   // cm/us
+    fDriftVel(p.get<float>("DriftVel",0.111436)),   // cm/us
     fverbose(p.get<bool>("verbose",false)),
     fAlignBotX(p.get<float>("AlignBotX",0.0)),
     fAlignBotY(p.get<float>("AlignBotY",0.0)),
