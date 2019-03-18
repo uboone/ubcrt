@@ -96,26 +96,32 @@ namespace crt{
     art::InputTag fCrtHitsIn_Label1;      ///< name of crt producer
     art::InputTag fCrtHitsIn_Label2;      ///< name of crt producer
     int fNumberCollections;
+			   bool fPlane3Only_Coll2;
 
     //for later
     // bool fChoose;
     // art::InputTag fPMTflashLabel;         ///< name of flash producer
     // art::InputTag fTPCtrackLabel;         ///< name of flash producer
 
+			   //Option to apply higher threshold
+    float fHitThreshold;
+    float fStripThreshold;
+    float fSiPMThreshold;
+
     //alignment params
 			   bool fCorrectAlignment;
-  float fAlignBotX;
-  float fAlignBotY;
-  float fAlignBotZ;
-  float fAlignAnodeX;
-  float fAlignAnodeY;
-  float fAlignAnodeZ;
-  float fAlignCathX;
-  float fAlignCathY;
-  float fAlignCathZ;
-  float fAlignTopX;
-  float fAlignTopY;
-  float fAlignTopZ;
+			   float fAlignBotX;
+			   float fAlignBotY;
+			   float fAlignBotZ;
+			   float fAlignAnodeX;
+			   float fAlignAnodeY;
+			   float fAlignAnodeZ;
+			   float fAlignCathX;
+			   float fAlignCathY;
+			   float fAlignCathZ;
+			   float fAlignTopX;
+			   float fAlignTopY;
+			   float fAlignTopZ;
 			   //
     bool          fVerbose;             ///< print info
    
@@ -137,6 +143,11 @@ namespace crt{
     fCrtHitsIn_Label1       = (p.get<art::InputTag> ("CrtHitsIn_Label1","merger")); 
     fCrtHitsIn_Label2       = (p.get<art::InputTag> ("CrtHitsIn_Label2","remerge")); 
     fNumberCollections      = (p.get<int> ("NumberCollections",1));
+    fPlane3Only_Coll2 = (p.get<bool> ("Plane3Only_Coll2",true));
+    //
+    fHitThreshold           = (p.get<float>("HitThreshold",0.0));
+    fStripThreshold           = (p.get<float>("StripThreshold",0.0));
+    fSiPMThreshold           = (p.get<float>("SiPMThreshold",0.0));
     //alignment params
     fCorrectAlignment       = (p.get<bool> ("CorrectAlignment",true));
 			       fAlignBotX = (p.get<float>("AlignBotX",0.0));
@@ -208,7 +219,12 @@ namespace crt{
       std::cout << " Skipping this CRT hit collection " << std::endl;
     }
     std::vector<crt::CRTHit> const& crtHitInList2(*crtHitsInHandle);
-    crtHitInList.insert(crtHitInList.end(), crtHitInList2.begin(), crtHitInList2.end());
+    if (fPlane3Only_Coll2) {
+      for (size_t i = 0; i < crtHitInList2.size(); i++){
+	if (crtHitInList2[i].plane==3)  crtHitInList.insert(crtHitInList.end(), crtHitInList2[i]);
+      }
+    }
+    else     crtHitInList.insert(crtHitInList.end(), crtHitInList2.begin(), crtHitInList2.end());
     if(fVerbose) std::cout<<"Number of CRT hits read in= "<<crtHitInList.size()<< " after second collection" << std::endl;
     }
 
@@ -235,9 +251,52 @@ namespace crt{
       float pestot = thisCrtHit.peshit;      
 
       int iKeepMe = 1;
-      // std::vector<std::pair<int,float>> test = tpesmap.find(tfeb_id[0])->second; 
-      // if (test.size()==32)  { // this is data	    
-      // } // if this is a data hit
+
+      // only change/remove data hits
+      std::vector<std::pair<int,float>> test = tpesmap.find(tfeb_id[0])->second; 
+      if (test.size()==32)  { // this is data	    
+	
+	// apply hit threshold
+	if (pestot<fHitThreshold) iKeepMe=0;
+
+	// apply strip and sipm threshold
+	std::vector<std::pair<int,float>> pes1 = tpesmap.find(tfeb_id[0])->second; 
+	std::vector<std::pair<int,float>> pes2 = tpesmap.find(tfeb_id[1])->second; 
+	std::pair<int,float> ind_pes1,ind_pes2,ind2_pes1,ind2_pes2;
+	float pmax1=0.0; float pmax2=0.0;
+	// use the max recorded sipm signal on this feb for this hit.  Not perfect.
+	for (int ii=0;ii<32;ii+=2){ 
+	  std::pair<int,float> ind_pesa=pes1[ii];  
+	  std::pair<int,float> ind_pesb=pes1[ii+1];
+	  if (ind_pesa.second+ind_pesb.second>pmax1) {
+	    ind_pes1=ind_pesa; ind_pes2=ind_pesb;
+	    pmax1=ind_pesa.second+ind_pesb.second;	    
+	  }
+	  ind_pesa=pes2[ii];  
+	  ind_pesb=pes2[ii+1];
+	  if ((ind_pesa.second+ind_pesb.second)>pmax2) {
+	    ind2_pes1=ind_pesa; ind2_pes2=ind_pesb;
+	    pmax2=ind_pesa.second+ind_pesb.second;	    
+	  }
+	}
+
+	float tot1 = ind_pes1.second+ind_pes2.second;
+	float tot2 = ind2_pes1.second+ind2_pes2.second;
+	
+	// issue here reconstructing exactly the report peshit for the hit.  Ignore for now
+	/*
+	float pdiff = (tot1+tot2-pestot);  
+	if (fabs(pdiff)>1) { std::cout << "double hit in this feb " << pestot<< " "  << tot1 << " " << tot2 << std::endl;
+	for (int ii=0;ii<32;ii+=2)
+	  std::cout << ii << " " << pes1[ii].second << " " << pes1[ii+1].second << std::endl;
+	for (int ii=0;ii<32;ii+=2)
+	  std::cout << ii << " " << pes2[ii].second << " " << pes2[ii+1].second << std::endl;
+	}
+	*/
+	if ( tot2<fStripThreshold || tot1<fStripThreshold ) iKeepMe=0;
+	if (ind2_pes1.second < fSiPMThreshold || ind2_pes2.second<fSiPMThreshold) iKeepMe=0;
+	if (ind_pes1.second < fSiPMThreshold || ind_pes2.second<fSiPMThreshold ) iKeepMe=0;
+
       if (iKeepMe) {
 	int feb1=thisCrtHit.feb_id[0];
 	int feb2=thisCrtHit.feb_id[1];
@@ -246,10 +305,11 @@ namespace crt{
 	  if (plane==3) {x+=12.1;  y-=40.0;  z-=31.1;}
 	  else if (plane==2) {
 	    if  (feb1==15 ||  feb1==20 ||  feb1==46 ||  feb1==48 ||  feb1==50  ) y-=5.0;
+
 	    if  (feb2==15 ||  feb2==20 ||  feb2==46 ||  feb2==48 ||  feb2==50  ) y-=5.0;
-	    if  (feb1==16 ||  feb1==21 ||  feb1==47 ||  feb1==49 ||  feb1==51  ) y+=3.0;
-	    if  (feb2==16 ||  feb2==21 ||  feb2==47 ||  feb2==49 ||  feb2==51  ) y+=3.0;
-	    if  ((feb1>52 && feb1<56) || (feb2>52 && feb2<56)) y-=17.1;
+	    if  (feb1==16 ||  feb1==21 ||  feb1==47 ||  feb1==49 ||  feb1==51  ) y-=9.0;
+	    if  (feb2==16 ||  feb2==21 ||  feb2==47 ||  feb2==49 ||  feb2==51  ) y-=9.0;
+	    if  ((feb1>52 && feb1<56) || (feb2>52 && feb2<56)) y-=6.2;
 	    if ((feb1>31 && feb1<39) || (feb2>31 && feb2<39) ) z+=5.2;
 	    if ((feb1>38 && feb1<46) || (feb2>38 && feb2<46) ) z-=5.5;
 	  }
@@ -260,7 +320,9 @@ namespace crt{
 	    if (feb1==12 || feb2==12) x-=4.9;
 	  }
 	}
-		
+       } 
+      }	// if this is a data hit	
+      if (iKeepMe) {
 	// Create a corrected CRT hit
 	crt::CRTHit crtHit = FillCrtHit(tfeb_id, tpesmap, pestot, time1,  time2,  time3,  time4,  time5, 
 					plane, x, ex,y,ey,z,ez );

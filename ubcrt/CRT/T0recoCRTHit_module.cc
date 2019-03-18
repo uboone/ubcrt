@@ -31,6 +31,8 @@
 #include "canvas/Persistency/Provenance/ProductID.h"
 #include "art/Persistency/Common/PtrMaker.h"
 
+#include "larevt/SpaceCharge/SpaceCharge.h"
+#include "larevt/SpaceChargeServices/SpaceChargeService.h"
 #include "ubobj/CRT/CRTHit.hh"
 #include "ubobj/CRT/CRTTzero.hh"
 #include "ubobj/RawData/DAQHeaderTimeUBooNE.h"
@@ -87,6 +89,7 @@ private:
   int fHardDelay;
   int fTimeZeroOffset;
   int fTimeSelect;
+  int fMatchCutTop;
   int fMatchCut;
   float fDriftVel;
   bool fstoreAssn;
@@ -181,7 +184,8 @@ T0recoCRTHit::T0recoCRTHit(fhicl::ParameterSet const & p)
     fHardDelay(p.get<int>("HardDelay",40000)),
     fTimeZeroOffset(p.get<int>("TimeZeroOffset",60000)),
     fTimeSelect(p.get<int>("TimeSelect",0)),
-    fMatchCut(p.get<int>("MatchCut",40)),
+    fMatchCutTop(p.get<int>("MatchCutTop",50)),
+    fMatchCut(p.get<int>("MatchCut",25)),
     fDriftVel(p.get<float>("DriftVel",0.11436)),   // cm/us
     fstoreAssn(p.get<bool>("storeAssn",true)),
     fverbose(p.get<bool>("verbose",false)),
@@ -371,6 +375,10 @@ void T0recoCRTHit::produce(art::Event & evt)
   } // loop over flashes
    
   
+// Set up space charge map
+  //Spacecharge services provider 
+  auto const* sce = lar::providerFrom<spacecharge::SpaceChargeService>();
+   
   double const vdrift = fDriftVel*0.001;  // in cm/ns
   // const detinfo::DetectorProperties *_detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
   // double const vdrift =  _detprop->DriftVelocity();  
@@ -433,7 +441,8 @@ void T0recoCRTHit::produce(art::Event & evt)
 		  double crt_y=hitlist[ah]->y_pos;
 		  double crt_z=hitlist[ah]->z_pos;
 		  
-		  int crt_plane = (hitlist[ah]->plane)%10;
+		  //		  int crt_plane = (hitlist[ah]->plane)%10;
+		  /*
 		  if (crt_plane==0) {
 		    crt_x+=fAlignBotX;
 		    crt_y+=fAlignBotY;
@@ -454,6 +463,7 @@ void T0recoCRTHit::produce(art::Event & evt)
 		    crt_y+=fAlignTopY;
 		    crt_z+=fAlignTopZ;
 		  }
+		  */
 		  TVector3 CRTpoint(crt_x,crt_y,crt_z);
 		  
 		  //calculate track shift in x for the time  of this CRT hit
@@ -462,8 +472,28 @@ void T0recoCRTHit::produce(art::Event & evt)
 		  else //fTimeSelect_==1 for BNB data
 		    xshift = ((double)(hitlist[ah]->ts1_ns) + fHardDelay)*vdrift;	      
 		  
-		  TVector3 trackstart(startP.X()-xshift,startP.Y(),startP.Z());
-		  TVector3 trackend(endP.X()-xshift,endP.Y(),endP.Z());
+		  //  Correct start and end point for space charge with this tzero
+		  geo::Point_t newStartP = startP; geo::Point_t newEndP = endP;
+		  if(sce->EnableCalSpatialSCE()) {
+		    geo::Point_t fTrackPos = startP;  fTrackPos.SetX(startP.X()-xshift);
+		    geo::Vector_t fPosOffsets = sce->GetCalPosOffsets(geo::Point_t{fTrackPos.X(),fTrackPos.Y(),fTrackPos.Z()});
+		    newStartP = geo::Point_t{fTrackPos.X() - fPosOffsets.X(), fTrackPos.Y() + fPosOffsets.Y(), 
+							  fTrackPos.Z() + fPosOffsets.Z()};
+		    // std::cout << fPosOffsets.X() << " " <<   fPosOffsets.Y() << " " <<  fPosOffsets.Z() << std::endl;
+		    
+		    fTrackPos = endP;  fTrackPos.SetX(endP.X()-xshift);
+		    fPosOffsets = sce->GetCalPosOffsets(geo::Point_t{fTrackPos.X(),fTrackPos.Y(),fTrackPos.Z()});
+		    newEndP = geo::Point_t{fTrackPos.X() - fPosOffsets.X(), fTrackPos.Y() + fPosOffsets.Y(), 
+							fTrackPos.Z() + fPosOffsets.Z()};
+		    
+		    // std::cout << fPosOffsets.X() << " " <<   fPosOffsets.Y() << " " <<  fPosOffsets.Z() << std::endl;
+		  }
+		  else {
+		    newStartP.SetX(startP.X()-xshift); newEndP.SetX(endP.X()-xshift);
+		  }
+
+		  TVector3 trackstart(newStartP.X(),newStartP.Y(),newStartP.Z());
+		  TVector3 trackend(newEndP.X(),newEndP.Y(),newEndP.Z());
 		  
 		  // calculate the distance of closest approach (DCA) of track to CRT hit
 		  TVector3 denom = trackend-trackstart;
@@ -513,7 +543,7 @@ void T0recoCRTHit::produce(art::Event & evt)
 	    if ((trackstart.X()>255 && trackstart.X()<268)  || (trackend.X()>255 && trackend.X()<268) )
 	      hDistCa->Fill(dist_besthit); 
 	  }	  
-	  if (dist_besthit<fMatchCut) {
+	  if ((dist_besthit<fMatchCut) || (dist_besthit<fMatchCutTop && plane_besthit==3)) {
 	    //	    double dT =0.0;
 	    // args are (time, triggertype, triggerbits, ?, trigger confidence)
 	    anab::T0 thist0(0.001*time_besthit, 2, 1, 1, dist_besthit);
