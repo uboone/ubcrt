@@ -20,7 +20,7 @@
 #include "canvas/Persistency/Provenance/SubRunID.h"
 #include "art/Framework/IO/Sources/put_product_in_principal.h"
 
-#include "art/Framework/Services/Optional/TFileService.h"
+#include "art_root_io/TFileService.h"
 
 #include "ubobj/CRT/CRTHit.hh"
 #include "ubobj/CRT/CRTTrack.hh"
