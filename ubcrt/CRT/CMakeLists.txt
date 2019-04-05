@@ -169,6 +169,7 @@ simple_plugin(CRTSimHitProducer "module"
         nutools_RandomUtils_NuRandomService_service
         ${ART_FRAMEWORK_SERVICES_REGISTRY}
         ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR_SERVICE}
+	${ART_ROOT_IO_TFILESERVICE_SERVICE}
         ${MF_MESSAGELOGGER}        
         ${ROOT_BASIC_LIB_LIST}
         ${CLHEP}
