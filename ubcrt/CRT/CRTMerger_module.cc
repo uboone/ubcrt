@@ -11,6 +11,7 @@
 #include "art/Framework/Principal/Handle.h"
 
 crt::CRTMerger::CRTMerger(const fhicl::ParameterSet& pset) :
+  EDProducer{pset},
   fDebug(pset.get<bool>("debug")),
   fDAQHeaderTimeUBooNELabel(pset.get<std::string>("DAQHeaderTimeUBooNELabel")),
   fCRTHitLabel(pset.get<std::string>("CRTHitLabel")),

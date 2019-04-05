@@ -116,7 +116,7 @@ private:
 
 
 crt::T0recoCRT::T0recoCRT(fhicl::ParameterSet const & p)
- :
+ : EDProducer{p},
 // Initialize member data here.
   data_labelCRTtrack_(p.get<std::string>("data_labelCRTtrack")),
   data_labelCRThit_(p.get<std::string>("data_labelCRThit")),

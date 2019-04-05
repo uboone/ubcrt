@@ -89,7 +89,7 @@ void set_def(crt::CRTTzero tz);
 
 
 CRTTzeroProducer::CRTTzeroProducer(fhicl::ParameterSet const & p)
-  :
+  : EDProducer{p},
   // Initialize member data here.
   data_label_(p.get<std::string>("data_label")),
   max_time_difference_(p.get<double>("max_time_difference")),

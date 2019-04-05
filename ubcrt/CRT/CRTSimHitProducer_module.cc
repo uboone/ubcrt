@@ -186,7 +186,7 @@ namespace crt{
 
   }; // class CRTSimHitProducer
     
-  CRTSimHitProducer::CRTSimHitProducer(fhicl::ParameterSet const & p)
+  CRTSimHitProducer::CRTSimHitProducer(fhicl::ParameterSet const & p) : EDProducer{p}
   // Initialize member data here, if know don't want to reconfigure on the fly
   {
     // Call appropriate produces<>() functions here.
