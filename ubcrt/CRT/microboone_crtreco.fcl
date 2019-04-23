@@ -24,7 +24,7 @@ t0recocrthit_data:  {
    data_label_flash: "simpleFlashCosmic"
    data_label_DAQHeader: "daq"
    HardDelay: 40000   #BNB data is 35520, for TimeSelect=1
-   TimeZeroOffset: 69200   #used for TimeSelect=0
+   TimeZeroOffset: 69000   #used for TimeSelect=0
 #   TimeZeroOffset: 65000   #used for TimeSelect=0
    verbose: false
    # set =0 for GPS ref and =1 to use trigger time
