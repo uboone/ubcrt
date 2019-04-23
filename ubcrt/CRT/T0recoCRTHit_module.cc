@@ -116,6 +116,10 @@ private:
 
   // TH1F* hDistTwo;
   TH1F* hDistOne;
+  TH1F* hDist0;
+  TH1F* hDist1;
+  TH1F* hDist2;
+  TH1F* hDist3;
   TH1F* hDistAn;
   TH1F* hDistCa;
   TH1F* hDistNone;
@@ -407,7 +411,8 @@ void T0recoCRTHit::produce(art::Event & evt)
 	trackCosStart.Z()*trackCosEnd.Z();
       
       //reject tracks that are too short and bend too much
-      if (trklen>20 && opang>0.95)  {
+      //      if (trklen>20 && opang>0.85)  {
+      if (trklen>20)  {
 	
 	if (fverbose) {
 	  std::cout << "Event " << evt.event() <<  " Track " << trkIter << " cos(opening angle) " << 
@@ -536,17 +541,21 @@ void T0recoCRTHit::produce(art::Event & evt)
 	  TVector3 trackend(endP.X()-xshift,endP.Y(),endP.Z());
 	  
 	  if (plane_besthit==1) {
+	    hDist1->Fill(dist_besthit);
 	    if ((trackstart.X()>-10 && trackstart.X()<2)  || (trackend.X()>-10 && trackend.X()<2) )
 	      hDistAn->Fill(dist_besthit); 
 	  }
 	  else if (plane_besthit==2) {
+	    hDist2->Fill(dist_besthit);
 	    if ((trackstart.X()>255 && trackstart.X()<268)  || (trackend.X()>255 && trackend.X()<268) )
 	      hDistCa->Fill(dist_besthit); 
 	  }	  
+	  else if (plane_besthit==3) hDist3->Fill(dist_besthit);
+	  else hDist0->Fill(dist_besthit);
 	  if ((dist_besthit<fMatchCut) || (dist_besthit<fMatchCutTop && plane_besthit==3)) {
 	    //	    double dT =0.0;
 	    // args are (time, triggertype, triggerbits, ?, trigger confidence)
-	    anab::T0 thist0(0.001*time_besthit, 2, 1, 1, dist_besthit);
+	    anab::T0 thist0(0.001*time_besthit, 2, plane_besthit, 1, dist_besthit);
 	    T0_v->emplace_back(thist0);
 	    
 	    //make pointers and associations
@@ -599,6 +608,14 @@ void T0recoCRTHit::beginJob()
   
   hDistOne = tfs->make<TH1F>("hDistOne","hDistOne",200,0.,200.);
   hDistOne->GetXaxis()->SetTitle("distance (cm)");
+  hDist0 = tfs->make<TH1F>("hDist0","hDist0",200,0.,200.);
+  hDist0->GetXaxis()->SetTitle("distance (cm)");
+  hDist1 = tfs->make<TH1F>("hDist1","hDist1",200,0.,200.);
+  hDist1->GetXaxis()->SetTitle("distance (cm)");
+  hDist2 = tfs->make<TH1F>("hDist2","hDist2",200,0.,200.);
+  hDist2->GetXaxis()->SetTitle("distance (cm)");
+  hDist3 = tfs->make<TH1F>("hDist3","hDist3",200,0.,200.);
+  hDist3->GetXaxis()->SetTitle("distance (cm)");
   hDistAn = tfs->make<TH1F>("hDistAn","hDistAn",200,0.,200.);
   hDistAn->GetXaxis()->SetTitle("distance (cm)");
   hDistCa = tfs->make<TH1F>("hDistCa","hDistCa",200,0.,200.);
