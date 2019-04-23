@@ -110,18 +110,6 @@ namespace crt{
 
     //alignment params
 			   bool fCorrectAlignment;
-			   float fAlignBotX;
-			   float fAlignBotY;
-			   float fAlignBotZ;
-			   float fAlignAnodeX;
-			   float fAlignAnodeY;
-			   float fAlignAnodeZ;
-			   float fAlignCathX;
-			   float fAlignCathY;
-			   float fAlignCathZ;
-			   float fAlignTopX;
-			   float fAlignTopY;
-			   float fAlignTopZ;
 			   //
     bool          fVerbose;             ///< print info
    
@@ -150,18 +138,6 @@ namespace crt{
     fSiPMThreshold           = (p.get<float>("SiPMThreshold",0.0));
     //alignment params
     fCorrectAlignment       = (p.get<bool> ("CorrectAlignment",true));
-			       fAlignBotX = (p.get<float>("AlignBotX",0.0));
-			       fAlignBotY = (p.get<float>("AlignBotY",0.0));
-			       fAlignBotZ = (p.get<float>("AlignBotZ",0.0));
-			       fAlignAnodeX = (p.get<float>("AlignAnodeX",0.0));
-			       fAlignAnodeY = (p.get<float>("AlignAnodeY",0.0));
-			       fAlignAnodeZ = (p.get<float>("AlignAnodeZ",0.0));
-			       fAlignCathX = (p.get<float>("AlignCathX",0.0));
-			       fAlignCathY = (p.get<float>("AlignCathY",0.0));
-			       fAlignCathZ = (p.get<float>("AlignCathZ",0.0));
-			       fAlignTopX = (p.get<float>("AlignTopX",0.0));
-			       fAlignTopY = (p.get<float>("AlignTopY",0.0));
-			       fAlignTopZ = (p.get<float>("AlignTopZ",0.0));
     // fTimeStart           = (p.get<float>("TimeStart",-10000.));
     // fTimeEnd           = (p.get<float>("TimeEnd",10000.));
     fVerbose              = (p.get<bool> ("Verbose",false));
