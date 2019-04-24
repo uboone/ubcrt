@@ -24,6 +24,7 @@ crtsimhitcorr_filter:
     SiPMThreshold:   0.0    # threshold in PE applied to the individual SiPMs 
     PEscaleFactor:   -1.0    # PEs scaled by this factor before applying thresholds
     RemoveBottomHits:  true   #  clean up bottom hits that are removed from data 
+    ApplyDetectorResponse:  false   # Apply detector response?  Currently only the pe lost to attenuation along strip length
     verbose: 0
 }
 
