@@ -3,6 +3,8 @@
 #  cdcvs.fnal.gov/redmine/documents/327 , the "FHiCL Quick Start Guide"
 
 
+#include "services_microboone.fcl"
+#include "spacecharge_microboone.fcl"
 #include "microboone_crtreco.fcl"
 #include "microboone_crthitcorr.fcl"
 
@@ -11,6 +13,7 @@ run_number: 101
 
 services:{
   TFileService: { fileName: "track_tree.root" }
+  @table::microboone_services_reco
 }
 
 physics:	
@@ -95,3 +98,9 @@ physics.producers.trackmatch.data_label_TPCtrack: "pandora"
 physics.producers.trackmatch.data_label_CRThit: "crthitcorr"
 physics.producers.trackmatch.data_label_CRTtzero: "crttzero"
 
+#
+
+services.SpaceCharge.EnableCalEfieldSCE: true
+services.SpaceCharge.EnableCalSpatialSCE: true
+services.SpaceCharge.RepresentationType: "Voxelized_TH3"
+services.SpaceCharge.CalibrationInputFilename: "SpaceCharge/SCEoffsets_dataDriven_combined_bkwd_Jan18.root"

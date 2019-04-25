@@ -226,8 +226,8 @@ TrackDump::TrackDump(fhicl::ParameterSet const & p)
     data_labelhit_(p.get<std::string>("data_labelhit")),
     data_label_flash_(p.get<std::string>("data_label_flash_")),
     data_label_DAQHeader_(p.get<std::string>("data_label_DAQHeader_")),
-    fHardDelay_(p.get<int>("fHardDelay",40000)),
-    fTimeZeroOffset(p.get<int>("fTimeZeroOffset",60000)),
+    fHardDelay_(p.get<int>("HardDelay",40000)),
+    fTimeZeroOffset(p.get<int>("TimeZeroOffset",60000)),
     verbose_(p.get<int>("verbose"))
     // More initializers here.    
 {
@@ -372,10 +372,22 @@ void TrackDump::analyze(art::Event const & evt)
 	const std::vector<const anab::T0*>& T0_v = trk_t0C_assn_v.at(j);
 	if (T0_v.size()==1) { 
 	  auto t0 = T0_v.at(0);
-	  tzeroCRT[j]=t0->Time();
+	  tzeroCRT[j]=t0->Time();	  
 	  planeCRT[j]=t0->TriggerBits();  
 	  //	  std::cout << "dca value is " << t0->TriggerConfidence() << std::endl;
+	  // art::FindMany<crt::CRTTzero> trk_tz_assn_v(trackListHandle, evt, data_label_t0C_);
+	  // const std::vector<const crt::CRTTzero*>& tz_v = trk_tz_assn_v.at(j);
+	  // // get correct crt hit
+	  // art::FindManyP<crt::CRTHit> tz_hit_assn_v(tz_v, evt, data_labeltzero_);
+	  // const std::vector<const crt::CRTHit*>& hitlist = tz_hit_assn_v.at(0);
+	  // int hitid = t0->TriggerBits();  
+	  // if (int(hitlist.size()) > hitid) {
+	  //   auto thishit = hitlist.at(hitid);
+	  //   std::cout << thishit->feb_id[0] << " " << thishit->feb_id[1]<< std::endl;
+	  // }
+
 	}
+
       }
     }  // loop over tracks
   }   //  if (saveTPCtrackinfo)
