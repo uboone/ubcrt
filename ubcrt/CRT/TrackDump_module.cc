@@ -26,7 +26,7 @@
 
 #include <artdaq-core/Data/Fragment.hh>
 
-#include "art/Framework/Services/Optional/TFileService.h"
+#include "art_root_io/TFileService.h"
 
 #include "ubobj/CRT/CRTHit.hh"
 #include "ubobj/CRT/CRTTzero.hh"
