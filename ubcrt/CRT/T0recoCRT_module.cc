@@ -17,7 +17,7 @@
 //#include "art/Utilities/InputTag.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
-#include "art/Framework/Services/Optional/TFileService.h"
+#include "art_root_io/TFileService.h"
 
 #include "canvas/Persistency/Common/Ptr.h"
 #include "canvas/Persistency/Common/Assns.h"
@@ -116,7 +116,7 @@ private:
 
 
 crt::T0recoCRT::T0recoCRT(fhicl::ParameterSet const & p)
- :
+ : EDProducer{p},
 // Initialize member data here.
   data_labelCRTtrack_(p.get<std::string>("data_labelCRTtrack")),
   data_labelCRThit_(p.get<std::string>("data_labelCRThit")),
