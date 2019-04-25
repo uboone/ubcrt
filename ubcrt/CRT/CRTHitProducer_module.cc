@@ -20,7 +20,7 @@
 #include "CRTBernFEBDAQCore/Overlays/BernZMQFragment.hh"
 #include <artdaq-core/Data/Fragment.hh>
 
-#include "art/Framework/Services/Optional/TFileService.h"
+#include "art_root_io/TFileService.h"
 
 #include "ubobj/CRT/CRTHit.hh"
 #include "ubobj/CRT/CRTTrack.hh"
@@ -124,7 +124,7 @@ private:
 
 
 bernfebdaq::CRTHitProducer::CRTHitProducer(fhicl::ParameterSet const & p)
-  : 
+  : EDProducer{p}, 
   raw_data_label_(p.get<std::string>("raw_data_label")),
   SiPMpositions_(p.get<std::string>("CRTpositions_file")),
   FEBDelays_(p.get<std::string>("FEBDelays_file")),
