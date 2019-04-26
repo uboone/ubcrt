@@ -153,19 +153,20 @@ void crt::CRTMerger::produce(art::Event& event)
 	// add one entry to cache.
 
 	long long new_entry = last_entry + 1;
-	if(new_entry < crt_event.eventEntry()) {
-	  std::cout << "Repositioning to entry " << last_entry << std::endl;
-	  crt_event.goToEntry(last_entry);
-	}
-	while(!crt_event.atEnd() && crt_event.eventEntry() < new_entry)
-	  crt_event.next();
-	std::vector<crt::CRTHit> new_hits;
-	if(!crt_event.atEnd())
-	  crtman->get_crt_hits(crt_event, new_hits);
-	if(new_hits.size() != 0) {
-	  long long entry = crt_event.eventEntry();
-	  std::cout << "Adding entry " << entry << " to hit cache." << std::endl;
-	  file_cache.emplace(entry, std::move(new_hits));
+	bool rewind_ok = true;
+	if(new_entry < crt_event.eventEntry())
+	  rewind_ok = crtman->rewind(crt_event);
+	if(rewind_ok) {
+	  while(!crt_event.atEnd() && crt_event.eventEntry() < new_entry)
+	    crt_event.next();
+	  std::vector<crt::CRTHit> new_hits;
+	  if(!crt_event.atEnd())
+	    crtman->get_crt_hits(crt_event, new_hits);
+	  if(new_hits.size() != 0) {
+	    long long entry = crt_event.eventEntry();
+	    std::cout << "Adding entry " << entry << " to hit cache." << std::endl;
+	    file_cache.emplace(entry, std::move(new_hits));
+	  }
 	}
       }
     }

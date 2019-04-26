@@ -3,13 +3,17 @@
 #  cdcvs.fnal.gov/redmine/documents/327 , the "FHiCL Quick Start Guide"
 
 
+#include "services_microboone.fcl"
+#include "spacecharge_microboone.fcl"
 #include "microboone_crtreco.fcl"
+#include "microboone_crthitcorr.fcl"
 
 events_to_generate: 200
 run_number: 101
 
 services:{
   TFileService: { fileName: "track_tree.root" }
+  @table::microboone_services_reco
 }
 
 physics:	
@@ -21,28 +25,30 @@ physics:
       module_type: TrackDump
       data_labeltrack: "crttrack"
       data_labeltzero: "crttzero"
-      data_labelhit: "merger"
+      data_labelhit: "crthitcorr"
       data_label_flash_: "simpleFlashCosmic"
       data_label_DAQHeader_: "daq"
       data_label_t0CRT: "trackmatch"
       data_label_t0ACPT: "pandoraCosmicT0Reco"
-      fHardDelay: 40000            #default is 40000
-      fTimeZeroOffset: 69000 
+      HardDelay: 40000            #default is 40000
+      TimeZeroOffset: 69000 
       verbose: 0
-      TrackModuleLabel: "pandoraCosmic"
-      SaveTPCTrackInfo: false
+      TrackModuleLabel: "pandora"
+      SaveTPCTrackInfo: true
       SavePMTFlashInfo: true
      }
   }
 
   producers:
   {
+      crthitcorr: @local::crtdatahitcorr
       crttzero: @local::crttzero
       crttrack: @local::crttrack
+      trackmatch: @local::t0recocrthit_data
    }
    
-  a1: [  crt ]
-   p1: [ crttzero, crttrack ]
+   a1: [  crt ]
+   p1: [ crthitcorr, crttzero, crttrack, trackmatch ]
    e1: [ out1, rootout ]
    trigger_paths: [p1]
    end_paths: [ a1 ]
@@ -72,5 +78,29 @@ source:
 
 process_name: TrackDump
 
+services.DetectorClocksService.InheritClockConfig: false
+#
 
+physics.producers.crttzero.data_label: "crthitcorr"
+physics.producers.crttrack.data_label: "crthitcorr"
+#
 
+physics.producers.crthitcorr.CrtHitsIn_Label1: "merger"
+physics.producers.crthitcorr.CorrectAlignment: true
+physics.producers.crthitcorr.StripThreshold: 0.0
+physics.producers.crthitcorr.SiPMThreshold: 0.0
+physics.producers.crthitcorr.HitThreshold: 0.0
+#
+
+physics.producers.trackmatch.MatchCutTop: 40
+physics.producers.trackmatch.MatchCut: 25
+physics.producers.trackmatch.data_label_TPCtrack: "pandora"
+physics.producers.trackmatch.data_label_CRThit: "crthitcorr"
+physics.producers.trackmatch.data_label_CRTtzero: "crttzero"
+
+#
+
+services.SpaceCharge.EnableCalEfieldSCE: true
+services.SpaceCharge.EnableCalSpatialSCE: true
+services.SpaceCharge.RepresentationType: "Voxelized_TH3"
+services.SpaceCharge.CalibrationInputFilename: "SpaceCharge/SCEoffsets_dataDriven_combined_bkwd_Jan18.root"
