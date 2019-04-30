@@ -180,6 +180,8 @@ bool UBCRTCosmicFilter::filter(art::Event &e)
   _subrun = e.subRun();
   _run = e.run();
 
+  std::cout<<"fCRTHitProducer "<<fCRTHitProducer<<"\n";
+    
   if (verbose)
     std::cout << "Now looping over event #" << event_counter << "." << std::endl;
 
@@ -225,6 +227,8 @@ bool UBCRTCosmicFilter::filter(art::Event &e)
   art::Handle<std::vector<crt::CRTHit>> crthit_h;
   e.getByLabel(fCRTHitProducer, crthit_h);
 
+  //  std::cout<<" crthit_h.size() "<< crthit_h.size() <<" \n";
+  
   // make sure CRT hits look good.
   if (!crthit_h.isValid()) {
     e.put(std::move(crthit_flash_assn_v));

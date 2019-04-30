@@ -21,6 +21,7 @@ art_make( BASENAME_ONLY
         CRTSimHitProducer_module.cc
         CRTSimHitCorr_module.cc
         CRTDataHitCorr_module.cc
+	CRTDataHitGeoCorr_module.cc
         CRTCalibration_module.cc
         CRTTrackProducer_module.cc
         CRTTzeroProducer_module.cc
@@ -30,6 +31,9 @@ art_make( BASENAME_ONLY
 	CRTFlashAna_module.cc
 	TimeExtraction_module.cc
 	TrackDump_module.cc
+	CRTOverlayHotFix_module.cc
+	CheckTimingOverlay_module.cc
+	CRTDataQuality_module.cc
         CRTHitPositionPerModule_module.cc
 	MergeTest_module.cc
 	CRTRawtoCRTHit_source.cc
@@ -225,6 +229,27 @@ simple_plugin(CRTDataHitCorr "module"
     BASENAME_ONLY
 )
 
+simple_plugin(CRTDataHitGeoCorr "module"
+          larcorealg_Geometry
+        larcore_Geometry_Geometry_service
+	  CRT
+	  CRTData
+	          ${ART_FRAMEWORK_CORE}
+        	  ${ART_FRAMEWORK_IO_SOURCES}
+        	  ${ART_FRAMEWORK_PRINCIPAL}
+        art_Persistency_Common canvas
+        art_Persistency_Provenance canvas
+        art_Utilities canvas
+        lardata_DetectorInfoServices_DetectorClocksServiceStandard_service
+        nutools_RandomUtils_NuRandomService_service
+        ${ART_FRAMEWORK_SERVICES_REGISTRY}
+        ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR_SERVICE}
+        ${MF_MESSAGELOGGER}        
+        ${ROOT_BASIC_LIB_LIST}
+        ${CLHEP}
+        cetlib cetlib_except
+    BASENAME_ONLY
+)
 
 simple_plugin(CRTHitProducer "module"
             CRT
@@ -287,6 +312,36 @@ simple_plugin(TrackDump "module"
           art_Framework_Services_Registry
           art_Framework_Services_Optional_TFileService_service
           ${ROOT_BASIC_LIB_LIST} )
+
+
+simple_plugin(CRTOverlayHotFix "module"
+            CRT
+	  bernfebdaq-core_Overlays
+	  lardataobj_RecoBase
+          art_Framework_Services_Optional
+          art_Framework_Services_Registry
+          art_Framework_Services_Optional_TFileService_service
+          ${ROOT_BASIC_LIB_LIST} )
+
+simple_plugin(CheckTimingOverlay "module"
+            CRT
+	  bernfebdaq-core_Overlays
+	  lardataobj_RecoBase
+          art_Framework_Services_Optional
+          art_Framework_Services_Registry
+          art_Framework_Services_Optional_TFileService_service
+          ${ROOT_BASIC_LIB_LIST} )
+
+
+simple_plugin(CRTDataQuality "module"
+            CRT
+	  bernfebdaq-core_Overlays
+	  lardataobj_RecoBase
+          art_Framework_Services_Optional
+          art_Framework_Services_Registry
+          art_Framework_Services_Optional_TFileService_service
+          ${ROOT_BASIC_LIB_LIST} )
+
 
 simple_plugin(CRTHitPositionPerModule "module"
              CRT

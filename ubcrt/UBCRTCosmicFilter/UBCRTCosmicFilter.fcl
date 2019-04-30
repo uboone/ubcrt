@@ -1,21 +1,22 @@
 BEGIN_PROLOG
+
 UBCRTCosmicFilter: {
- module_type              : "UBCRTCosmicFilter"  
- BeamFlashProducer        : "simpleFlashBeam"
- CRTHitProducer           : "merger"
- DAQHeaderProducer        : "daq"
- BeamStart                : 3.19  # us
- BeamEnd                  : 4.87 # us
- PEMin                    : 10.0   # PEs
- DTOffset                 : 68600. # us
- Resolution               : 1.0  # us
- useAsFilter              : true
- verbose                  : false
- Top                      : true
- Bottom                   : true
- Anode                    : true
- Cathode                  : true
-}
+    module_type              : "UBCRTCosmicFilter"  
+    BeamFlashProducer        : "simpleFlashBeam"
+    CRTHitProducer           : "merger"
+    DAQHeaderProducer        : "daq"
+    BeamStart                : 3.19  # us
+    BeamEnd                  : 4.87 # us
+    PEMin                    : 10.0   # PEs
+    DTOffset                 : 68600. # us
+    Resolution               : 1.0  # us
+    useAsFilter              : true
+    verbose                  : false
+    Top                      : true
+    Bottom                   : true
+    Anode                    : true
+    Cathode                  : true
+    }
 
 # NuMI beam on
 UBCRTCosmicFilterNuMION: @local::UBCRTCosmicFilter
