@@ -24,7 +24,8 @@ t0recocrthit_data:  {
    data_label_flash: "simpleFlashCosmic"
    data_label_DAQHeader: "daq"
    HardDelay: 40000   #BNB data is 35520, for TimeSelect=1
-   TimeZeroOffset: 69200   #used for TimeSelect=0
+   TimeZeroOffset: 69000   #used for TimeSelect=0
+#   TimeZeroOffset: 65000   #used for TimeSelect=0
    verbose: false
    # set =0 for GPS ref and =1 to use trigger time
    TimeSelect: 0
@@ -56,10 +57,10 @@ t0recocrthit_sim:
    data_label_TPCtrack: "pandora"
    data_label_CRTtzero: "crttzero"
    data_label_CRThit: "crthitsim"
-   data_label_flash: "opflashCosmic"
+   data_label_flash: "simpleFlashCosmic"
    data_label_DAQHeader: "daq"
-   HardDelay: 0   #BNB data is 35520?
-   TimeZeroOffset: 0   #used for fTimeSelect=0
+   HardDelay: 0   
+   TimeZeroOffset: 0   
    verbose: false
    # set =0 for GPS ref and =1 to use trigger time
    TimeSelect: 1
@@ -69,6 +70,7 @@ t0recocrthit_sim:
    MatchCut: 25
    # alignment offsets for CRT planes in cm, default is 0.0 for all
    # should be 0 for MC, so not listed here
+   DriftVel: 0.11436  # in cm/us, should be 0.1098 eventually
 }
 
 END_PROLOG
