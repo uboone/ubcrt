@@ -1,0 +1,82 @@
+# FHiCL document used to run the "driver" executable. To learn more
+#  about the FHiCL language, please look at
+#  cdcvs.fnal.gov/redmine/documents/327 , the "FHiCL Quick Start Guide"
+
+events_to_generate: 200
+run_number: 101
+
+services:{
+  TFileService: { fileName: "NeutAllTracks_QP.root" }
+}
+
+physics:
+{	
+  producers:
+  {
+  }
+  analyzers:
+  {
+    peb:
+      {
+        module_type: "ConsolidatedOutputAnalyserAllTracks"
+        CRTNeutrinoIdTool:
+          {
+            tool_type: "CRTSimpleNeutrinoId"
+          }
+        InputProducerLabel: "pandoraPatRec:allOutcomes"
+        CRTHitLabel:        "crttzero"
+        TrackProducerLabel: "pandoraAllOutcomesTrack" ## pandoraAllOutcomesTrack
+        ShowerProducerLabel: "pandoraAllOutcomesShower" ## pandoraAllOutcomesShower
+        HitProducerLabel: "gaushit"
+        ShouldProduceT0s: false
+        
+        data_label_assohits: "crttzero"
+        data_label_assotracks: "crttrackT0"
+        data_label_assoCRTT0: "crthitT0"
+        data_label_CRTtzero: "crttzero"
+        
+        data_label_DAQHeader: "daq"
+        data_label_flash: "simpleFlashCosmic"  ##"opflashCosmic" ##"opflashBeam"
+        
+        data_label_trackForMum: "pandoraTrack"
+        data_label_assotrackForMum: "pandoraTrackcalo"
+        data_label_MCSfit: "pandoraMCSMu"
+        
+        fHardDelay: 40000   #BNB data is 35520?
+        fTimeZeroOffset: 69100   #used for fTimeSelect=0
+        
+        verbose: 0
+        saveTTree: 1 # =0 saves no tree, =1 saves no vectors, =2 saves all in TTree
+        track_selection: 1 # =0 runs only over clear cosmic, =1 neutrino slices, =2 cosmic slices, =3 cosmic+cosmic slices
+      
+      }
+  }
+  a1: [ peb ]
+  #p1: [ peb ]
+  #e1: [ rootout ]
+  end_paths: [ a1 ]
+  #trigger_paths: [ a1 ]
+  
+}
+
+outputs:
+{
+ rootout:
+  {
+    module_type: RootOutput
+    fileName: "NeutId.root"
+    compressionLevel: 1
+  }
+  out1:
+  {
+    module_type: FileDumperOutput
+    wantProductFriendlyClassName: true
+  }
+}
+
+source:
+{
+  module_type: RootInput
+}
+
+process_name: CRTAnalyser
