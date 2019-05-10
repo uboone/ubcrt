@@ -29,6 +29,10 @@
 #include "canvas/Utilities/InputTag.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
+#include "nutools/RandomUtils/NuRandomService.h"
+#include "CLHEP/Random/RandFlat.h"
+#include "CLHEP/Random/RandGauss.h"
+#include "CLHEP/Random/RandPoisson.h"
 
 #include <memory>
 #include <iostream>
@@ -123,6 +127,15 @@
       180.0,180.0,365.0,365.0,365.0,365.0,365.0,365.0,180.0,180.0,  //60-69
       365.0,365.0,365.0};               //70-72
 
+    const short mod2end[73] = {  // -1 means sipm is a higher coordinate value than the center of the strip
+      -1,-1,-1,+1,+1,-1,-1,+1,+1,+1,  //0-9
+      +1,+1,+1,+1,+1,+1,-1,-1,-1,-1,  //10-19
+      -1,-1,-1,-1,-1,-1,-1,-1,-1,+1,  //20-29
+      +1,+1,+1,+1,+1,+1,-1,-1,-1,-1,  //30-39
+      -1,-1,-1,-1,-1,-1,-1,-1,-1,+1,  //40-49
+      +1,+1,+1,-1,-1,-1,-1,-1,-1,+1,  //50-59
+      +1,+1,-1,-1,-1,-1,+1,+1,-1,+1,  //60-69
+      -1,+1,-1};               //70-72
 
 namespace crt{
 
@@ -168,16 +181,21 @@ namespace crt{
     bool fRemoveBottomHits;
     bool fApplyDetectorResponse;
     bool          fVerbose;             ///< print info
+    CLHEP::HepRandomEngine& fEngine;
    
 
   }; // class CRTSimHitCorr
     
   CRTSimHitCorr::CRTSimHitCorr(fhicl::ParameterSet const & p)
+    : EDProducer{p},     
+    fEngine(art::ServiceHandle<rndm::NuRandomService>{}->createEngine(*this, "HepJamesRandom", "crt", p, "Seed"))
+
   // Initialize member data here, if know don't want to reconfigure on the fly
   {
     // Call appropriate produces<>() functions here.
     produces< std::vector<crt::CRTHit> >();
     
+    // fEngine = art::ServiceHandle<rndm::NuRandomService>{}->createEngine(*this, "HepJamesRandom", "crt", p, "Seed");
 
     reconfigure(p);
 
@@ -192,8 +210,9 @@ namespace crt{
     fSiPMThreshold           = (p.get<float>("SiPMThreshold",0.0));
     fPEscaleFactor           = (p.get<float>("PEscaleFactor",-1.0));
     fRemoveBottomHits           = (p.get<bool>("RemoveBottomHits",true));
-    fApplyDetectorResponse           = (p.get<bool>("ApplyDetectorResponse",true));
+    fApplyDetectorResponse           = (p.get<bool>("ApplyDetectorResponse",false));
     fVerbose              = (p.get<bool> ("Verbose",false));
+    //
 
   }
 
@@ -230,9 +249,9 @@ namespace crt{
       return;
     }
     std::vector<crt::CRTHit> const& crtHitInList(*crtHitsInHandle);
-
-
     if(fVerbose) std::cout<<"Number of CRT hits read in= "<<crtHitInList.size()<< std::endl;
+
+
 
     for (size_t i = 0; i < crtHitInList.size(); i++){
 
@@ -260,13 +279,103 @@ namespace crt{
       // only change/remove MC hits
       std::vector<std::pair<int,float>> test = tpesmap.find(tfeb_id[0])->second; 
       if (test.size()==2)  { // this is simulation
-	//  apply corrections to fix bug in simulation
+	//  apply corrections to fix bug in Oct2018 simulation
 	if (fScaleMCtime) {
 	  time5/=5;
 	  time1/=5;
 	}
-	if (fPEscaleFactor>0 && !fApplyDetectorResponse) {
-	  // scale charge 
+	if (fApplyDetectorResponse) {	  
+	  if (fPEscaleFactor<0) fPEscaleFactor=1.0; 
+	  tpesmap.clear();
+	  // first strip
+	  double distToReadout=0;
+	  int this_feb = tfeb_id[0];
+	  int this_mod = feb2mod[this_feb];
+	  if (this_mod<0 || this_mod>72) 
+	    std::cout << "bad module number for feb " << this_feb << std::endl;
+	  else {	    
+	    if (mod2orient[this_mod]==0) distToReadout=mod2end[this_mod]*(x-sipm_pos[this_mod]);
+	    else if (mod2orient[this_mod]==1) distToReadout=mod2end[this_mod]*(y-sipm_pos[this_mod]);
+	    else distToReadout=mod2end[this_mod]*(z-sipm_pos[this_mod]);
+	    if (distToReadout>mod2length[this_mod]) {
+	      //	      std::cout << "  HMMM  module/feb " << this_mod << " " << this_feb << " " << distToReadout << " " << 
+	      //	mod2length[this_mod] << std::endl;
+	      distToReadout=mod2length[this_mod];
+	    }
+	    else if (distToReadout<0) distToReadout=0.0;
+	  }	  
+	  double b = 1085.0;
+	  double pe_sf_A = b*b/pow(distToReadout+b,2.0);
+
+	  std::map<uint8_t, std::vector<std::pair<int,float>>> tempmap=thisCrtHit.pesmap;
+	  std::vector<std::pair<int,float>> pesA = tempmap.find(tfeb_id[0])->second; 
+	  float pesA_0=(fPEscaleFactor*pe_sf_A)*pesA[0].second;
+	  float pesB_0=(fPEscaleFactor*pe_sf_A)*pesA[1].second;
+	  float pestot_0=pesA_0+pesB_0;
+	  float distA=(pesA_0/pestot_0)*11.0;  // 11.0 is strip width in cm
+	  float distB=(pesB_0/pestot_0)*11.0;  // 11.0 is strip width in cm
+	  float absA=exp(-1.0*distA/8.5);
+	  float absB=exp(-1.0*distB/8.5);
+	  pesA_0=pestot_0*(absA)/(absA+absB);
+	  pesB_0=pestot_0*(absB)/(absA+absB);
+	  // smear these values
+          float npe0 = CLHEP::RandPoisson::shoot(&fEngine, pesA_0);
+          float npe1 = CLHEP::RandPoisson::shoot(&fEngine, pesB_0);
+	  // SiPM and ADC response: Npe to ADC counts
+          float pesA_sm = CLHEP::RandGauss::shoot(&fEngine, npe0, 0.085 * sqrt(npe0));
+          float pesB_sm = CLHEP::RandGauss::shoot(&fEngine, npe1, 0.085 * sqrt(npe1));
+	  std::pair<int,float> pesA0(pesA[0].first,pesA_sm);
+	  std::pair<int,float> pesA1(pesA[1].first,pesB_sm);
+	  std::vector<std::pair<int,float>> pesAnew;
+	  pesAnew.push_back(pesA0); pesAnew.push_back(pesA1);
+	  tpesmap.emplace(tfeb_id[0],pesAnew);
+	  pestot = pesA_sm+pesB_sm;
+
+	  //second strip
+	  distToReadout=0;
+	  this_feb = tfeb_id[1];
+	  this_mod = feb2mod[this_feb];
+	  if (this_mod<0 || this_mod>72) 
+	    std::cout << "bad module number for feb " << this_feb << std::endl;
+	  else {	    
+	    if (mod2orient[this_mod]==0) distToReadout=mod2end[this_mod]*(x-sipm_pos[this_mod]);
+	    else if (mod2orient[this_mod]==1) distToReadout=mod2end[this_mod]*(y-sipm_pos[this_mod]);
+	    else distToReadout=mod2end[this_mod]*(z-sipm_pos[this_mod]);
+	    if (distToReadout>mod2length[this_mod]) {
+	      // std::cout << "  HMMM  module/feb " << this_mod << " " << this_feb << " " << distToReadout << " " << 
+	      // 	mod2length[this_mod] << std::endl;
+	      distToReadout=mod2length[this_mod];
+	    }
+	    else if (distToReadout<0) distToReadout=0.0;
+	  }	  
+	  double pe_sf_B = b*b/pow(distToReadout+b,2.0);
+
+	  std::vector<std::pair<int,float>> pesB = tempmap.find(tfeb_id[1])->second; 
+	  pesA_0=pe_sf_B*fPEscaleFactor*pesB[0].second;
+	  pesB_0=pe_sf_B*fPEscaleFactor*pesB[1].second;
+	  pestot_0=pesA_0+pesB_0;
+	  distA=(pesA_0/pestot_0)*11.0;  // 11.0 is strip width in cm
+	  distB=(pesB_0/pestot_0)*11.0;  // 11.0 is strip width in cm
+	  absA=exp(-1.0*distA/8.5);
+	  absB=exp(-1.0*distB/8.5);
+	  pesA_0=pestot_0*(absA)/(absA+absB);
+	  pesB_0=pestot_0*(absB)/(absA+absB);
+	  // smear these values
+          npe0 = CLHEP::RandPoisson::shoot(&fEngine, pesA_0);
+          npe1 = CLHEP::RandPoisson::shoot(&fEngine, pesB_0);
+	  // SiPM and ADC response: Npe to ADC counts
+          pesA_sm = CLHEP::RandGauss::shoot(&fEngine, npe0, 0.085 * sqrt(npe0));
+          pesB_sm = CLHEP::RandGauss::shoot(&fEngine, npe1, 0.085 * sqrt(npe1));
+	  std::pair<int,float> pesB0(pesB[0].first,pesA_sm);
+	  std::pair<int,float> pesB1(pesB[1].first,pesB_sm);
+	  std::vector<std::pair<int,float>> pesBnew;
+	  pesBnew.push_back(pesB0); pesBnew.push_back(pesB1);
+	  tpesmap.emplace(tfeb_id[1],pesBnew);
+	  pestot += pesA_sm+pesB_sm;
+
+	} // if Apply Detector Response Flag is set
+	else if (fPEscaleFactor>0) {
+	  // scale total hit charge 
 	  pestot*=fPEscaleFactor;
 	  // more scaling of charge, maps are painful.
 	  tpesmap.clear();
@@ -283,72 +392,8 @@ namespace crt{
 	  std::vector<std::pair<int,float>> pesBnew;
 	  pesBnew.push_back(pesB0); pesBnew.push_back(pesB1);
 	  tpesmap.emplace(tfeb_id[1],pesBnew);
-	} // if scale factor >0
+	} // if scale factor >0 and det response turned off
 
-	if (fApplyDetectorResponse) {
-	  
-	  double distToReadout=0;
-	  int this_feb = tfeb_id[0];
-	  int this_mod = feb2mod[this_feb];
-	  if (this_mod<0 || this_mod>72) 
-	    std::cout << "bad module number for feb " << this_feb << std::endl;
-	  else {	    
-	    if (mod2orient[this_mod]==0) distToReadout=abs(sipm_pos[this_mod]-x);
-	    else if (mod2orient[this_mod]==1) distToReadout=abs(sipm_pos[this_mod]-y);
-	    else distToReadout=abs(sipm_pos[this_mod]-z);
-	    if (distToReadout>mod2length[this_mod]) {
-	      std::cout << "  HMMM  module/feb " << this_mod << " " << this_feb << " " << distToReadout << " " << 
-		mod2length[this_mod] << std::endl;
-	      distToReadout=mod2length[this_mod];
-	    }
-	  }
-	  
-	  double b = 1085.0;
-	  double pe_sf = b*b/pow(distToReadout+b,2.0);
-	  //	  std::cout << pe_sf << " " << distToReadout << std::endl;
-	  if (fPEscaleFactor>0) pe_sf*=fPEscaleFactor; 
-
-	  // more scaling of charge, maps are painful.
-	  tpesmap.clear();
-	  std::map<uint8_t, std::vector<std::pair<int,float>>> tempmap=thisCrtHit.pesmap;
-	  std::vector<std::pair<int,float>> pesA = tempmap.find(tfeb_id[0])->second; 
-	  std::pair<int,float> pesA0(pesA[0].first,pe_sf*pesA[0].second);
-	  std::pair<int,float> pesA1(pesA[1].first,pe_sf*pesA[1].second);
-	  std::vector<std::pair<int,float>> pesAnew;
-	  pesAnew.push_back(pesA0); pesAnew.push_back(pesA1);
-	  tpesmap.emplace(tfeb_id[0],pesAnew);
-	  pestot = pe_sf*(pesA[0].second+pesA[1].second);
-
-	  //second strip
-	  distToReadout=0;
-	  this_feb = tfeb_id[1];
-	  this_mod = feb2mod[this_feb];
-	  if (this_mod<0 || this_mod>72) 
-	    std::cout << "bad module number for feb " << this_feb << std::endl;
-	  else {	    
-	    if (mod2orient[this_mod]==0) distToReadout=abs(sipm_pos[this_mod]-x);
-	    else if (mod2orient[this_mod]==1) distToReadout=abs(sipm_pos[this_mod]-y);
-	    else distToReadout=abs(sipm_pos[this_mod]-z);
-	    if (distToReadout>mod2length[this_mod]) {
-	      std::cout << "  HMMM  module/feb " << this_mod << " " << this_feb << " " << distToReadout << " " << 
-		mod2length[this_mod] << std::endl;
-	      distToReadout=mod2length[this_mod];
-	    }
-	  }	  
-	  pe_sf = b*b/pow(distToReadout+b,2.0);
-	  //	  std::cout << pe_sf << " " << distToReadout << std::endl;
-	  if (fPEscaleFactor>0) pe_sf*=fPEscaleFactor; 
-
-	  std::vector<std::pair<int,float>> pesB = tempmap.find(tfeb_id[1])->second; 
-	  std::pair<int,float> pesB0(pesB[0].first,pe_sf*pesB[0].second);
-	  std::pair<int,float> pesB1(pesB[1].first,pe_sf*pesB[1].second);
-	  std::vector<std::pair<int,float>> pesBnew;
-	  pesBnew.push_back(pesB0); pesBnew.push_back(pesB1);
-	  tpesmap.emplace(tfeb_id[1],pesBnew);
-	  pestot += pe_sf*(pesB[0].second+pesB[1].second);
-
-
-	} // if Apply Detector Response Flag is set
 	
 	// remove bottom hits from FEB combinations not allowed in data
 	if (fRemoveBottomHits) {
@@ -358,6 +403,7 @@ namespace crt{
 	
 	// apply hit threshold
 	if (pestot<fHitThreshold) iKeepMe=0;
+	else {
 	// apply strip and sipm threshold
 	std::vector<std::pair<int,float>> pes1 = tpesmap.find(tfeb_id[0])->second; 
 	std::pair<int,float> ind_pes1=pes1[0];  // works only for simulation (the pes1 vector only has 2 elements)
@@ -371,7 +417,7 @@ namespace crt{
 	if (ind2_pes1.second < fSiPMThreshold || ind2_pes2.second<fSiPMThreshold) iKeepMe=0;
 	if (ind_pes1.second < fSiPMThreshold || ind_pes2.second<fSiPMThreshold ) iKeepMe=0;
 	//	if (iKeepMe==0) std::cout << "tot1 " << tot1 << " tot2 " << tot2 << std::endl;
-	    
+	}
       } // if this is a MC hit
       if (iKeepMe) {
 	

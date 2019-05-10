@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
 /// Class:       CRTSimHitProducer
 /// Module Type: producer
 /// File:        CRTSimHitProducer_module.cc
@@ -419,7 +419,7 @@ namespace crt{
 	      else if (!fRequireStripOverlap) {	     
 		TVector3 mean,error;
 		if (thisplane==0 || thisplane==3) { // top or bot planes at constant y
-		  if (stripdir==0) {  //strip1 length along x
+		  if (stripdir==0) {  //strip1 leng
 		    mean.SetZ(0.5*(limits1[4]+limits1[5]));
 		    error.SetZ(0.5*std::abs(limits1[5]-limits1[4]));
 		    mean.SetX(0.5*(limits2[0]+limits2[1]));
