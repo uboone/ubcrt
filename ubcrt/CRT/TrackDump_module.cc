@@ -659,8 +659,8 @@ void TrackDump::analyze(art::Event const & evt)
   for(int j = 0; j < nCRTtzeros; j++) {
     crt::CRTTzero my_CRTtz = CRTtzCollection[j];
     tz_time_s[j]=(double)my_CRTtz.ts0_s;
-    tz_time0[j]=(double)my_CRTtz.ts0_ns;
-    tz_time1[j]=(double)my_CRTtz.ts1_ns;
+    tz_time0[j]=(double)my_CRTtz.ts0_ns - (double)evt_timeGPS_nsec + (double)fTimeZeroOffset;
+    tz_time1[j]=(double)my_CRTtz.ts1_ns + (double)fHardDelay_; 
     tz_hits0[j]=my_CRTtz.nhits[0];
     tz_hits1[j]=my_CRTtz.nhits[1];
     tz_hits2[j]=my_CRTtz.nhits[2];
