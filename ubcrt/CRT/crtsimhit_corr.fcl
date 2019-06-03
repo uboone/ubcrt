@@ -15,6 +15,7 @@ crthitcorr_timebugfix:
      TimeEnd: 6000.
     verbose: 0
 
+
 }
 
 crthitcorr_filter:
@@ -26,10 +27,17 @@ crthitcorr_filter:
     StripThreshold:  0.0    # threshold in PE applied to the total of 2 SiPMs in a strip
     SiPMThreshold:   0.0    # threshold in PE applied to the individual SiPMs 
     PEscaleFactor:   -1.0    # PEs scaled by this factor before applying thresholds
+    ElectNoise:      0.085
+    RestorePE:       true
+    RemoveHits:      true
+    ApplyDetectorResponse: true
+    SimulatedSaturation:true
     RemoveBottomHits:  true   #  clean up bottom hits that are removed from data 
     TimeStart:   -1931.   # impose data merge window on simulated hits.  Start and End of window in microseconds
     TimeEnd: 4069.
     verbose: 0
+
+
 }
 
 END_PROLOG

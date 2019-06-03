@@ -212,21 +212,19 @@ namespace crt{
   {
     fCrtHitsIn_Label1       = (p.get<art::InputTag> ("CrtHitsIn_Label1","merger")); 
     fCrtHitsIn_Label2       = (p.get<art::InputTag> ("CrtHitsIn_Label2","remerge")); 
-    fNumberCollections      = (p.get<int> ("NumberCollections",1));
-    fPlane3Only_Coll2 = (p.get<bool> ("Plane3Only_Coll2",true));
+    fNumberCollections      = (p.get<int>  ("NumberCollections",1));
+    fPlane3Only_Coll2       = (p.get<bool> ("Plane3Only_Coll2",true));
     //
-    fHitThreshold           = (p.get<float>("HitThreshold",0.0));
-    fStripThreshold           = (p.get<float>("StripThreshold",0.0));
-    fSiPMThreshold           = (p.get<float>("SiPMThreshold",0.0));
+    fHitThreshold           = (p.get<float>("HitThreshold"  ,0.0));
+    fStripThreshold         = (p.get<float>("StripThreshold",0.0));
+    fSiPMThreshold          = (p.get<float>("SiPMThreshold" ,0.0));
     //alignment params
     fCorrectAlignment       = (p.get<bool> ("CorrectAlignment",true));
-    fRestorePE              = (p.get<bool> ("RestorePE",false));
-    fSumPE              = (p.get<bool> ("SumPE",false));
-    fRemoveHits             = (p.get<bool> ("RemoveHits",false));
-    fDistOffStrip             = (p.get<float> ("DistOffStrip",40.0));
-    // fTimeStart           = (p.get<float>("TimeStart",-10000.));
-    // fTimeEnd           = (p.get<float>("TimeEnd",10000.));
-    fVerbose              = (p.get<bool> ("Verbose",false));
+    fRestorePE              = (p.get<bool> ("RestorePE"       ,false));
+    fSumPE                  = (p.get<bool> ("SumPE"           ,false));
+    fRemoveHits             = (p.get<bool> ("RemoveHits"      ,false));
+    fDistOffStrip           = (p.get<float>("DistOffStrip"    ,40.0));
+    fVerbose                = (p.get<bool> ("Verbose"         ,false));
 
   }
 
@@ -359,8 +357,8 @@ namespace crt{
 	  else if (disttoreadout2<0) disttoreadout2=0.0;
 	  if (fRestorePE) { // correct hit pe for light losses to attenuation
 	    sf2=pow(disttoreadout2+b,2.0)/b/b;
-	  }	  
-	} // if RestorePE is turned on 
+	  }	  // if RestorePE is turned on 
+	}
 	
 	
 	// apply strip and sipm threshold

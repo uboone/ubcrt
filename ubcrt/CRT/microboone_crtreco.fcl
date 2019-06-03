@@ -37,17 +37,16 @@ t0recocrthit_data:  {
 }
 crttzero_sim: {
    module_type: CRTTzeroProducer
-   data_label: "crthitsim"
+   data_label: "crthitcorr"
    max_time_difference: 100.
    store_tzero: 1
    verbose: 0
 }
 crttrack_sim: {
    module_type: CRTTrackProducer
-   data_label_hits: "crthitsim"
+   data_label_hits: "crthitcorr"
    data_label_tzeros: "crttzero"
-   ## method 1 = all, method 2 = ave, method 3 = pure
-   track_method_type: 2
+   track_method_type: 2 ## method 1 = all, method 2 = ave, method 3 = pure
    store_track: 1
    verbose: 0
 }
@@ -56,14 +55,13 @@ t0recocrthit_sim:
    module_type: T0recoCRTHit
    data_label_TPCtrack: "pandora"
    data_label_CRTtzero: "crttzero"
-   data_label_CRThit: "crthitsim"
+   data_label_CRThit: "crthitcorr"
    data_label_flash: "simpleFlashCosmic"
    data_label_DAQHeader: "daq"
    HardDelay: 0   
    TimeZeroOffset: 0   
    verbose: false
-   # set =0 for GPS ref and =1 to use trigger time
-   TimeSelect: 1
+   TimeSelect: 1 # set =0 for GPS ref and =1 to use trigger time
    # distance squared in cm^2 from track extrapolation to CRT hit 
    #   must be less than this to be considered a match
    MatchCutTop: 40

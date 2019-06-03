@@ -36,10 +36,13 @@
 
 #include <memory>
 #include <iostream>
+#include <fstream>
 #include <map>
 #include <iterator>
 #include <algorithm>
 #include <vector>
+#include <unordered_set>
+
 
 // LArSoft
 #include "lardataobj/Simulation/SimChannel.h"
@@ -91,7 +94,7 @@
     -218.514, -218.514, -218.514, -218.514, -218.514, -218.514, 312.7, 716.7, 1120.7, 312.7,                  //10-19
     716.7, 1120.7, 291.486, 291.486, 291.486, 291.486, 291.486, 291.486, 291.486, -218.514,                  //20-29
     -218.514, -218.514, -218.514, -218.514, -218.514, -218.514, 327.7, 724.2, 1120.7, 188.7,                  //30-39
-    416.7, 644.7, 872.7, 1100.7, 188.7, 416.7, 644.7, 827.7, 1100.7, -230.0,                 //40-49
+    416.7, 644.7, 872.7, 1100.7, 188.7, 416.7, 644.7, 872.7, 1100.7, -230.0,                 //40-49
     -230.0, -230.0, -230.0, 490.0, 490.0, 490.0, 310.0, 310.0, 310.0, -50.0,        //50-59
     -50.0, -80.0, 1180.0, 1180.0, 1180.0, 820.0, 100.0, 100.0, 640.0, 130.0,        //60-69
     820.0, 100.0, 820.0};                                   //70-72
@@ -157,6 +160,9 @@ namespace crt{
     void endJob() override;
     void reconfigure(fhicl::ParameterSet const & p);
     
+    bool isHitFromDeadChannels(int febNumber1, int channel1Number1, int channel1Number2 , int febNumber2, int channel2Number1, int channel2Number2, std::vector<std::pair<int,int>> deadMap );
+    void DBCall( std::vector<std::pair<int,int>> &deadMap );
+
     crt::CRTHit FillCrtHit(std::vector<uint8_t> tfeb_id, std::map<uint8_t,std::vector<std::pair<int,float>>> tpesmap, 
 			   float peshit, double time1, double time2, double time3, double time4, double time5, int plane,
 			   double x, double ex, double y, double ey, double z, double ez); 
@@ -170,9 +176,16 @@ namespace crt{
     float fSiPMThreshold;
     float fPEscaleFactor;
     float fElectNoise;
+    float fDistOffStrip;
+    bool  fRestorePE;
     bool  fRemoveBottomHits;
     bool  fApplyDetectorResponse;
-    bool  fVerbose;                        ///< print info
+    bool  fVerbose;
+    bool  fRemoveHits;
+    bool  fMaskDeadChannels;
+    bool  fTopSections;
+    bool  fSimulatedSaturation;
+			   ///< print info
     CLHEP::HepRandomEngine& fEngine;
    
 
@@ -190,18 +203,67 @@ namespace crt{
       reconfigure(p);
     } // CRTSimHitCorr()
 
+    void CRTSimHitCorr::DBCall( std::vector<std::pair<int,int>> &deadMap )
+    {
+      deadMap.clear();
+      bool useMichelle = true;
+      // This is where we should call the db
+      // But for now we just to a horrible implementation
+      
+      int MichelleArrayFEB[16]      = {29, 30, 32, 37, 37, 37, 37, 38, 41, 46, 109, 111, 113, 113,  117, 124} ;
+      int MichelleArrayChannels[16] = {11,  0,  1,  1,  3,  6, 13,  4,  0,  2,   5,  15,   3,   4,   21,   7};
+      
+      int LorcaArrayFEB[10]      = {29, 30, 32, 37, 38, 46, 109, 111,  117, 128} ;
+      int LorcaArrayChannels[10] = {23,  1,  3, 12,  8,  7,  11,  31,   21,  20};
+
+      if (useMichelle)
+	{
+	  for (size_t i = 0; i < 16; i++ )
+	    {
+	      std::pair<int,int> p1 (MichelleArrayFEB[i], MichelleArrayChannels[i]);
+	      deadMap.push_back(p1);
+	    }
+	}else
+	{
+	  for (size_t i = 0; i < 10; i++ )
+	    {
+	      std::pair<int,int> p1 (LorcaArrayFEB[i], LorcaArrayChannels[i]);
+	      deadMap.push_back(p1);
+	    }
+	}
+
+    }
+
+    bool  CRTSimHitCorr::isHitFromDeadChannels(int febNumber1, int channel1Number1, int channel1Number2 , int febNumber2, int channel2Number1, int channel2Number2, std::vector<std::pair<int,int>> deadMap )
+    {
+      for(auto const& value: deadMap)
+	{ 
+	  if (value.first == febNumber1 && value.second == channel1Number1) {return true;}
+	  if (value.first == febNumber1 && value.second == channel1Number2) {return true;}
+	  if (value.first == febNumber2 && value.second == channel2Number1) {return true;}
+	  if (value.first == febNumber2 && value.second == channel2Number2) {return true;}
+	}
+      return false;
+    }
+
   void CRTSimHitCorr::reconfigure(fhicl::ParameterSet const & p)
     {
-      fCrtHitsIn_Label       = (p.get<art::InputTag> ("CrtHitsIn_Label","crtsimhit")); 
-      fScaleMCtime           = (p.get<bool>("ScaleMCtime",false));
-      fHitThreshold          = (p.get<float>("HitThreshold",0.0));
-      fStripThreshold        = (p.get<float>("StripThreshold",0.0));
-      fSiPMThreshold         = (p.get<float>("SiPMThreshold",0.0));
-      fPEscaleFactor         = (p.get<float>("PEscaleFactor",1.5));
-      fElectNoise            = (p.get<float>("ElectNoise",0.085));
-      fRemoveBottomHits      = (p.get<bool>("RemoveBottomHits",true));
-      fApplyDetectorResponse = (p.get<bool>("ApplyDetectorResponse",false));
-      fVerbose               = (p.get<bool> ("Verbose",false));
+      // Default parameters
+      fCrtHitsIn_Label       = (p.get<art::InputTag> ("CrtHitsIn_Label"      ,"crtsimhit")); 
+      fScaleMCtime           = (p.get<bool>          ("ScaleMCtime"          ,false));
+      fHitThreshold          = (p.get<float>         ("HitThreshold"         ,0.0));
+      fStripThreshold        = (p.get<float>         ("StripThreshold"       ,7.75));
+      fSiPMThreshold         = (p.get<float>         ("SiPMThreshold"        ,0.0));
+      fPEscaleFactor         = (p.get<float>         ("PEscaleFactor"        ,1.525));
+      fElectNoise            = (p.get<float>         ("ElectNoise"           ,2.0));
+      fRestorePE             = (p.get<bool>          ("RestorePE"            ,true));
+      fRemoveHits            = (p.get<bool>          ("RemoveHits"           ,true));
+      fRemoveBottomHits      = (p.get<bool>          ("RemoveBottomHits"     ,true));
+      fApplyDetectorResponse = (p.get<bool>          ("ApplyDetectorResponse",true));
+      fMaskDeadChannels      = (p.get<bool>          ("MaskDeadChannels"     ,false));
+      fTopSections           = (p.get<bool>          ("TopSections"          ,true));
+      fSimulatedSaturation   = (p.get<bool>          ("SimulatedSaturation"  ,true));
+      fVerbose               = (p.get<bool>          ("Verbose"              ,false));
     }
 
     void CRTSimHitCorr::beginJob()
@@ -234,6 +296,15 @@ namespace crt{
       event.put(std::move(CRTHitOutCol));
       return;
     }
+
+    
+    std::vector<std::pair<int,int>> deadMap;
+    if (fMaskDeadChannels)
+      {
+	DBCall(deadMap);
+      }
+
+
     std::vector<crt::CRTHit> const& crtHitInList(*crtHitsInHandle);
     if(fVerbose) std::cout<<"Number of CRT hits read in= "<<crtHitInList.size()<< std::endl;
 
@@ -258,13 +329,16 @@ namespace crt{
       double z  = thisCrtHit.z_pos;
       double ez = thisCrtHit.z_err;
       
-      double stripWidth = 10.8;
-      if (plane == 3 ) stripWidth = 11.2;
+
       
       std::map<uint8_t, std::vector<std::pair<int,float>>> tpesmap=thisCrtHit.pesmap;
       float pestot = thisCrtHit.peshit;      
       int iKeepMe = 1;
 
+      double stripWidth = 10.8;
+      if (plane == 3 ) {
+	stripWidth = 11.2;
+      }
       // only change/remove MC hits
       std::vector<std::pair<int,float>> test = tpesmap.find(tfeb_id[0])->second; 
       if (test.size()==2)  { // this is simulation
@@ -273,6 +347,30 @@ namespace crt{
 	  time5/=5;
 	  time1/=5;
 	}
+	
+	if (fTopSections)
+	  {
+	    if (plane == 3 ) {
+	      std::unordered_set<int> sectionA = {109,105,195,123,113,114,115};
+	      std::unordered_set<int> sectionB = {106,124,107,108,116,117,118,127};
+	      std::unordered_set<int> sectionC = {128,125,126,111,112,119,120,121,129};
+	      
+	      int firstFEB  = tfeb_id[0];
+	      int secondFEB = tfeb_id[0];
+	    
+	      const bool first_inA  = sectionA.find(firstFEB)  != sectionA.end();
+	      const bool second_inA = sectionA.find(secondFEB) != sectionA.end();
+	      
+	      const bool first_inB  = sectionB.find(firstFEB)  != sectionB.end();
+	      const bool second_inB = sectionB.find(secondFEB) != sectionB.end();
+	      
+	      const bool first_inC  = sectionC.find(firstFEB)  != sectionC.end();
+	      const bool second_inC = sectionC.find(secondFEB) != sectionC.end();
+	      
+	      if ( !((first_inA && second_inA) ||  (first_inB && second_inB) ||  (first_inC && second_inC) ) ) iKeepMe = 0;
+	    }
+	  }
+
 
 
 	// Parametrize this!!
@@ -289,7 +387,13 @@ namespace crt{
 	  if      (mod2orient[this_mod]==0) distToReadout=mod2end[this_mod]*(x-sipm_pos[this_mod]);
 	  else if (mod2orient[this_mod]==1) distToReadout=mod2end[this_mod]*(y-sipm_pos[this_mod]);
 	  else                              distToReadout=mod2end[this_mod]*(z-sipm_pos[this_mod]);
+
 	  // And fudge a bit with the ends
+	  
+	  if (fRemoveHits) {
+	    if (distToReadout<-1.0*fDistOffStrip) iKeepMe=0;
+	    else if (distToReadout>(mod2length[this_mod]+fDistOffStrip)) iKeepMe=0;
+	  }
 	  if (distToReadout>mod2length[this_mod]) {
 	    distToReadout=mod2length[this_mod];
 	  }
@@ -323,6 +427,23 @@ namespace crt{
 	  // SiPM and ADC response: Npe to ADC counts
           float pesA_sm = CLHEP::RandGauss::shoot(&fEngine, npe0, fElectNoise * sqrt(npe0)); // fElectNoise guess 0.085
           float pesB_sm = CLHEP::RandGauss::shoot(&fEngine, npe1, fElectNoise * sqrt(npe0)); // fElectNoise guess 0.085
+	  if (fVerbose)std::cout<<"DEBUGG  "<< fElectNoise<<"  "<<pesA_0<<"   "<<npe0<<" --   "<<pesA_sm<<"  ";
+	  
+	  if (fSimulatedSaturation)
+	    {
+	      // If the pe is too high, the sipm saturated and returns only the maximum pe.
+	      // We estimate this saturation from data in the following way:
+	      // For a 12 bit adc you have a range of 4095, the average gain in data (i.e. ADC/pe conversion) is 
+	      // 40 ADC/pe, so 4095/40 = 102.375 is the max pe recorded... let's put a cap on that!
+	      if (pesA_sm > 102.375 ) pesA_sm = 102.375;
+	      if (pesB_sm > 102.375 ) pesB_sm = 102.375;
+	    }
+	  if (fRestorePE) {
+	    float sf2=pow(distToReadout+b,2.0)/b/b;
+	    pesA_sm *= sf2;
+	    pesB_sm *= sf2;
+	  }
+	  if (fVerbose)std::cout<<pesA_sm<<"   \n";
 	  // Put these values back into the single simulated sipms
 	  std::pair<int,float> pesA0(pesA[0].first,pesA_sm);
 	  std::pair<int,float> pesA1(pesA[1].first,pesB_sm);
@@ -331,6 +452,7 @@ namespace crt{
 	  tpesmap.emplace(tfeb_id[0],pesAnew);
 	  // Calculate the contribution of the first stript to the total pe of the hit
 	  pestot = pesA_sm+pesB_sm;
+
 
 	  //second strip
 	  distToReadout=0;
@@ -342,9 +464,13 @@ namespace crt{
 	    if (mod2orient[this_mod]==0) distToReadout=mod2end[this_mod]*(x-sipm_pos[this_mod]);
 	    else if (mod2orient[this_mod]==1) distToReadout=mod2end[this_mod]*(y-sipm_pos[this_mod]);
 	    else distToReadout=mod2end[this_mod]*(z-sipm_pos[this_mod]);
+	    
+	    if (fRemoveHits) {
+	      if (distToReadout<-1.0*fDistOffStrip) iKeepMe=0;
+	      else if (distToReadout>(mod2length[this_mod]+fDistOffStrip)) iKeepMe=0;
+	    }
+
 	    if (distToReadout>mod2length[this_mod]) {
-	      // std::cout << "  HMMM  module/feb " << this_mod << " " << this_feb << " " << distToReadout << " " << 
-	      // 	mod2length[this_mod] << std::endl;
 	      distToReadout=mod2length[this_mod];
 	    }
 	    else if (distToReadout<0) distToReadout=0.0;
@@ -367,6 +493,22 @@ namespace crt{
 	  // SiPM and ADC response: Npe to ADC counts
           pesA_sm = CLHEP::RandGauss::shoot(&fEngine, npe0, fElectNoise * sqrt(npe0));
           pesB_sm = CLHEP::RandGauss::shoot(&fEngine, npe1, fElectNoise * sqrt(npe1));
+	  if (fSimulatedSaturation)
+	    {
+	      // If the pe is too high, the sipm saturated and returns only the maximum pe.
+	      // We estimate this saturation from data in the following way:
+	      // For a 12 bit adc you have a range of 4095, the average gain in data (i.e. ADC/pe conversion) is 
+	      // 40 ADC/pe, so 4095/40 = 102.375 is the max pe recorded... let's put a cap on that!
+	      if (pesA_sm > 102.375 ) pesA_sm = 102.375;
+	      if (pesB_sm > 102.375 ) pesB_sm = 102.375;
+	    }
+	  if (fRestorePE) {
+	    float sf2=pow(distToReadout+b,2.0)/b/b;
+	    pesA_sm *= sf2;
+	    pesB_sm *= sf2;
+	  }
+
+
 	  std::pair<int,float> pesB0(pesB[0].first,pesA_sm);
 	  std::pair<int,float> pesB1(pesB[1].first,pesB_sm);
 	  std::vector<std::pair<int,float>> pesBnew;
@@ -419,6 +561,30 @@ namespace crt{
 	if (ind_pes1.second < fSiPMThreshold || ind_pes2.second<fSiPMThreshold ) iKeepMe=0;
 	//	if (iKeepMe==0) std::cout << "tot1 " << tot1 << " tot2 " << tot2 << std::endl;
 	}
+
+	if (fMaskDeadChannels)
+	  {
+	    int feb1Number = tfeb_id[0];
+	    std::vector<std::pair<int,float>> pes1 = tpesmap.find(tfeb_id[0])->second; 
+	    int strip1Number1 = pes1[0].first; 
+	    int strip1Number2 = pes1[1].first; 
+
+	    int feb2Number = tfeb_id[1];
+	    std::vector<std::pair<int,float>> pes2 = tpesmap.find(tfeb_id[1])->second; 
+	    int strip2Number1 = pes2[0].first; 
+	    int strip2Number2 = pes2[1].first; 
+
+	    //int feb2Number = tfeb_id[1];
+
+	    bool hitFromDead = isHitFromDeadChannels(feb1Number, strip1Number1, strip1Number2, feb2Number, strip2Number1, strip2Number2, deadMap);
+	    
+	    if ( hitFromDead ){
+	      //std::cout<<hitFromDead<<" "<<feb1Number<<" "<<strip1Number1<<" "<<strip1Number2<<" , "<<feb2Number<<" "<<strip2Number1<<" "<<strip2Number2<<"\n";
+	      iKeepMe =0;
+	    }
+	  }
+
+
       } // if this is a MC hit
       if (iKeepMe) {
 	
