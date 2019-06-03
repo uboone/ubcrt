@@ -91,6 +91,7 @@ private:
   int fTimeSelect;
   int fMatchCutTop;
   int fMatchCut;
+  float fMinTrackLength;
   float fDriftVel;
   bool fverbose;
 
@@ -125,6 +126,7 @@ T0recoCRTHit::T0recoCRTHit(fhicl::ParameterSet const & p)
     fTimeSelect(p.get<int>("TimeSelect",0)),
     fMatchCutTop(p.get<int>("MatchCutTop",40)),
     fMatchCut(p.get<int>("MatchCut",25)),
+    fMinTrackLength(p.get<float>("MinTrackLength",20.0)),   // cm
     fDriftVel(p.get<float>("DriftVel",0.111436)),   // cm/us
     fverbose(p.get<bool>("verbose",false))
 {
@@ -351,7 +353,7 @@ void T0recoCRTHit::produce(art::Event & evt)
       
       //reject tracks that are too short and bend too much
       //      if (trklen>20 && opang>0.85)  {
-      if (trklen>20)  {
+      if (trklen>fMinTrackLength)  {
 	
 	if (fverbose) {
 	  std::cout << "Event " << evt.event() <<  " Track " << trkIter << " cos(opening angle) " << 
