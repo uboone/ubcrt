@@ -93,6 +93,7 @@ private:
   int fMatchCut;
   float fMinTrackLength;
   float fDriftVel;
+  float fMinCRTPe;
   bool fverbose;
 
   //histograms
@@ -128,6 +129,7 @@ T0recoCRTHit::T0recoCRTHit(fhicl::ParameterSet const & p)
     fMatchCut(p.get<int>("MatchCut",25)),
     fMinTrackLength(p.get<float>("MinTrackLength",20.0)),   // cm
     fDriftVel(p.get<float>("DriftVel",0.111436)),   // cm/us
+    fMinCRTPe(p.get<float>("fMinCRTPe",70.)),   // cm/us
     fverbose(p.get<bool>("verbose",false))
 {
 
@@ -382,6 +384,8 @@ void T0recoCRTHit::produce(art::Event & evt)
 	      if (hitlist.size()>0) {
 		for (size_t ah = 0; ah< hitlist.size(); ++ah){	
 		  
+		  // if CRT Hit PE is less than threshold, ignore this hit.
+		  if (hitlist[ah]->peshit < fMinCRTPe ) continue;
 		  //adjust CRT hit positions for rough alignment correction 
 		  //   temporary until the CRT geometry is updated with the precise positions from the laser survey
 		  double crt_x=hitlist[ah]->x_pos;

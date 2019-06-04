@@ -2,11 +2,11 @@ BEGIN_PROLOG
 UBCRTCosmicFilter: {
  module_type              : "UBCRTCosmicFilter"  
  BeamFlashProducer        : "simpleFlashBeam"
- CRTHitProducer           : "merger"
+ CRTHitProducer           : "crthitcorr"
  DAQHeaderProducer        : "daq"
  BeamStart                : 3.19  # us
  BeamEnd                  : 4.87 # us
- PEMin                    : 10.0   # PEs
+ PEMin                    : 100.0   # PEs
  DTOffset                 : 68600. # us
  Resolution               : 1.0  # us
  useAsFilter              : true

@@ -183,11 +183,15 @@ namespace crt{
     bool  fVerbose;
     bool  fRemoveHits;
     bool  fMaskDeadChannels;
+    std::vector<int> fDeadFEB; 
+    std::vector<int> fDeadChannels;
     bool  fTopSections;
     bool  fSimulatedSaturation;
 			   ///< print info
     CLHEP::HepRandomEngine& fEngine;
-   
+
+    std::vector<int> MichelleFEB      {29, 30, 32, 37, 37, 37, 37, 38, 41, 46, 109, 111, 113, 113,  117, 124};
+    std::vector<int> MichelleChannels {23,  1,  3,  2,  6, 12, 26,  8,  0,  7,  11,  31,   6,   8,   21,  14};   
 
   }; // class CRTSimHitCorr
     
@@ -206,32 +210,17 @@ namespace crt{
     void CRTSimHitCorr::DBCall( std::vector<std::pair<int,int>> &deadMap )
     {
       deadMap.clear();
-      bool useMichelle = true;
-      // This is where we should call the db
-      // But for now we just to a horrible implementation
-      
-      int MichelleArrayFEB[16]      = {29, 30, 32, 37, 37, 37, 37, 38, 41, 46, 109, 111, 113, 113,  117, 124} ;
-      int MichelleArrayChannels[16] = {11,  0,  1,  1,  3,  6, 13,  4,  0,  2,   5,  15,   3,   4,   21,   7};
-      
-      int LorcaArrayFEB[10]      = {29, 30, 32, 37, 38, 46, 109, 111,  117, 128} ;
-      int LorcaArrayChannels[10] = {23,  1,  3, 12,  8,  7,  11,  31,   21,  20};
-
-      if (useMichelle)
+      if (fDeadFEB.size() != fDeadChannels.size() ) 
 	{
-	  for (size_t i = 0; i < 16; i++ )
-	    {
-	      std::pair<int,int> p1 (MichelleArrayFEB[i], MichelleArrayChannels[i]);
-	      deadMap.push_back(p1);
-	    }
-	}else
-	{
-	  for (size_t i = 0; i < 10; i++ )
-	    {
-	      std::pair<int,int> p1 (LorcaArrayFEB[i], LorcaArrayChannels[i]);
-	      deadMap.push_back(p1);
-	    }
+	  std::cout<<"FEB and Channel sizes are different. I am not applying the dead channel masking\n";
+	  return;
 	}
-
+      
+      for (size_t i = 0; i < fDeadFEB.size(); i++ )
+	{
+	  std::pair<int,int> p1 (fDeadFEB[i], fDeadChannels[i]);
+	  deadMap.push_back(p1);
+	}
     }
 
     bool  CRTSimHitCorr::isHitFromDeadChannels(int febNumber1, int channel1Number1, int channel1Number2 , int febNumber2, int channel2Number1, int channel2Number2, std::vector<std::pair<int,int>> deadMap )
@@ -248,6 +237,7 @@ namespace crt{
 
   void CRTSimHitCorr::reconfigure(fhicl::ParameterSet const & p)
     {
+
       // Default parameters
       fCrtHitsIn_Label       = (p.get<art::InputTag> ("CrtHitsIn_Label"      ,"crtsimhit")); 
       fScaleMCtime           = (p.get<bool>          ("ScaleMCtime"          ,false));
@@ -263,6 +253,10 @@ namespace crt{
       fMaskDeadChannels      = (p.get<bool>          ("MaskDeadChannels"     ,false));
       fTopSections           = (p.get<bool>          ("TopSections"          ,true));
       fSimulatedSaturation   = (p.get<bool>          ("SimulatedSaturation"  ,true));
+
+      fDeadFEB               = (p.get< std::vector<int> > ("fDeadFEB"    ,  MichelleFEB ));
+      fDeadChannels          = (p.get< std::vector<int> > ("fDeadChannel",  MichelleChannels ));
+
       fVerbose               = (p.get<bool>          ("Verbose"              ,false));
     }
 
