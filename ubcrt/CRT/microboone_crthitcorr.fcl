@@ -35,7 +35,8 @@ crtsimhitcorr:
     RemoveHits:           true   # check if hits in boundaries
     RemoveBottomHits:     true   # clean up bottom hits that are removed from data 
     ApplyDetectorResponse:true   # Apply detector response? 
-    MaskDeadChannels:     false  # Mask Dead Channels?
+    MaskDeadChannels:     true   # Mask Dead Channels?
+    TopSections:          true   # Constrain the hits to belong to one of the top sections
     SimulatedSaturation:  true   # Simulate Sipm saturation?
     Verbose:              false  # Talk?
 }

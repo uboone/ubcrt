@@ -64,10 +64,12 @@ private:
   double fBeamStart;
   double fBeamEnd;
   double fPEMin;
+  double fPEMin_CRT;
   double fDTOffset;
   double fResolution;
   bool fuseAsFilter;
   bool verbose;
+  bool fIsThisMC;
   bool fAnode, fTop, fBottom, fCathode;
 
   // TTree Declaration.
@@ -112,6 +114,9 @@ private:
   // Is the closest CRT hit within resolution?  Binary flag.
   int _within_resolution;
 
+  // Is the CRT hit above the MIP threshold?  Binary flag.
+  int _above_CRT_threshold;
+
   // Counter for the events.
   int event_counter;
 };
@@ -129,6 +134,7 @@ UBCRTCosmicFilter::UBCRTCosmicFilter(fhicl::ParameterSet const &p)
   fBeamStart = p.get<double>("BeamStart");
   fBeamEnd = p.get<double>("BeamEnd");
   fPEMin = p.get<double>("PEMin");
+  fPEMin_CRT = p.get<double>("PEMin_CRT");
   fDTOffset = p.get<double>("DTOffset");
   fResolution = p.get<double>("Resolution");
   fuseAsFilter = p.get<bool>("useAsFilter");
@@ -137,6 +143,7 @@ UBCRTCosmicFilter::UBCRTCosmicFilter(fhicl::ParameterSet const &p)
   fBottom  = p.get<bool>("Bottom");
   fAnode   = p.get<bool>("Anode");
   fCathode = p.get<bool>("Cathode");
+  fIsThisMC = p.get<bool>("isThisMC");
 }
 
 void UBCRTCosmicFilter::beginJob()
@@ -169,6 +176,7 @@ void UBCRTCosmicFilter::beginJob()
   _tree->Branch("_nu_vtx_z",&_nu_vtx_z,"nu_vtx_z/D");
   _tree->Branch("_dt", &_dt, "dt/D");
   _tree->Branch("_within_resolution", &_within_resolution, "within_resolution/I");
+  _tree->Branch("_above_CRT_threshold", &_above_CRT_threshold, "above_CRT_threshold/I");
 }
 
 bool UBCRTCosmicFilter::filter(art::Event &e)
@@ -224,7 +232,7 @@ bool UBCRTCosmicFilter::filter(art::Event &e)
   // load CRT hits.
   art::Handle<std::vector<crt::CRTHit>> crthit_h;
   e.getByLabel(fCRTHitProducer, crthit_h);
-
+  
   // make sure CRT hits look good.
   if (!crthit_h.isValid()) {
     e.put(std::move(crthit_flash_assn_v));
@@ -258,8 +266,9 @@ bool UBCRTCosmicFilter::filter(art::Event &e)
   _dt = 0.;
   _CRT_hit_time = 0.;
 
-  // Set the variable for if the CRT hit is within resolution of the flash.
+  // Set the variables as  if the CRT hit is within resolution of the flash and above threshold.
   _within_resolution = 0;
+  _above_CRT_threshold = 0;
 
   // Set the value for the '_beam_flash_PE' to be negative so that it will be overwritten by the information for the actual flash.
   _beam_flash_time = -10000.0;
@@ -336,6 +345,9 @@ bool UBCRTCosmicFilter::filter(art::Event &e)
     */
 
     double _crt_time_temp = ((crthit_h->at(j).ts0_ns - evt_timeGPS_nsec + fDTOffset) / 1000.);
+    std::cout<<"-------------- fIsThisMC "<<fIsThisMC<<"\n";
+    if (fIsThisMC) _crt_time_temp = crthit_h->at(j).ts1_ns;
+    if (crthit_h->at(j).peshit >  fPEMin_CRT) _above_CRT_threshold = 1;
     // Fill the vector variables.
     _CRT_hits_time.push_back(_crt_time_temp);
     _CRT_hits_PE.push_back(crthit_h->at(j).peshit);
@@ -343,6 +355,7 @@ bool UBCRTCosmicFilter::filter(art::Event &e)
     _CRT_hits_y.push_back(crthit_h->at(j).y_pos);
     _CRT_hits_z.push_back(crthit_h->at(j).z_pos);
     
+
     if (fabs(_beam_flash_time - _crt_time_temp) < _dt_abs)
     {
       _dt_abs = fabs(_beam_flash_time - _crt_time_temp);
@@ -392,7 +405,7 @@ bool UBCRTCosmicFilter::filter(art::Event &e)
   e.put(std::move(crthit_flash_assn_v));
 
   // Return true if you are within resolution.
-  if (fuseAsFilter && _within_resolution == 1)
+  if (fuseAsFilter && _within_resolution == 1 && _above_CRT_threshold == 1)
     return false;
 
   // Otherwise return false.

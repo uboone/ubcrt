@@ -190,8 +190,8 @@ namespace crt{
 			   ///< print info
     CLHEP::HepRandomEngine& fEngine;
 
-    std::vector<int> MichelleFEB      {29, 30, 32, 37, 37, 37, 37, 38, 41, 46, 109, 111, 113, 113,  117, 124};
-    std::vector<int> MichelleChannels {23,  1,  3,  2,  6, 12, 26,  8,  0,  7,  11,  31,   6,   8,   21,  14};   
+    std::vector<int> MichelleFEB      {29, 30, 32, 37, 37, 37, 37, 38, 41, 46, 109, 111, 113, 113,  124};   //117,
+    std::vector<int> MichelleChannels {23,  1,  3,  2,  6, 12, 26,  8,  0,  7,  11,  31,   6,   8,   14};   // 21, 
 
   }; // class CRTSimHitCorr
     
@@ -250,12 +250,12 @@ namespace crt{
       fRemoveHits            = (p.get<bool>          ("RemoveHits"           ,true));
       fRemoveBottomHits      = (p.get<bool>          ("RemoveBottomHits"     ,true));
       fApplyDetectorResponse = (p.get<bool>          ("ApplyDetectorResponse",true));
-      fMaskDeadChannels      = (p.get<bool>          ("MaskDeadChannels"     ,false));
+      fMaskDeadChannels      = (p.get<bool>          ("MaskDeadChannels"     ,true));
       fTopSections           = (p.get<bool>          ("TopSections"          ,true));
       fSimulatedSaturation   = (p.get<bool>          ("SimulatedSaturation"  ,true));
 
-      fDeadFEB               = (p.get< std::vector<int> > ("fDeadFEB"    ,  MichelleFEB ));
-      fDeadChannels          = (p.get< std::vector<int> > ("fDeadChannel",  MichelleChannels ));
+      fDeadFEB               = (p.get< std::vector<int> > ("DeadFEB"    ,  MichelleFEB ));
+      fDeadChannels          = (p.get< std::vector<int> > ("DeadChannel",  MichelleChannels ));
 
       fVerbose               = (p.get<bool>          ("Verbose"              ,false));
     }
@@ -341,9 +341,10 @@ namespace crt{
 	  time5/=5;
 	  time1/=5;
 	}
-	
+
 	if (fTopSections)
 	  {
+
 	    if (plane == 3 ) {
 	      std::unordered_set<int> sectionA = {109,105,195,123,113,114,115};
 	      std::unordered_set<int> sectionB = {106,124,107,108,116,117,118,127};
@@ -362,6 +363,7 @@ namespace crt{
 	      const bool second_inC = sectionC.find(secondFEB) != sectionC.end();
 	      
 	      if ( !((first_inA && second_inA) ||  (first_inB && second_inB) ||  (first_inC && second_inC) ) ) iKeepMe = 0;
+	      
 	    }
 	  }
 
