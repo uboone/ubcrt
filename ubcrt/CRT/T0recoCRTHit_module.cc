@@ -377,6 +377,7 @@ void T0recoCRTHit::produce(art::Event & evt)
 	      xshift = ((double)(tzerolist[tzIter]->ts1_ns) + fHardDelay)*vdrift;	      
 	    // verify that track is within the fiducial volume after this time shift
 	    double test1 = startP.X()-xshift; double test2 = endP.X()-xshift;
+	    // loose active volume cuts are hardcoded, one should not do that
 	    if (test1>-10. && test1<270. && test2>-10 && test2<270.) {
 	      
 	    //  loop over CRT hits for this tzero
