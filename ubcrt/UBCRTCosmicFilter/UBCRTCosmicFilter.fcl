@@ -16,6 +16,7 @@ UBCRTCosmicFilter: {
  Bottom                   : true
  Anode                    : true
  Cathode                  : true
+ isThisMC                 : false
 }
 
 # NuMI beam on

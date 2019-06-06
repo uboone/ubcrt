@@ -264,7 +264,7 @@ bool UBCRTCosmicFilter::filter(art::Event &e)
   double _dt_abs   = 100000.0;
   size_t flash_idx = 0;
   _dt = 0.;
-  _CRT_hit_time = 0.;
+  _CRT_hit_time = -10000.;
 
   // Set the variables as  if the CRT hit is within resolution of the flash and above threshold.
   _within_resolution = 0;
@@ -345,9 +345,10 @@ bool UBCRTCosmicFilter::filter(art::Event &e)
     */
 
     double _crt_time_temp = ((crthit_h->at(j).ts0_ns - evt_timeGPS_nsec + fDTOffset) / 1000.);
-    std::cout<<"-------------- fIsThisMC "<<fIsThisMC<<"\n";
-    if (fIsThisMC) _crt_time_temp = crthit_h->at(j).ts1_ns;
-    if (crthit_h->at(j).peshit >  fPEMin_CRT) _above_CRT_threshold = 1;
+    //std::cout<<"-------------- fIsThisMC "<<fIsThisMC<<" "<<_crt_time_temp<<"\n";
+    if (fIsThisMC) _crt_time_temp = crthit_h->at(j).ts1_ns / 1000.;
+    //    std::cout<<"--------------  "<<_crt_time_temp<<"\n\n";
+
     // Fill the vector variables.
     _CRT_hits_time.push_back(_crt_time_temp);
     _CRT_hits_PE.push_back(crthit_h->at(j).peshit);
@@ -360,38 +361,42 @@ bool UBCRTCosmicFilter::filter(art::Event &e)
     {
       _dt_abs = fabs(_beam_flash_time - _crt_time_temp);
       _dt = _beam_flash_time - _crt_time_temp;
-      _CRT_hit_time = _crt_time_temp;
 
       // set 'within_resolution' to 'true' and break the loop if 'closest_crt_diff' is less than fResolution.
       if (_dt_abs < fResolution)
       {
-        _within_resolution = 1;
+	_within_resolution = 1;
 
-        // Set the position information and the intensity of the CRT hit.
-        _CRT_hit_PE = crthit_h->at(j).peshit;
-        _CRT_hit_x = crthit_h->at(j).x_pos;
-        _CRT_hit_y = crthit_h->at(j).y_pos;
-        _CRT_hit_z = crthit_h->at(j).z_pos;
+	if (crthit_h->at(j).peshit >  fPEMin_CRT) 
+	  { 
+	    _above_CRT_threshold = 1;
+	    // Set the position information and the intensity of the CRT hit.
+	    _CRT_hit_PE = crthit_h->at(j).peshit;
+	    _CRT_hit_x = crthit_h->at(j).x_pos;
+	    _CRT_hit_y = crthit_h->at(j).y_pos;
+	    _CRT_hit_z = crthit_h->at(j).z_pos;
+	    _CRT_hit_time = _crt_time_temp;
+		  
+	    // Convert the CRT iterator to type 'size_t'.
+	    size_t crt_idx = size_t(j);
 
-        // Convert the CRT iterator to type 'size_t'.
-        size_t crt_idx = size_t(j);
+	    // Make the two pointers.
+	    const art::Ptr<crt::CRTHit> crt_ptr(crthit_h, crt_idx);
+	    const art::Ptr<recob::OpFlash> flash_ptr(beamflash_h, flash_idx);
 
-        // Make the two pointers.
-        const art::Ptr<crt::CRTHit> crt_ptr(crthit_h, crt_idx);
-        const art::Ptr<recob::OpFlash> flash_ptr(beamflash_h, flash_idx);
+	    // Make the association between the CRT hit and the OpFlash.
+	    crthit_flash_assn_v->addSingle(crt_ptr, flash_ptr);
 
-        // Make the association between the CRT hit and the OpFlash.
-        crthit_flash_assn_v->addSingle(crt_ptr, flash_ptr);
+	    if (verbose)
+	      {
+		std::cout << "CRT hit PE = " << _CRT_hit_PE << " PEs." << std::endl;
+		std::cout << "CRT hit x = " << _CRT_hit_x << " cm." << std::endl;
+		std::cout << "CRT hit y = " << _CRT_hit_y << " cm." << std::endl;
+		std::cout << "CRT hit z = " << _CRT_hit_z << " cm." << std::endl;
+	      }
 
-        if (verbose)
-        {
-          std::cout << "CRT hit PE = " << _CRT_hit_PE << " PEs." << std::endl;
-          std::cout << "CRT hit x = " << _CRT_hit_x << " cm." << std::endl;
-          std::cout << "CRT hit y = " << _CRT_hit_y << " cm." << std::endl;
-          std::cout << "CRT hit z = " << _CRT_hit_z << " cm." << std::endl;
-        }
-
-        break;
+	    break;
+	  }
       }
 
     } // End of conditional for closest CRT hit time.
