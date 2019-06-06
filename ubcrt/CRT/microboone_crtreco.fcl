@@ -24,7 +24,7 @@ t0recocrthit_data:  {
    module_type: T0recoCRTHit
    data_label_TPCtrack: "pandora"
    data_label_CRTtzero: "crttzero"
-   data_label_CRThit: "merger"
+   data_label_CRThit: "crthitcorr"
    data_label_flash: "simpleFlashCosmic"
    data_label_DAQHeader: "daq"
    HardDelay:      40000   #BNB data is 35520, for TimeSelect=1
@@ -43,6 +43,7 @@ t0recocrthit_data:  {
 t0recocrthit_sim: @local::t0recocrthit_data
 t0recocrthit_sim.HardDelay: 0 
 t0recocrthit_sim.TimeZeroOffset: 0 
+t0recocrthit_sim.TimeSelect: 1   # Simulation only fills the time1 variable for crt hits (time since last trigger)
 
 
 END_PROLOG
