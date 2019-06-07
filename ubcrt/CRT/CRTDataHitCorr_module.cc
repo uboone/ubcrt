@@ -236,7 +236,7 @@ namespace crt{
     
   void CRTDataHitCorr::produce(art::Event & event)
   {
-
+    std::cout<<"((((((((((((((((( "<<fCrtHitsIn_Label1<<" \n";
     int nHits = 0;
 
     if(fVerbose){

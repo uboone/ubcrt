@@ -234,7 +234,7 @@ TrackDump::TrackDump(fhicl::ParameterSet const & p)
     data_labeltrack_(p.get<std::string>("data_labeltrack")),
     data_labeltzero_(p.get<std::string>("data_labeltzero")),
     data_label_t0A_(p.get<std::string>("data_label_t0ACPT", "pandoraCosmicT0Reco" )),
-    data_label_t0C_(p.get<std::string>("data_label_t0CRT", "trackmatch" )),
+    data_label_t0C_(p.get<std::string>("data_label_t0CRT")),
     data_labelhit_(p.get<std::string>("data_labelhit")),
     data_label_flash_(p.get<std::string>("data_label_flash_")),
     data_label_DAQHeader_(p.get<std::string>("data_label_DAQHeader_")),
@@ -248,7 +248,6 @@ TrackDump::TrackDump(fhicl::ParameterSet const & p)
 
 void TrackDump::analyze(art::Event const & evt)
 {
-  
   ResetVars();
 
   frunNum    = evt.run();
@@ -348,7 +347,7 @@ void TrackDump::analyze(art::Event const & evt)
     nTPCtracks = tracklist.size();
     if (nTPCtracks>kMaxTPCtracks) nTPCtracks=kMaxTPCtracks;
     for(int j = 0; j < nTPCtracks; j++) {
-      
+      if (verbose_)std::cout<<"in iTrackloop\n";
       art::Ptr<recob::Track> ptrack(trackListHandle, j);
       const recob::Track& track = *ptrack;
       
@@ -384,7 +383,8 @@ void TrackDump::analyze(art::Event const & evt)
 	}
       }
       tzeroCRT[j]=-9999.0; planeCRT[j]=-1;
-      if (iT0crt) { 
+      if (iT0crt) {
+	if (verbose_)std::cout<<"in iT0crt\n";
 	//	art::FindMany<anab::T0> trk_t0C_assn_v("pandora", evt, "pandoraCrtHitMatch");
 	art::FindMany<anab::T0> trk_t0C_assn_v(trackListHandle, evt, data_label_t0C_);
 	const std::vector<const anab::T0*>& T0_v = trk_t0C_assn_v.at(j);

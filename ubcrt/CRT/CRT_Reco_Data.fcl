@@ -6,26 +6,14 @@
 #include "spacecharge_microboone.fcl"
 #include "microboone_crtreco.fcl"
 #include "microboone_crthitcorr.fcl"
-#include "triggeralgo_service.fcl"
 #include "UBCRTCosmicFilter.fcl"
 
 events_to_generate: 200
 run_number: 101
 
 services:{
-  TFileService: { fileName: "CRTReco_histo_sim.root" }
-  RandomNumberGenerator: {} #ART native random number generator
+  TFileService: { fileName: "CRTReco_histo_data.root" }
   @table::microboone_services_reco
-  TimeTracker:             {}
-  ExptGeoHelperInterface:         @local::microboone_geometry_helper
-  Geometry:                       @local::microboone_geo
-  DetectorProperties:             @local::microboone_detproperties
-  LArProperties:                  @local::microboone_properties
-  DetectorClocksService:          @local::microboone_detectorclocks
-  MemoryTracker:           { } # default is one
-  RandomNumberGenerator:   {} #ART native random number generator
-  message:                 @local::microboone_message_services_prod_debug
-  FileCatalogMetadata:     @local::art_file_catalog_mc
 }
 
 physics:	
@@ -33,7 +21,7 @@ physics:
   analyzers:	
   {
     crt:		
-    {		
+    {			
       module_type: TrackDump
       data_labeltrack: "crttrack"
       data_labeltzero: "crttzero"
@@ -42,36 +30,35 @@ physics:
       data_label_DAQHeader_: "daq"
       data_label_t0CRT: "crttrackmatch"
       data_label_t0ACPT: ""
-      HardDelay: 0
-      TimeZeroOffset: 0
+      fHardDelay: 38800            #default is 40000
+      fTimeZeroOffset: 69000 
       verbose: 0
       TrackModuleLabel: "pandora"
       SaveTPCTrackInfo: true
       SavePMTFlashInfo: true
-	
      }
   }
-  
+
   filters:
       {
-        ubcrtVeto : @local::UBCRTCosmicFilterBNBMC
+        ubcrtVeto: @local::UBCRTCosmicFilterBNBOFF
         }
 
   producers:
-      {
-        crthitcorr:       @local::crtsimhitcorr
-        crttzero:         @local::crttzero
-        crttrack:         @local::crttrack
-        crttrackmatch:    @local::t0recocrthit_sim
-        crttrackmatchAll: @local::t0recocrthit_sim
-        }
-  
+  {
+      crthitcorr:      @local::crtdatahitcorr
+      crttzero:        @local::crttzero
+      crttrack:        @local::crttrack
+      crttrackmatch:   @local::t0recocrthit_data
+      crttrackmatchAll:@local::t0recocrthit_data
+      }
+   
   a1: [  crt ]
   p1: [ crthitcorr, crttzero,  crttrack, crttrackmatch, crttrackmatchAll, ubcrtVeto]
   e1: [ rootout ]
   trigger_paths: [p1]
   end_paths: [ a1]#,e1 ]
- }
+}
 
 outputs:
 {
@@ -84,6 +71,7 @@ outputs:
     dataTier:    "reco"
     SelectEvents: [p1]  
   }
+
 }
 
 source:
@@ -99,7 +87,8 @@ services.SpaceCharge.EnableCalSpatialSCE: true
 services.SpaceCharge.RepresentationType: "Voxelized_TH3"
 services.SpaceCharge.CalibrationInputFilename: "SpaceCharge/SCEoffsets_dataDriven_combined_bkwd_Jan18.root"
 
-physics.producers.crthitcorr.CrtHitsIn_Label: "crthitsim"
+
+physics.producers.crthitcorr.CrtHitsIn_Label1: "merger"
 physics.producers.crthitcorr.HitThreshold: 70.
 
 physics.producers.crttzero.data_label: "crthitcorr"
@@ -116,4 +105,3 @@ physics.producers.crttrackmatchAll.data_label_flash:    "simpleFlashCosmic"
 
 physics.analyzers.crt.SelectEvents: [p1]
 physics.filters.ubcrtVeto.SelectEvents: [p1]
-

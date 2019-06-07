@@ -28,7 +28,7 @@ physics:
       data_labelhit: "crthitcorr"
       data_label_flash_: "simpleFlashCosmic"
       data_label_DAQHeader_: "daq"
-      data_label_t0CRT: "trackmatch"
+      data_label_t0CRT: "crttrackmatch"
       data_label_t0ACPT: "pandoraCosmicT0Reco"
       HardDelay: 40000            #default is 40000
       TimeZeroOffset: 69000 
