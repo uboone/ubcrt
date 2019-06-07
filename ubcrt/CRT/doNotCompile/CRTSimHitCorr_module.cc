@@ -67,82 +67,81 @@
 #include "TGeoManager.h"
 
 
-const short feb2mod[200] = {
-  -1,-1,-1,-1,-1,-1,-1,-1,-1,-1, //0-9
-  -1,8,7,-1,4,48,43,3,5,6, //10-19
-  47,42,2,1,0,-1,14,13,12,11,  //20-29
-  15,10,22,27,26,25,24,28,23,35,  //30-39
-  34,33,32,31,30,29,46,41,45,40,  //40-49
-  44,39,9,38,37,36,21,18,20,17,   //50-59
-  19,16,-1,-1,-1,-1,-1,-1,-1,-1, //60-69
-  -1,-1,-1,-1,-1,-1,-1,-1,-1,-1, //70-79
-  -1,-1,-1,-1,-1,-1,-1,-1,-1,-1, //80-89
-  -1,-1,-1,-1,-1,-1,-1,-1,-1,-1, //90-99
-  -1,-1,-1,-1,-1,51,50,49,53,52, //100-109
-  -1,55,54,64,63,62,65,70,72,66, //110-119
-  71,67,-1,57,58,59,60,68,69,61, //120-129
-  -1,-1,-1,-1,-1,-1,-1,-1,-1,-1, //130-139
-  -1,-1,-1,-1,-1,-1,-1,-1,-1,-1, //140-149
-  -1,-1,-1,-1,-1,-1,-1,-1,-1,-1, //150-159
-  -1,-1,-1,-1,-1,-1,-1,-1,-1,-1, //160-169
-  -1,-1,-1,-1,-1,-1,-1,-1,-1,-1, //170-179
-  -1,-1,-1,-1,-1,-1,-1,-1,-1,-1, //180-189
-  -1,-1,-1,-1,-1,56,-1,-1,-1,-1}; //190-199
+  const short feb2mod[200] = {
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1, //0-9
+    -1,8,7,-1,4,48,43,3,5,6, //10-19
+    47,42,2,1,0,-1,14,13,12,11,  //20-29
+    15,10,22,27,26,25,24,28,23,35,  //30-39
+    34,33,32,31,30,29,46,41,45,40,  //40-49
+    44,39,9,38,37,36,21,18,20,17,   //50-59
+    19,16,-1,-1,-1,-1,-1,-1,-1,-1, //60-69
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1, //70-79
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1, //80-89
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1, //90-99
+    -1,-1,-1,-1,-1,51,50,49,53,52, //100-109
+    -1,55,54,64,63,62,65,70,72,66, //110-119
+    71,67,-1,57,58,59,60,68,69,61, //120-129
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1, //130-139
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1, //140-149
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1, //150-159
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1, //160-169
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1, //170-179
+    -1,-1,-1,-1,-1,-1,-1,-1,-1,-1, //180-189
+    -1,-1,-1,-1,-1,56,-1,-1,-1,-1}; //190-199
 
-const float sipm_pos[73] = {  // index is module number from gdml
-  628.952, 628.952, 628.952, -134.384, -134.384, 390.616, 390.616, 515.952, -134.384, -218.514,  //0-9
-  -218.514, -218.514, -218.514, -218.514, -218.514, -218.514, 312.7, 716.7, 1120.7, 312.7,                  //10-19
-  716.7, 1120.7, 291.486, 291.486, 291.486, 291.486, 291.486, 291.486, 291.486, -218.514,                  //20-29
-  -218.514, -218.514, -218.514, -218.514, -218.514, -218.514, 327.7, 724.2, 1120.7, 188.7,                  //30-39
-  416.7, 644.7, 872.7, 1100.7, 188.7, 416.7, 644.7, 872.7, 1100.7, -230.0,                 //40-49
-  -230.0, -230.0, -230.0, 490.0, 490.0, 490.0, 310.0, 310.0, 310.0, -50.0,        //50-59
-  -50.0, -80.0, 1180.0, 1180.0, 1180.0, 820.0, 100.0, 100.0, 640.0, 130.0,        //60-69
-  820.0, 100.0, 820.0};                                   //70-72
+  const float sipm_pos[73] = {  // index is module number from gdml
+    628.952, 628.952, 628.952, -134.384, -134.384, 390.616, 390.616, 515.952, -134.384, -218.514,  //0-9
+    -218.514, -218.514, -218.514, -218.514, -218.514, -218.514, 312.7, 716.7, 1120.7, 312.7,                  //10-19
+    716.7, 1120.7, 291.486, 291.486, 291.486, 291.486, 291.486, 291.486, 291.486, -218.514,                  //20-29
+    -218.514, -218.514, -218.514, -218.514, -218.514, -218.514, 327.7, 724.2, 1120.7, 188.7,                  //30-39
+    416.7, 644.7, 872.7, 1100.7, 188.7, 416.7, 644.7, 872.7, 1100.7, -230.0,                 //40-49
+    -230.0, -230.0, -230.0, 490.0, 490.0, 490.0, 310.0, 310.0, 310.0, -50.0,        //50-59
+    -50.0, -80.0, 1180.0, 1180.0, 1180.0, 820.0, 100.0, 100.0, 640.0, 130.0,        //60-69
+    820.0, 100.0, 820.0};                                   //70-72
 
 /*
-  const short mod2feb[73] = {
-  24,23,22,17,14,18,19,12,11,52,  //0-9
-  31,29,28,27,26,30,61,59,57,60,                  //10-19
-  58,56,32,38,36,35,34,33,37,45,                  //20-29
-  44,43,42,41,40,39,55,54,53,51,                  //30-39
-  49,47,21,16,50,48,46,20,15,107,                 //40-49
-  106,105,109,108,112,111,195,123,124,125,        //50-59
-  126,129,115,114,113,116,119,121,127,128,        //60-69
-  117,120,118};                                   //70-72
+    const short mod2feb[73] = {
+      24,23,22,17,14,18,19,12,11,52,  //0-9
+      31,29,28,27,26,30,61,59,57,60,                  //10-19
+      58,56,32,38,36,35,34,33,37,45,                  //20-29
+      44,43,42,41,40,39,55,54,53,51,                  //30-39
+      49,47,21,16,50,48,46,20,15,107,                 //40-49
+      106,105,109,108,112,111,195,123,124,125,        //50-59
+      126,129,115,114,113,116,119,121,127,128,        //60-69
+      117,120,118};                                   //70-72
 */
-const short mod2orient[73] = {  // 0=x, 1=y, 2=z
-  2,2,2,0,0,0,0,2,0,1,  //0-9
-  1,1,1,1,1,1,2,2,2,2,  //10-19
-  2,2,1,1,1,1,1,1,1,1,  //20-29
-  1,1,1,1,1,1,2,2,2,2,  //30-39
-  2,2,2,2,2,2,2,2,2,0,  //40-49
-  0,0,0,0,0,0,0,0,0,0,  //50-59
-  0,2,2,2,2,2,2,2,2,0,  //60-69
-  2,2,2};               //70-72
+    const short mod2orient[73] = {  // 0=x, 1=y, 2=z
+      2,2,2,0,0,0,0,2,0,1,  //0-9
+      1,1,1,1,1,1,2,2,2,2,  //10-19
+      2,2,1,1,1,1,1,1,1,1,  //20-29
+      1,1,1,1,1,1,2,2,2,2,  //30-39
+      2,2,2,2,2,2,2,2,2,0,  //40-49
+      0,0,0,0,0,0,0,0,0,0,  //50-59
+      0,2,2,2,2,2,2,2,2,0,  //60-69
+      2,2,2};               //70-72
 
-const float mod2length[73] = { 
-  346.0,346.0,346.0,259.6,259.6,259.6,259.6,227.0,227.0,346.0,  //0-9
-  346.0,346.0,346.0,346.0,346.0,346.0,403.8,403.8,403.8,403.8,  //10-19
-  403.8,403.8,259.6,259.6,259.6,259.6,259.6,259.6,259.6,259.6,  //20-29
-  259.6,259.6,259.6,259.6,259.6,259.6,396.2,396.2,396.2,227.0,  //30-39
-  227.0,227.0,227.0,227.0,227.0,227.0,227.0,227.0,227.0,360.0,  //40-49
-  360.0,360.0,360.0,360.0,360.0,360.0,180.0,180.0,180.0,180.0,  //50-59
-  180.0,180.0,365.0,365.0,365.0,365.0,365.0,365.0,180.0,180.0,  //60-69
-  365.0,365.0,365.0};               //70-72
+    const float mod2length[73] = { 
+      346.0,346.0,346.0,259.6,259.6,259.6,259.6,227.0,227.0,346.0,  //0-9
+      346.0,346.0,346.0,346.0,346.0,346.0,403.8,403.8,403.8,403.8,  //10-19
+      403.8,403.8,259.6,259.6,259.6,259.6,259.6,259.6,259.6,259.6,  //20-29
+      259.6,259.6,259.6,259.6,259.6,259.6,396.2,396.2,396.2,227.0,  //30-39
+      227.0,227.0,227.0,227.0,227.0,227.0,227.0,227.0,227.0,360.0,  //40-49
+      360.0,360.0,360.0,360.0,360.0,360.0,180.0,180.0,180.0,180.0,  //50-59
+      180.0,180.0,365.0,365.0,365.0,365.0,365.0,365.0,180.0,180.0,  //60-69
+      365.0,365.0,365.0};               //70-72
 
-const short mod2end[73] = {  // -1 means sipm is a higher coordinate value than the center of the strip
-  -1,-1,-1,+1,+1,-1,-1,+1,+1,+1,  //0-9
-  +1,+1,+1,+1,+1,+1,-1,-1,-1,-1,  //10-19
-  -1,-1,-1,-1,-1,-1,-1,-1,-1,+1,  //20-29
-  +1,+1,+1,+1,+1,+1,-1,-1,-1,-1,  //30-39
-  -1,-1,-1,-1,-1,-1,-1,-1,-1,+1,  //40-49
-  +1,+1,+1,-1,-1,-1,-1,-1,-1,+1,  //50-59
-  +1,+1,-1,-1,-1,-1,+1,+1,-1,+1,  //60-69
-  -1,+1,-1};               //70-72
+    const short mod2end[73] = {  // -1 means sipm is a higher coordinate value than the center of the strip
+      -1,-1,-1,+1,+1,-1,-1,+1,+1,+1,  //0-9
+      +1,+1,+1,+1,+1,+1,-1,-1,-1,-1,  //10-19
+      -1,-1,-1,-1,-1,-1,-1,-1,-1,+1,  //20-29
+      +1,+1,+1,+1,+1,+1,-1,-1,-1,-1,  //30-39
+      -1,-1,-1,-1,-1,-1,-1,-1,-1,+1,  //40-49
+      +1,+1,+1,-1,-1,-1,-1,-1,-1,+1,  //50-59
+      +1,+1,-1,-1,-1,-1,+1,+1,-1,+1,  //60-69
+      -1,+1,-1};               //70-72
 
 namespace crt{
   class CRTSimHitCorr : public art::EDProducer {
-  
   public:
     explicit CRTSimHitCorr(fhicl::ParameterSet const & p);
     // The destructor generated by the compiler is fine for classes
@@ -161,28 +160,12 @@ namespace crt{
     void endJob() override;
     void reconfigure(fhicl::ParameterSet const & p);
     
-   
+    bool isHitFromDeadChannels(int febNumber1, int channel1Number1, int channel1Number2 , int febNumber2, int channel2Number1, int channel2Number2, std::vector<std::pair<int,int>> deadMap );
     void DBCall( std::vector<std::pair<int,int>> &deadMap );
-    bool isHitFromDeadChannels(int febNumber1, int channel1Number1, int channel1Number2 , 
-			       int febNumber2, int channel2Number1, int channel2Number2 , std::vector<std::pair<int,int>> deadMap );
- 
-    crt::CRTHit FillCrtHit(std::vector<uint8_t> tfeb_id, std::map<uint8_t,std::vector<std::pair<int,float > > > tpesmap, 
+
+    crt::CRTHit FillCrtHit(std::vector<uint8_t> tfeb_id, std::map<uint8_t,std::vector<std::pair<int,float>>> tpesmap, 
 			   float peshit, double time1, double time2, double time3, double time4, double time5, int plane,
 			   double x, double ex, double y, double ey, double z, double ez); 
-
-    void ScaleMCtime  (float &time1,float &time5) {time1/=5.;time5/=5.;};
-    
-    bool TopSections(int firstFEB, int secondFEB);
-    bool BottomSections(int firstFEB, int secondFEB);
-			   /*
-
-    void RestorePE             (crt::CRTHit hit);
-    void ApplyDetectorResponse (crt::CRTHit hit);
-    void RemoveHits            (crt::CRTHit hit);
-    void MaskDeadChannels      (crt::CRTHit hit);
-    void SimulatedSaturation   (crt::CRTHit hit);
-			   */
-
     
   private:
     // Params got from fcl file.......
@@ -204,17 +187,17 @@ namespace crt{
     std::vector<int> fDeadChannels;
     bool  fTopSections;
     bool  fSimulatedSaturation;
-    
-    ///< print info
+			   ///< print info
     CLHEP::HepRandomEngine& fEngine;
 
     std::vector<int> MichelleFEB      {29, 30, 32, 37, 37, 37, 37, 38, 41, 46, 109, 111, 113, 113,  124};   //117,
     std::vector<int> MichelleChannels {23,  1,  3,  2,  6, 12, 26,  8,  0,  7,  11,  31,   6,   8,   14};   // 21, 
-			   
+
   }; // class CRTSimHitCorr
     
 
-    CRTSimHitCorr::CRTSimHitCorr(fhicl::ParameterSet const & p) : EDProducer{p},     
+    CRTSimHitCorr::CRTSimHitCorr(fhicl::ParameterSet const & p)
+      : EDProducer{p},     
       fEngine(art::ServiceHandle<rndm::NuRandomService>{}->createEngine(*this, "HepJamesRandom", "crt", p, "Seed"))
       // Initialize member data here, if know don't want to reconfigure on the fly
     {
@@ -224,7 +207,35 @@ namespace crt{
       reconfigure(p);
     } // CRTSimHitCorr()
 
-      void CRTSimHitCorr::reconfigure(fhicl::ParameterSet const & p)
+    void CRTSimHitCorr::DBCall( std::vector<std::pair<int,int>> &deadMap )
+    {
+      deadMap.clear();
+      if (fDeadFEB.size() != fDeadChannels.size() ) 
+	{
+	  std::cout<<"FEB and Channel sizes are different. I am not applying the dead channel masking\n";
+	  return;
+	}
+      
+      for (size_t i = 0; i < fDeadFEB.size(); i++ )
+	{
+	  std::pair<int,int> p1 (fDeadFEB[i], fDeadChannels[i]);
+	  deadMap.push_back(p1);
+	}
+    }
+
+    bool  CRTSimHitCorr::isHitFromDeadChannels(int febNumber1, int channel1Number1, int channel1Number2 , int febNumber2, int channel2Number1, int channel2Number2, std::vector<std::pair<int,int>> deadMap )
+    {
+      for(auto const& value: deadMap)
+	{ 
+	  if (value.first == febNumber1 && value.second == channel1Number1) {return true;}
+	  if (value.first == febNumber1 && value.second == channel1Number2) {return true;}
+	  if (value.first == febNumber2 && value.second == channel2Number1) {return true;}
+	  if (value.first == febNumber2 && value.second == channel2Number2) {return true;}
+	}
+      return false;
+    }
+
+  void CRTSimHitCorr::reconfigure(fhicl::ParameterSet const & p)
     {
 
       // Default parameters
@@ -253,100 +264,11 @@ namespace crt{
     {
       if(fVerbose){std::cout<<"----------------- CRT Hit Correction Module -------------------"<<std::endl;}
     } // beginJob()
-
-
-    void CRTSimHitCorr::endJob()
-    {
-    }
-
-    void CRTSimHitCorr::DBCall( std::vector<std::pair<int,int>> &deadMap )
-    {
-      deadMap.clear();
-      if (fDeadFEB.size() != fDeadChannels.size() ) {
-	std::cout<<"FEB and Channel sizes are different. I am not applying the dead channel masking\n";
-	return;
-      }
-      
-      for (size_t i = 0; i < fDeadFEB.size(); i++ ){
-	std::pair<int,int> p1 (fDeadFEB[i], fDeadChannels[i]);
-	deadMap.push_back(p1);
-      }
-    }
-
-    bool  CRTSimHitCorr::isHitFromDeadChannels(int febNumber1, int channel1Number1, int channel1Number2 , 
-					       int febNumber2, int channel2Number1, int channel2Number2, std::vector<std::pair<int,int>> deadMap )
-    {
-      for(auto const& value: deadMap)
-	{ 
-	  if (value.first == febNumber1 && value.second == channel1Number1) {return true;}
-	  if (value.first == febNumber1 && value.second == channel1Number2) {return true;}
-	  if (value.first == febNumber2 && value.second == channel2Number1) {return true;}
-	  if (value.first == febNumber2 && value.second == channel2Number2) {return true;}
-	}
-      return false;
-    }
-
-  crt::CRTHit CRTSimHitCorr::FillCrtHit(std::vector<uint8_t> tfeb_id, std::map<uint8_t, std::vector<std::pair<int,float>>> tpesmap, float peshit,
-					double time1, double time2, double time3, double time4, double time5, 
-					int plane, double x, double ex, double y, double ey, double z, double ez) {
-    crt::CRTHit crtHit;
-    crtHit.feb_id = tfeb_id;
-    crtHit.pesmap = tpesmap;
-    crtHit.peshit = peshit;
-    crtHit.ts0_s = time1; 
-    crtHit.ts0_s_corr = time2;
-    crtHit.ts0_ns = time3;
-    crtHit.ts0_ns_corr = time4;
-    crtHit.ts1_ns = time5 ;
-    crtHit.plane = plane;
-    crtHit.x_pos = x;
-    crtHit.x_err = ex;
-    crtHit.y_pos = y; 
-    crtHit.y_err = ey;
-    crtHit.z_pos = z;
-    crtHit.z_err = ez;
-    return crtHit;
-  }
-
-  bool CRTSimHitCorr::BottomSections(int firstFEB, int secondFEB)
-  {    
-    std::unordered_set<int> sectionA = {11,12};
-    std::unordered_set<int> sectionB = {14,17,18,19,22,23,24};
-
-    // Check if both FEBs are in section A
-    const bool first_inA  = sectionA.find(firstFEB)  != sectionA.end();
-    const bool second_inA = sectionA.find(secondFEB) != sectionA.end();
-    // Check if both FEBs are in section B
-    const bool first_inB  = sectionB.find(firstFEB)  != sectionB.end();
-    const bool second_inB = sectionB.find(secondFEB) != sectionB.end();
-
-    if ( !((first_inA && second_inA) ||  (first_inB && second_inB)) ) return false;
-    return true;
-  }
-					
-  bool CRTSimHitCorr::TopSections(int firstFEB, int secondFEB)
-  {
-    std::unordered_set<int> sectionA = {109,105,195,123,113,114,115};
-    std::unordered_set<int> sectionB = {106,124,107,108,116,117,118,127};
-    std::unordered_set<int> sectionC = {128,125,126,111,112,119,120,121,129};
-
-    // Check if both FEBs are in section A
-    const bool first_inA  = sectionA.find(firstFEB)  != sectionA.end();
-    const bool second_inA = sectionA.find(secondFEB) != sectionA.end();
-    // Check if both FEBs are in section B
-    const bool first_inB  = sectionB.find(firstFEB)  != sectionB.end();
-    const bool second_inB = sectionB.find(secondFEB) != sectionB.end();
-    // Check if both FEBs are in section C
-    const bool first_inC  = sectionC.find(firstFEB)  != sectionC.end();
-    const bool second_inC = sectionC.find(secondFEB) != sectionC.end();
-	  
-    if ( !((first_inA && second_inA) ||  (first_inB && second_inB) ||  (first_inC && second_inC) ) ) return false;
-    return true;
-  }
-
     
     void CRTSimHitCorr::produce(art::Event & event)
     {
+      int nHits = 0;
+      
       if(fVerbose){
 	std::cout<<"============================================"<<std::endl
 		 <<"Run = "<<event.run()<<", SubRun = "<<event.subRun()<<", Event = "<<event.id().event()<<std::endl
@@ -354,118 +276,98 @@ namespace crt{
       }
 
       // Place to store corrected CRThits as they are created
-      std::unique_ptr<std::vector<crt::CRTHit>> CRTHitOutCol( new std::vector<crt::CRTHit>);
-      // Retrieve list of CRT hits
-      art::Handle< std::vector<crt::CRTHit>> crtHitsInHandle;
-      event.getByLabel(fCrtHitsIn_Label, crtHitsInHandle);
-      //check to make sure the data we asked for is valid
-      if(!crtHitsInHandle.isValid()){
-	std::cout << "Run " << event.run() << ", subrun " << event.subRun()
-		  << ", event " << event.event() << " has zero"
+    std::unique_ptr<std::vector<crt::CRTHit>> CRTHitOutCol( new std::vector<crt::CRTHit>);
+    // Retrieve list of CRT hits
+    art::Handle< std::vector<crt::CRTHit>> crtHitsInHandle;
+    event.getByLabel(fCrtHitsIn_Label, crtHitsInHandle);
+   //check to make sure the data we asked for is valid
+    if(!crtHitsInHandle.isValid()){
+      std::cout << "Run " << event.run() << ", subrun " << event.subRun()
+		<< ", event " << event.event() << " has zero"
 		<< " CRTHits " << " in module " << fCrtHitsIn_Label << std::endl;
-	std::cout << std::endl;
-	//add protection here
-	event.put(std::move(CRTHitOutCol));
-	return;
-      }
-      // Load the crt dead channel map only once per event
-      std::vector<std::pair<int,int>> deadMap;
-      if (fMaskDeadChannels){
+      std::cout << std::endl;
+      //add protection here
+      event.put(std::move(CRTHitOutCol));
+      return;
+    }
+
+    
+    std::vector<std::pair<int,int>> deadMap;
+    if (fMaskDeadChannels)
+      {
 	DBCall(deadMap);
       }
 
-      std::vector<crt::CRTHit> const& crtHitInList(*crtHitsInHandle);
-      if(fVerbose) std::cout<<"Number of CRT hits read in= "<<crtHitInList.size()<< std::endl;
+
+    std::vector<crt::CRTHit> const& crtHitInList(*crtHitsInHandle);
+    if(fVerbose) std::cout<<"Number of CRT hits read in= "<<crtHitInList.size()<< std::endl;
+
+
+
+    for (size_t i = 0; i < crtHitInList.size(); i++){
+
+      crt::CRTHit thisCrtHit = crtHitInList[i];
+
+      std::vector<uint8_t> tfeb_id = thisCrtHit.feb_id; 
+      double time1 = thisCrtHit.ts0_s;
+      double time2 = thisCrtHit.ts0_s_corr;
+      double time3 = thisCrtHit.ts0_ns;
+      double time4 = thisCrtHit.ts0_ns_corr;
+      double time5 = thisCrtHit.ts1_ns;
+      
+      int plane = thisCrtHit.plane;
+      double x  = thisCrtHit.x_pos;
+      double ex = thisCrtHit.x_err;
+      double y  = thisCrtHit.y_pos;
+      double ey = thisCrtHit.y_err;
+      double z  = thisCrtHit.z_pos;
+      double ez = thisCrtHit.z_err;
       
 
-      //Loop on CRT Hits
-      for (size_t i = 0; i < crtHitInList.size(); i++){
-	// Let's start positive, let's keep this hit
-	bool keepMe = 1;
+      
+      std::map<uint8_t, std::vector<std::pair<int,float>>> tpesmap=thisCrtHit.pesmap;
+      float pestot = thisCrtHit.peshit;      
+      int iKeepMe = 1;
 
-	// Get hit
-	crt::CRTHit thisCrtHit = crtHitInList[i];
-	// Get all memebers you need to check if this is data or MC.
-	// only change/remove MC hits. 
-	std::vector<uint8_t> tfeb_id = thisCrtHit.feb_id;
-	std::map<uint8_t, std::vector<std::pair<int,float>>> tpesmap=thisCrtHit.pesmap;
-	std::cout<<"*************** "<<tpesmap.size()<<"\n";
-	// if this is data, push the hit and continue with the next
-	if (tpesmap.size() == 32) { std::cout<<"&&&&&&&&&&&&&&&&&&&& data\n"; CRTHitOutCol->push_back(thisCrtHit); continue;}
-	// At this point, throw an exeption if the size is strange
-	if (tpesmap.size() !=  2) {std::cerr << "\033[93m[ERROR]\033[00m Hit has wrong number of strips: "<<tpesmap.size()  << std::endl;
-	  event.put(std::move(CRTHitOutCol));
-	  return; }
-	
-	// Ok, now we just made sure we have only MC hit... let modify them!
-	
-	float time1 = thisCrtHit.ts0_s;
-	float time2 = thisCrtHit.ts0_s_corr;
-	float time3 = thisCrtHit.ts0_ns;
-	float time4 = thisCrtHit.ts0_ns_corr;
-	float time5 = thisCrtHit.ts1_ns;
-	int   plane = thisCrtHit.plane;
-	float    x  = thisCrtHit.x_pos;
-	float    ex = thisCrtHit.x_err;
-	float    y  = thisCrtHit.y_pos;
-	float    ey = thisCrtHit.y_err;
-	float    z  = thisCrtHit.z_pos;
-	float    ez = thisCrtHit.z_err;
-	float pestot = thisCrtHit.peshit;      
+      double stripWidth = 10.8;
+      if (plane == 3 ) {
+	stripWidth = 11.2;
+      }
+      // only change/remove MC hits
+      std::vector<std::pair<int,float>> test = tpesmap.find(tfeb_id[0])->second; 
+      if (test.size()==2)  { // this is simulation
+	//  apply corrections to fix bug in Oct2018 simulation
+	if (fScaleMCtime) {
+	  time5/=5;
+	  time1/=5;
+	}
 
-	int firstFEB  = (int)tfeb_id[0];
-	int secondFEB = (int)tfeb_id[1];
-	// Modify the timing of ts1 due to bug in
-	// in Oct2018 simulation. May not apply anymore
-	if (fScaleMCtime) ScaleMCtime(time1,time5);
+	if (fTopSections)
+	  {
 
-
-	// Would you like to section the top?
-	if (fTopSections && (plane == 3) ) keepMe = TopSections(firstFEB, secondFEB);
-	if (!keepMe) continue; // If this hit is to trash, skip the rest
-	
-	// Would you like to section the Bottom?
-	if (fRemoveBottomHits)   keepMe = BottomSections(firstFEB, secondFEB);
-	if (!keepMe) continue; // If this hit is to trash, skip the rest
-
-	//Let's mask the dead channels
-	std::vector<std::pair<int,float>> firstStrip  = tpesmap.find(tfeb_id[0])->second; 
-	std::vector<std::pair<int,float>> secondStrip = tpesmap.find(tfeb_id[1])->second; 
-	if (fMaskDeadChannels) keepMe = !(isHitFromDeadChannels(firstFEB , firstStrip[0].first , firstStrip[0].first , 
-								secondFEB, secondStrip[0].first, secondStrip[0].first, 
-								deadMap));
+	    if (plane == 3 ) {
+	      std::unordered_set<int> sectionA = {109,105,195,123,113,114,115};
+	      std::unordered_set<int> sectionB = {106,124,107,108,116,117,118,127};
+	      std::unordered_set<int> sectionC = {128,125,126,111,112,119,120,121,129};
+	      
+	      int firstFEB  = tfeb_id[0];
+	      int secondFEB = tfeb_id[0];
+	    
+	      const bool first_inA  = sectionA.find(firstFEB)  != sectionA.end();
+	      const bool second_inA = sectionA.find(secondFEB) != sectionA.end();
+	      
+	      const bool first_inB  = sectionB.find(firstFEB)  != sectionB.end();
+	      const bool second_inB = sectionB.find(secondFEB) != sectionB.end();
+	      
+	      const bool first_inC  = sectionC.find(firstFEB)  != sectionC.end();
+	      const bool second_inC = sectionC.find(secondFEB) != sectionC.end();
+	      
+	      if ( !((first_inA && second_inA) ||  (first_inB && second_inB) ||  (first_inC && second_inC) ) ) iKeepMe = 0;
+	      
+	    }
+	  }
 
 
-	
-	// Setup the strip width (the top is wider)
-	//double stripWidth = 10.8;
-	//if (plane == 3 stripWidth = 11.2;
-
-	/*
-	  ALL THE CODE
-	 */
-
-	
-	if (keepMe) {
-	  // Create a corrected CRT hit
-	  crt::CRTHit crtHit = FillCrtHit(tfeb_id, tpesmap, pestot,
-					  time1,  time2,  time3,  time4,  time5, 
-					  plane, x, ex,y,ey,z,ez );
-	  CRTHitOutCol->push_back(crtHit);
-	}// If the hit is to be keptSW
-      }// End of crt hits loop
-      event.put(std::move(CRTHitOutCol));
-    }// End of the produce function
-
-  
-  DEFINE_ART_MODULE(CRTSimHitCorr)
-}// namespace crt
-
-
-     
-
-    
-  /*
 
 	// Parametrize this!!
 	if (fApplyDetectorResponse) {	  
@@ -633,7 +535,10 @@ namespace crt{
 
 	
 	// remove bottom hits from FEB combinations not allowed in data
-
+	if (fRemoveBottomHits) {
+	  if ((tfeb_id[0]==11 && tfeb_id[1]!=12) || (tfeb_id[0]==12 && tfeb_id[1]!=11)) iKeepMe=0;	
+	  if ((tfeb_id[1]==11 && tfeb_id[0]!=12) || (tfeb_id[1]==12 && tfeb_id[0]!=11)) iKeepMe=0;	
+	}
 	
 	// apply hit threshold
 	if (pestot<fHitThreshold) iKeepMe=0;
@@ -653,6 +558,27 @@ namespace crt{
 	//	if (iKeepMe==0) std::cout << "tot1 " << tot1 << " tot2 " << tot2 << std::endl;
 	}
 
+	if (fMaskDeadChannels)
+	  {
+	    int feb1Number = tfeb_id[0];
+	    std::vector<std::pair<int,float>> pes1 = tpesmap.find(tfeb_id[0])->second; 
+	    int strip1Number1 = pes1[0].first; 
+	    int strip1Number2 = pes1[1].first; 
+
+	    int feb2Number = tfeb_id[1];
+	    std::vector<std::pair<int,float>> pes2 = tpesmap.find(tfeb_id[1])->second; 
+	    int strip2Number1 = pes2[0].first; 
+	    int strip2Number2 = pes2[1].first; 
+
+	    //int feb2Number = tfeb_id[1];
+
+	    bool hitFromDead = isHitFromDeadChannels(feb1Number, strip1Number1, strip1Number2, feb2Number, strip2Number1, strip2Number2, deadMap);
+	    
+	    if ( hitFromDead ){
+	      //std::cout<<hitFromDead<<" "<<feb1Number<<" "<<strip1Number1<<" "<<strip1Number2<<" , "<<feb2Number<<" "<<strip2Number1<<" "<<strip2Number2<<"\n";
+	      iKeepMe =0;
+	    }
+	  }
 
 
       } // if this is a MC hit
@@ -675,6 +601,40 @@ namespace crt{
       
     
   } // produce()
-  */    
     
- 
+    void CRTSimHitCorr::endJob()
+    {
+      
+    }
+    
+    crt::CRTHit CRTSimHitCorr::FillCrtHit(std::vector<uint8_t> tfeb_id, std::map<uint8_t, std::vector<std::pair<int,float>>> tpesmap, float peshit,double time1, double time2, double time3, double time4, double time5, 
+int plane, double x, double ex, double y, double ey, double z, double ez){
+	
+	crt::CRTHit crtHit;
+	crtHit.feb_id = tfeb_id;
+	crtHit.pesmap = tpesmap;
+	crtHit.peshit = peshit;
+	crtHit.ts0_s = time1; 
+	crtHit.ts0_s_corr = time2;
+	crtHit.ts0_ns = time3;
+	crtHit.ts0_ns_corr = time4;
+	crtHit.ts1_ns = time5 ;
+	crtHit.plane = plane;
+	crtHit.x_pos = x;
+	crtHit.x_err = ex;
+	crtHit.y_pos = y; 
+	crtHit.y_err = ey;
+	crtHit.z_pos = z;
+	crtHit.z_err = ez;
+	return crtHit;
+      }
+      
+
+      DEFINE_ART_MODULE(CRTSimHitCorr)
+
+    }// namespace crt
+
+namespace {
+
+
+}
