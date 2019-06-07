@@ -239,6 +239,7 @@ namespace crt{
       fSiPMThreshold         = (p.get<float>         ("SiPMThreshold"        ,0.0));
       fPEscaleFactor         = (p.get<float>         ("PEscaleFactor"        ,1.525));
       fElectNoise            = (p.get<float>         ("ElectNoise"           ,2.0));
+      fDistOffStrip          = (p.get<float>         ("DistOffStrip"         ,40.0));
       fRestorePE             = (p.get<bool>          ("RestorePE"            ,true));
       fRemoveHits            = (p.get<bool>          ("RemoveHits"           ,true));
       fRemoveBottomHits      = (p.get<bool>          ("RemoveBottomHits"     ,true));
@@ -421,6 +422,7 @@ namespace crt{
     
     void CRTSimHitCorr::produce(art::Event & event)
     {
+      std::cout<<"-------------- puppa \n";
       if(fVerbose){
 	std::cout<<"============================================"<<std::endl
 		 <<"Run = "<<event.run()<<", SubRun = "<<event.subRun()<<", Event = "<<event.id().event()<<std::endl
