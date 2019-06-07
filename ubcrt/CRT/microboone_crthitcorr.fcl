@@ -36,7 +36,7 @@ crtsimhitcorr:
     RemoveBottomHits:     true   # clean up bottom hits that are removed from data 
     ApplyDetectorResponse:true   # Apply detector response? 
     MaskDeadChannels:     true   # Mask Dead Channels?
-    TopSections:          true   # Constrain the hits to belong to one of the top sections
+    Sections:             true   # Constrain the hits to belong to one of the sections
     SimulatedSaturation:  true   # Simulate Sipm saturation?
     Verbose:              false  # Talk?
 }

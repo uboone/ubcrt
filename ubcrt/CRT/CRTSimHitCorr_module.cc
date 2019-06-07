@@ -166,15 +166,19 @@ namespace crt{
     bool isHitFromDeadChannels(int febNumber1, int channel1Number1, int channel1Number2 , 
 			       int febNumber2, int channel2Number1, int channel2Number2 , std::vector<std::pair<int,int>> deadMap );
  
-    crt::CRTHit FillCrtHit(std::vector<uint8_t> tfeb_id, std::map<uint8_t,std::vector<std::pair<int,float > > > tpesmap, 
+    crt::CRTHit FillCrtHit(std::vector<uint8_t> tfeb_id, std::map<uint8_t,std::vector<std::pair<int,float>>> tpesmap, 
 			   float peshit, double time1, double time2, double time3, double time4, double time5, int plane,
 			   double x, double ex, double y, double ey, double z, double ez); 
-
+    
     void ScaleMCtime  (float &time1,float &time5) {time1/=5.;time5/=5.;};
     
-    bool TopSections(int firstFEB, int secondFEB);
+
     bool BottomSections(int firstFEB, int secondFEB);
-			   /*
+    bool PipeSections(int firstFEB, int secondFEB);			   
+    bool FTSections(int firstFEB, int secondFEB);			   
+    bool TopSections(int firstFEB, int secondFEB);	
+    bool ApplyDetectorResponse(crt::CRTHit thisCrtHit,  std::map<uint8_t, std::vector<std::pair<int,float>>> &tpesmap, float &pestot );
+    /*
 
     void RestorePE             (crt::CRTHit hit);
     void ApplyDetectorResponse (crt::CRTHit hit);
@@ -202,7 +206,7 @@ namespace crt{
     bool  fMaskDeadChannels;
     std::vector<int> fDeadFEB; 
     std::vector<int> fDeadChannels;
-    bool  fTopSections;
+    bool  fSections;
     bool  fSimulatedSaturation;
     
     ///< print info
@@ -240,7 +244,7 @@ namespace crt{
       fRemoveBottomHits      = (p.get<bool>          ("RemoveBottomHits"     ,true));
       fApplyDetectorResponse = (p.get<bool>          ("ApplyDetectorResponse",true));
       fMaskDeadChannels      = (p.get<bool>          ("MaskDeadChannels"     ,true));
-      fTopSections           = (p.get<bool>          ("TopSections"          ,true));
+      fSections              = (p.get<bool>          ("Sections"             ,true));
       fSimulatedSaturation   = (p.get<bool>          ("SimulatedSaturation"  ,true));
 
       fDeadFEB               = (p.get< std::vector<int> > ("DeadFEB"    ,  MichelleFEB ));
@@ -311,7 +315,8 @@ namespace crt{
   bool CRTSimHitCorr::BottomSections(int firstFEB, int secondFEB)
   {    
     std::unordered_set<int> sectionA = {11,12};
-    std::unordered_set<int> sectionB = {14,17,18,19,22,23,24};
+    std::unordered_set<int> sectionB = {14,17,23,24};
+    std::unordered_set<int> sectionC = {18,19,22,23};
 
     // Check if both FEBs are in section A
     const bool first_inA  = sectionA.find(firstFEB)  != sectionA.end();
@@ -320,12 +325,39 @@ namespace crt{
     const bool first_inB  = sectionB.find(firstFEB)  != sectionB.end();
     const bool second_inB = sectionB.find(secondFEB) != sectionB.end();
 
-    if ( !((first_inA && second_inA) ||  (first_inB && second_inB)) ) return false;
+    // Check if both FEBs are in section C
+    const bool first_inC  = sectionC.find(firstFEB)  != sectionC.end();
+    const bool second_inC = sectionC.find(secondFEB) != sectionC.end();
+	  
+    if ( !((first_inA && second_inA) ||  (first_inB && second_inB) ||  (first_inC && second_inC) ) ) return false;
     return true;
   }
-					
+
+
+  bool CRTSimHitCorr::FTSections(int firstFEB, int secondFEB)
+  {    
+    std::unordered_set<int> sectionA = {52,31,29,60,61};
+    std::unordered_set<int> sectionB = {29,28,27,58,59};
+    std::unordered_set<int> sectionC = {27,26,30,56,57};
+
+    // Check if both FEBs are in section A
+    const bool first_inA  = sectionA.find(firstFEB)  != sectionA.end();
+    const bool second_inA = sectionA.find(secondFEB) != sectionA.end();
+    // Check if both FEBs are in section B
+    const bool first_inB  = sectionB.find(firstFEB)  != sectionB.end();
+    const bool second_inB = sectionB.find(secondFEB) != sectionB.end();
+
+    // Check if both FEBs are in section C
+    const bool first_inC  = sectionC.find(firstFEB)  != sectionC.end();
+    const bool second_inC = sectionC.find(secondFEB) != sectionC.end();
+	  
+    if ( !((first_inA && second_inA) ||  (first_inB && second_inB) ||  (first_inC && second_inC) ) ) return false;
+    return true;
+  }
+
+
   bool CRTSimHitCorr::TopSections(int firstFEB, int secondFEB)
-  {
+  {    
     std::unordered_set<int> sectionA = {109,105,195,123,113,114,115};
     std::unordered_set<int> sectionB = {106,124,107,108,116,117,118,127};
     std::unordered_set<int> sectionC = {128,125,126,111,112,119,120,121,129};
@@ -336,11 +368,53 @@ namespace crt{
     // Check if both FEBs are in section B
     const bool first_inB  = sectionB.find(firstFEB)  != sectionB.end();
     const bool second_inB = sectionB.find(secondFEB) != sectionB.end();
+
     // Check if both FEBs are in section C
     const bool first_inC  = sectionC.find(firstFEB)  != sectionC.end();
     const bool second_inC = sectionC.find(secondFEB) != sectionC.end();
 	  
     if ( !((first_inA && second_inA) ||  (first_inB && second_inB) ||  (first_inC && second_inC) ) ) return false;
+    return true;
+  }
+					
+  bool CRTSimHitCorr::PipeSections(int firstFEB, int secondFEB)
+  {
+    std::unordered_set<int> sectionA = {53,37,33,34,15,16,20,21};
+    std::unordered_set<int> sectionB = {54,34,35,36,20,21,46,47,48,49};
+    std::unordered_set<int> sectionC = {55,36,32,38,46,47,48,49,50,51};
+
+    std::unordered_set<int> sectionD = {39,40,41,15,16,20,21,46,47};
+    std::unordered_set<int> sectionE = {41,42,43,46,47,48,49};    
+    std::unordered_set<int> sectionF = {43,44,45,48,49,50,51};
+
+    //if (firstFEB==40||secondFEB==40) std::cout<<secondFEB<<" "<<firstFEB<<"\n";
+    // Check if both FEBs are in section A
+    const bool first_inA  = sectionA.find(firstFEB)  != sectionA.end();
+    const bool second_inA = sectionA.find(secondFEB) != sectionA.end();
+    // Check if both FEBs are in section B
+    const bool first_inB  = sectionB.find(firstFEB)  != sectionB.end();
+    const bool second_inB = sectionB.find(secondFEB) != sectionB.end();
+    // Check if both FEBs are in section C
+    const bool first_inC  = sectionC.find(firstFEB)  != sectionC.end();
+    const bool second_inC = sectionC.find(secondFEB) != sectionC.end();
+    // Check if both FEBs are in section D
+    const bool first_inD  = sectionD.find(firstFEB)  != sectionD.end();
+    const bool second_inD = sectionD.find(secondFEB) != sectionD.end();
+    // Check if both FEBs are in section E
+    const bool first_inE  = sectionE.find(firstFEB)  != sectionE.end();
+    const bool second_inE = sectionE.find(secondFEB) != sectionE.end();
+    // Check if both FEBs are in section F
+    const bool first_inF  = sectionF.find(firstFEB)  != sectionF.end();
+    const bool second_inF = sectionF.find(secondFEB) != sectionF.end();
+    /*
+    if ( !first_inA &&  !first_inB &&  !first_inC &&
+	 !first_inD &&  !first_inE &&  !first_inF     ) {std::cout<<firstFEB<<"\n";}
+
+    if ( !second_inA &&  !second_inB &&  !second_inC &&
+	 !second_inD &&  !second_inE &&  !second_inF     ) {std::cout<<secondFEB<<"\n";}
+    */
+    if ( !((first_inA && second_inA) ||  (first_inB && second_inB) ||  (first_inC && second_inC) ||
+	   (first_inD && second_inD) ||  (first_inE && second_inE) ||  (first_inF && second_inF)    ) ) {return false;}
     return true;
   }
 
@@ -388,12 +462,15 @@ namespace crt{
 	// Get all memebers you need to check if this is data or MC.
 	// only change/remove MC hits. 
 	std::vector<uint8_t> tfeb_id = thisCrtHit.feb_id;
+	int firstFEB  = (int)tfeb_id[0];
+	int secondFEB = (int)tfeb_id[1];
 	std::map<uint8_t, std::vector<std::pair<int,float>>> tpesmap=thisCrtHit.pesmap;
-	std::cout<<"*************** "<<tpesmap.size()<<"\n";
+	std::vector<std::pair<int,float>> firstStrip  = tpesmap.find(firstFEB)->second; 
+	std::vector<std::pair<int,float>> secondStrip = tpesmap.find(secondFEB)->second; 
 	// if this is data, push the hit and continue with the next
-	if (tpesmap.size() == 32) { std::cout<<"&&&&&&&&&&&&&&&&&&&& data\n"; CRTHitOutCol->push_back(thisCrtHit); continue;}
+	if (firstStrip.size() == 32) { CRTHitOutCol->push_back(thisCrtHit); continue;}
 	// At this point, throw an exeption if the size is strange
-	if (tpesmap.size() !=  2) {std::cerr << "\033[93m[ERROR]\033[00m Hit has wrong number of strips: "<<tpesmap.size()  << std::endl;
+	if (firstStrip.size() !=  2) {std::cerr << "\033[93m[ERROR]\033[00m Hit has wrong number of strips: "<<tpesmap.size()  << std::endl;
 	  event.put(std::move(CRTHitOutCol));
 	  return; }
 	
@@ -413,37 +490,34 @@ namespace crt{
 	float    ez = thisCrtHit.z_err;
 	float pestot = thisCrtHit.peshit;      
 
-	int firstFEB  = (int)tfeb_id[0];
-	int secondFEB = (int)tfeb_id[1];
+
 	// Modify the timing of ts1 due to bug in
 	// in Oct2018 simulation. May not apply anymore
 	if (fScaleMCtime) ScaleMCtime(time1,time5);
 
 
-	// Would you like to section the top?
-	if (fTopSections && (plane == 3) ) keepMe = TopSections(firstFEB, secondFEB);
+	// Would you like restrict the strip crossing to overlapping modules?
+	if (fSections)
+	  {
+	    if (plane == 0) keepMe = BottomSections(firstFEB, secondFEB);
+	    else if (plane == 1) keepMe = FTSections(firstFEB, secondFEB);
+	    else if (plane == 2) keepMe = PipeSections(firstFEB, secondFEB);
+	    else if (plane == 3) keepMe = TopSections(firstFEB, secondFEB);
+	  }
 	if (!keepMe) continue; // If this hit is to trash, skip the rest
 	
-	// Would you like to section the Bottom?
-	if (fRemoveBottomHits)   keepMe = BottomSections(firstFEB, secondFEB);
-	if (!keepMe) continue; // If this hit is to trash, skip the rest
 
 	//Let's mask the dead channels
-	std::vector<std::pair<int,float>> firstStrip  = tpesmap.find(tfeb_id[0])->second; 
-	std::vector<std::pair<int,float>> secondStrip = tpesmap.find(tfeb_id[1])->second; 
-	if (fMaskDeadChannels) keepMe = !(isHitFromDeadChannels(firstFEB , firstStrip[0].first , firstStrip[0].first , 
+	if (fMaskDeadChannels) keepMe = !(isHitFromDeadChannels(firstFEB , firstStrip [0].first, firstStrip [0].first, 
 								secondFEB, secondStrip[0].first, secondStrip[0].first, 
 								deadMap));
 
+	if (!keepMe) continue; // If this hit is to trash, skip the rest
 
-	
-	// Setup the strip width (the top is wider)
-	//double stripWidth = 10.8;
-	//if (plane == 3 stripWidth = 11.2;
-
-	/*
-	  ALL THE CODE
-	 */
+	// Apply the detector response & threshold at the sipm & strip level
+	if (fApplyDetectorResponse) { keepMe = ApplyDetectorResponse(thisCrtHit,  tpesmap, pestot); }
+	// after that, check the hit threshold
+	if (pestot<fHitThreshold) continue;
 
 	
 	if (keepMe) {
@@ -457,224 +531,174 @@ namespace crt{
       event.put(std::move(CRTHitOutCol));
     }// End of the produce function
 
+
+
+  bool CRTSimHitCorr::ApplyDetectorResponse(crt::CRTHit thisCrtHit,  std::map<uint8_t , std::vector<std::pair<int,float>>>  &tpesmap, float &pestot )
+  {
+    // Get the strips info!
+    std::vector<uint8_t> tfeb_id = thisCrtHit.feb_id;
+    int first_feb  = (int)tfeb_id[0];
+    
+    if (fPEscaleFactor<0) fPEscaleFactor=1.0; 
+    
+    // ---------------------- first strip -------------------------------
+    double distToReadout=0;
+    int this_mod = feb2mod[first_feb];
+    if (this_mod<0 || this_mod>72) { std::cout << "bad module number for feb " << first_feb << std::endl; return false;}
+    // Calculate the distance between hit and sipm... it depends on the orientation of the module (= 3 possibility)
+    if      (mod2orient[this_mod]==0) distToReadout=mod2end[this_mod]*(thisCrtHit.x_pos-sipm_pos[this_mod]);
+    else if (mod2orient[this_mod]==1) distToReadout=mod2end[this_mod]*(thisCrtHit.y_pos-sipm_pos[this_mod]);
+    else                              distToReadout=mod2end[this_mod]*(thisCrtHit.z_pos-sipm_pos[this_mod]);
+    
+    // And fudge a bit with the ends
+    if (fRemoveHits) {
+      if (distToReadout<-1.0*fDistOffStrip) return false;
+      else if (distToReadout>(mod2length[this_mod]+fDistOffStrip)) return false;
+    }
+    if (distToReadout>mod2length[this_mod]) {
+      distToReadout=mod2length[this_mod];
+    }
+    else if (distToReadout<0) distToReadout=0.0;
+    
+    
+    // Setup the strip width (the top is wider)
+    double stripWidth = 10.8;
+    if (thisCrtHit.plane == 3) stripWidth = 11.2;
+
+    // This is where the fun starts
+    double b = 1085.0;
+    double pe_sf_A = b*b/pow(distToReadout+b,2.0);
+    
+    // Take the crt hit map, 
+    // Find the first feb for this hit
+    std::map<uint8_t, std::vector<std::pair<int,float>>> thispesmap=thisCrtHit.pesmap;
+    std::vector<std::pair<int,float>> pesA  = thispesmap.find(first_feb)->second; 
+    // Take the signal on the single sipm and scale it by 2 factors: fPEscaleFactor and pe_sf_A
+    float pesA_0=(fPEscaleFactor*pe_sf_A)*pesA[0].second;
+    float pesB_0=(fPEscaleFactor*pe_sf_A)*pesA[1].second;
+    // Calculate the total pes
+    float pestot_0=pesA_0+pesB_0;
+    // Calculate the distance in the "across" direction 
+    float distA=(pesA_0/pestot_0)*stripWidth;  // 10.8 is strip width in cm for side, 11.2 for the top
+    float distB=(pesB_0/pestot_0)*stripWidth;  // 10.8 is strip width in cm for side, 11.2 for the top
+    // Calculate attenuation in the "across" direction 
+    float absA=exp(-1.0*distA/8.5); // 
+    float absB=exp(-1.0*distB/8.5); //
+    // Ridistribute the signal on single sipm considering the attenuation
+    pesA_0=pestot_0*(absA)/(absA+absB);
+    pesB_0=pestot_0*(absB)/(absA+absB);
+    // smear these values to simulate the number of produced photoelectrons
+    float npe0 = CLHEP::RandPoisson::shoot(&fEngine, pesA_0);
+    float npe1 = CLHEP::RandPoisson::shoot(&fEngine, pesB_0);
+    // SiPM and ADC response: Npe to ADC counts
+    float pesA_sm = CLHEP::RandGauss::shoot(&fEngine, npe0, fElectNoise * sqrt(npe0)); // fElectNoise guess 0.085
+    float pesB_sm = CLHEP::RandGauss::shoot(&fEngine, npe1, fElectNoise * sqrt(npe0)); // fElectNoise guess 0.085
+    if (fVerbose)std::cout<<"DEBUGG  "<< fElectNoise<<"  "<<pesA_0<<"   "<<npe0<<" --   "<<pesA_sm<<"  ";
+	  
+    if (fSimulatedSaturation)
+      {
+	// If the pe is too high, the sipm saturated and returns only the maximum pe.
+	// We estimate this saturation from data in the following way:
+	// For a 12 bit adc you have a range of 4095, the average gain in data (i.e. ADC/pe conversion) is 
+	// 40 ADC/pe, so 4095/40 = 102.375 is the max pe recorded... let's put a cap on that!
+	if (pesA_sm > 102.375 ) pesA_sm = 102.375;
+	if (pesB_sm > 102.375 ) pesB_sm = 102.375;
+      }
+
+    if (fRestorePE) {
+      float sf2=pow(distToReadout+b,2.0)/b/b;
+      pesA_sm *= sf2;
+      pesB_sm *= sf2;
+    }
+    
+    if (pesA_sm< fSiPMThreshold) return false;
+    if (pesB_sm< fSiPMThreshold) return false;
+    if ( (pesA_sm+pesB_sm) <fStripThreshold) return false;
+
+    // Put these values back into the single simulated sipms
+    std::pair<int,float> pesA0(pesA[0].first,pesA_sm);
+    std::pair<int,float> pesA1(pesA[1].first,pesB_sm);
+    std::vector<std::pair<int,float>> pesAnew;
+    pesAnew.push_back(pesA0); pesAnew.push_back(pesA1);
+
+    tpesmap.clear();
+    tpesmap.emplace(tfeb_id[0],pesAnew);
+    // Calculate the contribution of the first stript to the total pe of the hit
+    pestot = pesA_sm+pesB_sm;
+
+
+    // ---------------------- second strip -------------------------------
+    int second_feb = (int)tfeb_id[1];
+    std::vector<std::pair<int,float>> pesB  = thispesmap.find(second_feb)->second; 
+    distToReadout=0;
+    this_mod = feb2mod[second_feb];
+    if (this_mod<0 || this_mod>72) 
+      std::cout << "bad module number for feb " << second_feb << std::endl;
+    else {	    
+      if (mod2orient[this_mod]==0) distToReadout=mod2end[this_mod]*(thisCrtHit.x_pos-sipm_pos[this_mod]);
+      else if (mod2orient[this_mod]==1) distToReadout=mod2end[this_mod]*(thisCrtHit.y_pos-sipm_pos[this_mod]);
+      else distToReadout=mod2end[this_mod]*(thisCrtHit.z_pos-sipm_pos[this_mod]);
+	    
+      if (fRemoveHits) {
+	if (distToReadout<-1.0*fDistOffStrip) return false;
+	else if (distToReadout>(mod2length[this_mod]+fDistOffStrip)) return false;
+      }
+      if (distToReadout>mod2length[this_mod]) {
+	distToReadout=mod2length[this_mod];
+      }
+      else if (distToReadout<0) distToReadout=0.0;
+    }	  
+    double pe_sf_B = b*b/pow(distToReadout+b,2.0);
+    pesA_0=pe_sf_B*fPEscaleFactor*pesB[0].second;
+    pesB_0=pe_sf_B*fPEscaleFactor*pesB[1].second;
+    pestot_0=pesA_0+pesB_0;
+    distA=(pesA_0/pestot_0)*stripWidth;  // 10.8 is strip width in cm for side, 11.2 for the top
+    distB=(pesB_0/pestot_0)*stripWidth;  // 10.8 is strip width in cm for side, 11.2 for the top
+    absA=exp(-1.0*distA/8.5);
+    absB=exp(-1.0*distB/8.5);
+    pesA_0=pestot_0*(absA)/(absA+absB);
+    pesB_0=pestot_0*(absB)/(absA+absB);
+    // smear these values
+    npe0 = CLHEP::RandPoisson::shoot(&fEngine, pesA_0);
+    npe1 = CLHEP::RandPoisson::shoot(&fEngine, pesB_0);
+    // SiPM and ADC response: Npe to ADC counts
+    pesA_sm = CLHEP::RandGauss::shoot(&fEngine, npe0, fElectNoise * sqrt(npe0));
+    pesB_sm = CLHEP::RandGauss::shoot(&fEngine, npe1, fElectNoise * sqrt(npe1));
+    if (fSimulatedSaturation)
+      {
+	// If the pe is too high, the sipm saturated and returns only the maximum pe.
+	// We estimate this saturation from data in the following way:
+	// For a 12 bit adc you have a range of 4095, the average gain in data (i.e. ADC/pe conversion) is 
+	// 40 ADC/pe, so 4095/40 = 102.375 is the max pe recorded... let's put a cap on that!
+	if (pesA_sm > 102.375 ) pesA_sm = 102.375;
+	if (pesB_sm > 102.375 ) pesB_sm = 102.375;
+      }
+    if (fRestorePE) {
+      float sf2=pow(distToReadout+b,2.0)/b/b;
+      pesA_sm *= sf2;
+      pesB_sm *= sf2;
+    }
+    if (pesA_sm< fSiPMThreshold) return false;
+    if (pesB_sm< fSiPMThreshold) return false;
+    if ( (pesA_sm+pesB_sm) <fStripThreshold) return false;
+
+    std::pair<int,float> pesB0(pesB[0].first,pesA_sm);
+    std::pair<int,float> pesB1(pesB[1].first,pesB_sm);
+    std::vector<std::pair<int,float>> pesBnew;
+    pesBnew.push_back(pesB0); pesBnew.push_back(pesB1);
+    tpesmap.emplace(tfeb_id[1],pesBnew);
+    pestot += pesA_sm+pesB_sm;
+
+    return true;
+  }
+
+	
+					    	
+
+
   
   DEFINE_ART_MODULE(CRTSimHitCorr)
 }// namespace crt
 
 
      
-
-    
-  /*
-
-	// Parametrize this!!
-	if (fApplyDetectorResponse) {	  
-	  if (fPEscaleFactor<0) fPEscaleFactor=1.0; 
-	  tpesmap.clear();
-	  // first strip
-	  double distToReadout=0;
-	  int this_feb = tfeb_id[0];
-	  int this_mod = feb2mod[this_feb];
-	  if (this_mod<0 || this_mod>72) { std::cout << "bad module number for feb " << this_feb << std::endl; continue;}
-
-	  // Calculate the distance between hit and sipm... it depends on the orientation of the module (= 3 possibility)
-	  if      (mod2orient[this_mod]==0) distToReadout=mod2end[this_mod]*(x-sipm_pos[this_mod]);
-	  else if (mod2orient[this_mod]==1) distToReadout=mod2end[this_mod]*(y-sipm_pos[this_mod]);
-	  else                              distToReadout=mod2end[this_mod]*(z-sipm_pos[this_mod]);
-
-	  // And fudge a bit with the ends
-	  
-	  if (fRemoveHits) {
-	    if (distToReadout<-1.0*fDistOffStrip) iKeepMe=0;
-	    else if (distToReadout>(mod2length[this_mod]+fDistOffStrip)) iKeepMe=0;
-	  }
-	  if (distToReadout>mod2length[this_mod]) {
-	    distToReadout=mod2length[this_mod];
-	  }
-	  else if (distToReadout<0) distToReadout=0.0;
-	   
-	  // This is where the fun starts
-	  double b = 1085.0;
-	  double pe_sf_A = b*b/pow(distToReadout+b,2.0);
-
-	  // Take the crt hit map, 
-	  // Find the first feb for this hit
-	  std::map<uint8_t, std::vector<std::pair<int,float>>> tempmap = thisCrtHit.pesmap;
-	  std::vector<std::pair<int,float>>                       pesA = tempmap.find(tfeb_id[0])->second;
-	  // Take the signal on the single sipm and scale it by 2 factors: fPEscaleFactor and pe_sf_A
-	  float pesA_0=(fPEscaleFactor*pe_sf_A)*pesA[0].second;
-	  float pesB_0=(fPEscaleFactor*pe_sf_A)*pesA[1].second;
-	  // Calculate the total pes
-	  float pestot_0=pesA_0+pesB_0;
-	  // Calculate the distance in the "across" direction 
-	  float distA=(pesA_0/pestot_0)*stripWidth;  // 10.8 is strip width in cm for side, 11.2 for the top
-	  float distB=(pesB_0/pestot_0)*stripWidth;  // 10.8 is strip width in cm for side, 11.2 for the top
-	  // Calculate attenuation in the "across" direction 
-	  float absA=exp(-1.0*distA/8.5); // 
-	  float absB=exp(-1.0*distB/8.5); //
-	  // Ridistribute the signal on single sipm considering the attenuation
-	  pesA_0=pestot_0*(absA)/(absA+absB);
-	  pesB_0=pestot_0*(absB)/(absA+absB);
-	  // smear these values to simulate the number of produced photoelectrons
-          float npe0 = CLHEP::RandPoisson::shoot(&fEngine, pesA_0);
-          float npe1 = CLHEP::RandPoisson::shoot(&fEngine, pesB_0);
-	  // SiPM and ADC response: Npe to ADC counts
-          float pesA_sm = CLHEP::RandGauss::shoot(&fEngine, npe0, fElectNoise * sqrt(npe0)); // fElectNoise guess 0.085
-          float pesB_sm = CLHEP::RandGauss::shoot(&fEngine, npe1, fElectNoise * sqrt(npe0)); // fElectNoise guess 0.085
-	  if (fVerbose)std::cout<<"DEBUGG  "<< fElectNoise<<"  "<<pesA_0<<"   "<<npe0<<" --   "<<pesA_sm<<"  ";
-	  
-	  if (fSimulatedSaturation)
-	    {
-	      // If the pe is too high, the sipm saturated and returns only the maximum pe.
-	      // We estimate this saturation from data in the following way:
-	      // For a 12 bit adc you have a range of 4095, the average gain in data (i.e. ADC/pe conversion) is 
-	      // 40 ADC/pe, so 4095/40 = 102.375 is the max pe recorded... let's put a cap on that!
-	      if (pesA_sm > 102.375 ) pesA_sm = 102.375;
-	      if (pesB_sm > 102.375 ) pesB_sm = 102.375;
-	    }
-	  if (fRestorePE) {
-	    float sf2=pow(distToReadout+b,2.0)/b/b;
-	    pesA_sm *= sf2;
-	    pesB_sm *= sf2;
-	  }
-	  if (fVerbose)std::cout<<pesA_sm<<"   \n";
-	  // Put these values back into the single simulated sipms
-	  std::pair<int,float> pesA0(pesA[0].first,pesA_sm);
-	  std::pair<int,float> pesA1(pesA[1].first,pesB_sm);
-	  std::vector<std::pair<int,float>> pesAnew;
-	  pesAnew.push_back(pesA0); pesAnew.push_back(pesA1);
-	  tpesmap.emplace(tfeb_id[0],pesAnew);
-	  // Calculate the contribution of the first stript to the total pe of the hit
-	  pestot = pesA_sm+pesB_sm;
-
-
-	  //second strip
-	  distToReadout=0;
-	  this_feb = tfeb_id[1];
-	  this_mod = feb2mod[this_feb];
-	  if (this_mod<0 || this_mod>72) 
-	    std::cout << "bad module number for feb " << this_feb << std::endl;
-	  else {	    
-	    if (mod2orient[this_mod]==0) distToReadout=mod2end[this_mod]*(x-sipm_pos[this_mod]);
-	    else if (mod2orient[this_mod]==1) distToReadout=mod2end[this_mod]*(y-sipm_pos[this_mod]);
-	    else distToReadout=mod2end[this_mod]*(z-sipm_pos[this_mod]);
-	    
-	    if (fRemoveHits) {
-	      if (distToReadout<-1.0*fDistOffStrip) iKeepMe=0;
-	      else if (distToReadout>(mod2length[this_mod]+fDistOffStrip)) iKeepMe=0;
-	    }
-
-	    if (distToReadout>mod2length[this_mod]) {
-	      distToReadout=mod2length[this_mod];
-	    }
-	    else if (distToReadout<0) distToReadout=0.0;
-	  }	  
-	  double pe_sf_B = b*b/pow(distToReadout+b,2.0);
-
-	  std::vector<std::pair<int,float>> pesB = tempmap.find(tfeb_id[1])->second; 
-	  pesA_0=pe_sf_B*fPEscaleFactor*pesB[0].second;
-	  pesB_0=pe_sf_B*fPEscaleFactor*pesB[1].second;
-	  pestot_0=pesA_0+pesB_0;
-	  distA=(pesA_0/pestot_0)*stripWidth;  // 10.8 is strip width in cm for side, 11.2 for the top
-	  distB=(pesB_0/pestot_0)*stripWidth;  // 10.8 is strip width in cm for side, 11.2 for the top
-	  absA=exp(-1.0*distA/8.5);
-	  absB=exp(-1.0*distB/8.5);
-	  pesA_0=pestot_0*(absA)/(absA+absB);
-	  pesB_0=pestot_0*(absB)/(absA+absB);
-	  // smear these values
-          npe0 = CLHEP::RandPoisson::shoot(&fEngine, pesA_0);
-          npe1 = CLHEP::RandPoisson::shoot(&fEngine, pesB_0);
-	  // SiPM and ADC response: Npe to ADC counts
-          pesA_sm = CLHEP::RandGauss::shoot(&fEngine, npe0, fElectNoise * sqrt(npe0));
-          pesB_sm = CLHEP::RandGauss::shoot(&fEngine, npe1, fElectNoise * sqrt(npe1));
-	  if (fSimulatedSaturation)
-	    {
-	      // If the pe is too high, the sipm saturated and returns only the maximum pe.
-	      // We estimate this saturation from data in the following way:
-	      // For a 12 bit adc you have a range of 4095, the average gain in data (i.e. ADC/pe conversion) is 
-	      // 40 ADC/pe, so 4095/40 = 102.375 is the max pe recorded... let's put a cap on that!
-	      if (pesA_sm > 102.375 ) pesA_sm = 102.375;
-	      if (pesB_sm > 102.375 ) pesB_sm = 102.375;
-	    }
-	  if (fRestorePE) {
-	    float sf2=pow(distToReadout+b,2.0)/b/b;
-	    pesA_sm *= sf2;
-	    pesB_sm *= sf2;
-	  }
-
-
-	  std::pair<int,float> pesB0(pesB[0].first,pesA_sm);
-	  std::pair<int,float> pesB1(pesB[1].first,pesB_sm);
-	  std::vector<std::pair<int,float>> pesBnew;
-	  pesBnew.push_back(pesB0); pesBnew.push_back(pesB1);
-	  tpesmap.emplace(tfeb_id[1],pesBnew);
-	  pestot += pesA_sm+pesB_sm;
-
-	} // if Apply Detector Response Flag is set
-	else if (fPEscaleFactor>0) {
-	  // scale total hit charge 
-	  pestot*=fPEscaleFactor;
-	  // more scaling of charge, maps are painful.
-	  tpesmap.clear();
-	  std::map<uint8_t, std::vector<std::pair<int,float>>> tempmap=thisCrtHit.pesmap;
-	  std::vector<std::pair<int,float>> pesA = tempmap.find(tfeb_id[0])->second; 
-	  std::pair<int,float> pesA0(pesA[0].first,fPEscaleFactor*pesA[0].second);
-	  std::pair<int,float> pesA1(pesA[1].first,fPEscaleFactor*pesA[1].second);
-	  std::vector<std::pair<int,float>> pesAnew;
-	  pesAnew.push_back(pesA0); pesAnew.push_back(pesA1);
-	  tpesmap.emplace(tfeb_id[0],pesAnew);
-	  std::vector<std::pair<int,float>> pesB = tempmap.find(tfeb_id[1])->second; 
-	  std::pair<int,float> pesB0(pesB[0].first,fPEscaleFactor*pesB[0].second);
-	  std::pair<int,float> pesB1(pesB[1].first,fPEscaleFactor*pesB[1].second);
-	  std::vector<std::pair<int,float>> pesBnew;
-	  pesBnew.push_back(pesB0); pesBnew.push_back(pesB1);
-	  tpesmap.emplace(tfeb_id[1],pesBnew);
-	} // if scale factor >0 and det response turned off
-
-	
-	// remove bottom hits from FEB combinations not allowed in data
-
-	
-	// apply hit threshold
-	if (pestot<fHitThreshold) iKeepMe=0;
-	else {
-	// apply strip and sipm threshold
-	std::vector<std::pair<int,float>> pes1 = tpesmap.find(tfeb_id[0])->second; 
-	std::pair<int,float> ind_pes1=pes1[0];  // works only for simulation (the pes1 vector only has 2 elements)
-	std::pair<int,float> ind_pes2=pes1[1];
-	float tot1 = ind_pes1.second+ind_pes2.second;
-	std::vector<std::pair<int,float>> pes2 = tpesmap.find(tfeb_id[1])->second; 
-	std::pair<int,float> ind2_pes1=pes2[0];  // works only for simulation (the pes1 vector only has 2 elements)
-	std::pair<int,float> ind2_pes2=pes2[1];
-	float tot2 = ind2_pes1.second+ind2_pes2.second;
-	if ( tot2<fStripThreshold || tot1<fStripThreshold ) iKeepMe=0;
-	if (ind2_pes1.second < fSiPMThreshold || ind2_pes2.second<fSiPMThreshold) iKeepMe=0;
-	if (ind_pes1.second < fSiPMThreshold || ind_pes2.second<fSiPMThreshold ) iKeepMe=0;
-	//	if (iKeepMe==0) std::cout << "tot1 " << tot1 << " tot2 " << tot2 << std::endl;
-	}
-
-
-
-      } // if this is a MC hit
-      if (iKeepMe) {
-	
-	// Create a corrected CRT hit
-	crt::CRTHit crtHit = FillCrtHit(tfeb_id, tpesmap, pestot, time1,  time2,  time3,  time4,  time5, 
-					plane, x, ex,y,ey,z,ez );
-	
-	CRTHitOutCol->push_back(crtHit);
-	nHits++;
-	if (fVerbose) std::cout << "hit created: time " << time5 << " x " <<  x << 
-			" y " << y << " z " <<  z << std::endl;
-      }  // keep this hit	    
-    } // loop over hits
-    
-    event.put(std::move(CRTHitOutCol));
-
-    if(fVerbose) std::cout<<"Number of CRT hits produced = "<<nHits<<std::endl;
-      
-    
-  } // produce()
-  */    
-    
- 
