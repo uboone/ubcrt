@@ -142,11 +142,14 @@ void CRTTzeroProducer::produce(art::Event & evt)
  
 
   int N_CRTHits = CRTHitCollection.size();
-  //  std::cout << "number of crt hits " << N_CRTHits << std::endl;
-  int iflag[1000] = {};
-
+  std::vector<int> iflag(N_CRTHits, 0);
   uint planeA, planeB;
 
+  if (verbose_)
+    {
+      std::cout<<"Number of hits "<< N_CRTHits <<"\n";
+      //  if (N_CRTHits > 1000) std::cout<<"This is going to segfault cause I'm getting out of the array range \n"<< N_CRTHits <<"\n";
+    }
 
   for(int  i = 0; i < N_CRTHits; i++) {//A 
         
