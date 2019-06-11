@@ -2,19 +2,21 @@ BEGIN_PROLOG
 UBCRTCosmicFilter: {
  module_type              : "UBCRTCosmicFilter"  
  BeamFlashProducer        : "simpleFlashBeam"
- CRTHitProducer           : "merger"
+ CRTHitProducer           : "crthitcorr"
  DAQHeaderProducer        : "daq"
  BeamStart                : 3.19  # us
  BeamEnd                  : 4.87 # us
  PEMin                    : 10.0   # PEs
+ PEMin_CRT                : 100.0   # PEs
  DTOffset                 : 68600. # us
  Resolution               : 1.0  # us
- useAsFilter              : true
+ useAsFilter              : false
  verbose                  : false
  Top                      : true
  Bottom                   : true
  Anode                    : true
  Cathode                  : true
+ isThisMC                 : false
 }
 
 # NuMI beam on
@@ -31,7 +33,7 @@ UBCRTCosmicFilterNuMIOFF.BeamEnd:   15.86
 UBCRTCosmicFilterNuMIMC: @local::UBCRTCosmicFilterNuMION
 UBCRTCosmicFilterNuMIMC.DAQHeaderProducer: ""
 UBCRTCosmicFilterNuMIMC.DTOffset: 0
-UBCRTCosmicFilterNuMIMC.CRTHitProducer: "crthitsim"
+UBCRTCosmicFilterNuMIMC.isThisMC: true
 
 # BNB beam on
 UBCRTCosmicFilterBNBON: @local::UBCRTCosmicFilter
@@ -47,9 +49,9 @@ UBCRTCosmicFilterBNBOFF.BeamEnd:   5.25
 UBCRTCosmicFilterBNBMC: @local::UBCRTCosmicFilter
 UBCRTCosmicFilterBNBMC.DAQHeaderProducer: ""
 UBCRTCosmicFilterBNBMC.DTOffset: 0
-UBCRTCosmicFilterBNBMC.CRTHitProducer: "crthitsim"
 UBCRTCosmicFilterBNBMC.BeamStart: 3.1
 UBCRTCosmicFilterBNBMC.BeamEnd:   4.9
+UBCRTCosmicFilterBNBMC.isThisMC:  true
 
 # BNB beam on top-only
 UBCRTCosmicFilterBNBONtop: @local::UBCRTCosmicFilterBNBON
@@ -68,6 +70,7 @@ UBCRTCosmicFilterBNBMCtop: @local::UBCRTCosmicFilterBNBMC
 UBCRTCosmicFilterBNBMCtop.Bottom:  false
 UBCRTCosmicFilterBNBMCtop.Anode:   false
 UBCRTCosmicFilterBNBMCtop.Cathode: false
+UBCRTCosmicFilterBNBMCtop.isThisMC:true
 
 # NuMI beam on top-only
 UBCRTCosmicFilterNuMIONtop: @local::UBCRTCosmicFilterNuMION
@@ -86,5 +89,5 @@ UBCRTCosmicFilterNuMIMCtop: @local::UBCRTCosmicFilterNuMIMC
 UBCRTCosmicFilterNuMIMCtop.Bottom:  false
 UBCRTCosmicFilterNuMIMCtop.Anode:   false
 UBCRTCosmicFilterNuMIMCtop.Cathode: false
-
+UBCRTCosmicFilterNuMIMC.isThisMC:   true
 END_PROLOG

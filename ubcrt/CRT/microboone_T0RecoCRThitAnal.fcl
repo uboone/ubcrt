@@ -1,27 +1,64 @@
 # FHiCL document used to run the "driver" executable. To learn more
 #  about the FHiCL language, please look at
 #  cdcvs.fnal.gov/redmine/documents/327 , the "FHiCL Quick Start Guide"
+BEGIN_PROLOG
 
 t0recocrthitana:
-    {			
-      module_type: T0recoCRTHitAnal
-      data_label_TPCtrack: "pandoraCosmic"
-      data_label_acptT0: "pandoraCosmicT0Reco"
-      data_label_crtT0:  "match"
-      data_label_CRThit: "merger"
-      data_label_CRTtzero: "crttzero"
-      data_label_flash: "simpleFlashCosmic"
-      data_label_DAQHeader: "daq"
-      fHardDelay: 40000   #BNB data is 35520?
-      TimeZeroOffset: 69200   #used for fTimeSelect=0
-      verbose: false
-	 # set =0 for GPS ref and =1 to use trigger time
-      TimeSelect: 0
-	 # distance of closest approach from track extrapolation to CRT hit 
-	 #   must be less than this to be considered a match
-      MatchCut: 40
-         # Track Quality Cuts for efficiency histograms
-      TQCutLength: 20 
-      TQCutOpAng: 0.95
-     }
+{			
+   module_type: T0recoCRTHitAnal
+   data_label_TPCtrack: "pandoraCosmic"
+   data_label_acptT0: "pandoraCosmicT0Reco"
+   data_label_crtT0:  "match"
+   data_label_CRThit: "remerge"
+   data_label_CRTtzero: "crttzero"
+   data_label_flash: "simpleFlashCosmic"
+   data_label_DAQHeader: "daq"
+   fHardDelay: 40000   #BNB data is 35520?
+   TimeZeroOffset: 69200   #used for fTimeSelect=0
+   verbose: false
+   # set =0 for GPS ref and =1 to use trigger time
+   TimeSelect: 0
+   # distance of closest approach from track extrapolation to CRT hit 
+   #   must be less than this to be considered a match
+   MatchCut: 40
+   # Track Quality Cuts for efficiency histograms
+   TQCutLength: 20 
+   TQCutOpAng: 0.95
+}
 
+t0recocrthitana2:
+{			
+   module_type: T0recoCRTHitAna2
+   data_label_TPCtrack: "pandoraCosmic"
+   data_label_acptT0: "pandoraCosmicT0Reco"
+   data_label_CRThit: "remerge"
+   data_label_CRTtzero: "crttzero"
+   data_label_flash: "simpleFlashCosmic"
+   data_label_DAQHeader: "daq"
+   HardDelay: 40000   #BNB data is 35520?
+   TimeZeroOffset: 69200   #used for fTimeSelect=0
+   verbose: false
+   # set =0 for GPS ref and =1 to use trigger time
+   TimeSelect: 0
+   # distance of closest approach from track extrapolation to CRT hit 
+   #   must be less than this to be considered a match
+   MatchCut: 40
+   # Track Quality Cuts for efficiency histograms
+   DriftVel: 0.11436
+   TQCutLength: 20 
+   TQCutOpAng: 0.95
+   AlignBotX:     0.0
+   AlignBotY:     0.0
+   AlignBotZ:     0.0
+   AlignAnodeX:   0.0
+   AlignAnodeY:   0.0
+   AlignAnodeZ:   0.0
+   AlignCathX:    0.0
+   AlignCathY:    0.0
+   AlignCathZ:    0.0
+   AlignTopX:     0.0
+   AlignTopY:     0.0
+   AlignTopZ:     0.0
+}
+
+END_PROLOG
