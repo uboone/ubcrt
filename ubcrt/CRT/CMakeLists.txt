@@ -119,7 +119,7 @@ simple_plugin( CRTDetSim module
         art_Persistency_Provenance canvas
         art_Utilities canvas
         lardata_DetectorInfoServices_DetectorClocksServiceStandard_service
-        nutools_RandomUtils_NuRandomService_service
+        nurandom_RandomUtils_NuRandomService_service
         ${ART_FRAMEWORK_SERVICES_REGISTRY}
         ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR_SERVICE}
         ${MF_MESSAGELOGGER}        
@@ -138,7 +138,7 @@ simple_plugin(CRTCalibration "module"
         art_Persistency_Provenance canvas
         art_Utilities canvas
         lardata_DetectorInfoServices_DetectorClocksServiceStandard_service
-      nutools_RandomUtils_NuRandomService_service
+      nurandom_RandomUtils_NuRandomService_service
         ${ART_FRAMEWORK_SERVICES_REGISTRY}
         ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR_SERVICE}
         ${MF_MESSAGELOGGER}
@@ -166,7 +166,7 @@ simple_plugin(CRTSimHitProducer "module"
         art_Persistency_Provenance canvas
         art_Utilities canvas
         lardata_DetectorInfoServices_DetectorClocksServiceStandard_service
-        nutools_RandomUtils_NuRandomService_service
+        nurandom_RandomUtils_NuRandomService_service
         ${ART_FRAMEWORK_SERVICES_REGISTRY}
         ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR_SERVICE}
 	${ART_ROOT_IO_TFILESERVICE_SERVICE}

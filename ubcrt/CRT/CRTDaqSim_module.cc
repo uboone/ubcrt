@@ -8,7 +8,7 @@
 #include "lardataobj/Simulation/AuxDetSimChannel.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "larcore/Geometry/AuxDetGeometry.h"
-#include "nutools/RandomUtils/NuRandomService.h"
+#include "nurandom/RandomUtils/NuRandomService.h"
 #include "CLHEP/Random/RandFlat.h"
 #include "CLHEP/Random/RandGauss.h"
 #include "CLHEP/Random/RandPoisson.h"
