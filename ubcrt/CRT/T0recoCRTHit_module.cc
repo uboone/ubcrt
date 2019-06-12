@@ -393,30 +393,6 @@ void T0recoCRTHit::produce(art::Event & evt)
 		  double crt_y=hitlist[ah]->y_pos;
 		  double crt_z=hitlist[ah]->z_pos;
 
-		  
-		  //		  int crt_plane = (hitlist[ah]->plane)%10;
-		  /*
-		  if (crt_plane==0) {
-		    crt_x+=fAlignBotX;
-		    crt_y+=fAlignBotY;
-		    crt_z+=fAlignBotZ;
-		  }
-		  else if (crt_plane==1) {
-		    crt_x+=fAlignAnodeX;
-		    crt_y+=fAlignAnodeY;
-		    crt_z+=fAlignAnodeZ;
-		  }
-		  else if (crt_plane==2) {
-		    crt_x+=fAlignCathX;
-		    crt_y+=fAlignCathY;
-		    crt_z+=fAlignCathZ;
-		  }
-		  else if (crt_plane==3) {
-		    crt_x+=fAlignTopX;
-		    crt_y+=fAlignTopY;
-		    crt_z+=fAlignTopZ;
-		  }
-		  */
 		  TVector3 CRTpoint(crt_x,crt_y,crt_z);
 		  
 		  //calculate track shift in x for the time  of this CRT hit
@@ -448,6 +424,38 @@ void T0recoCRTHit::produce(art::Event & evt)
 		  TVector3 trackstart(newStartP.X(),newStartP.Y(),newStartP.Z());
 		  TVector3 trackend(newEndP.X(),newEndP.Y(),newEndP.Z());
 		  
+		  // treat plane 2 special because modules are not all at the same x position.
+		  //  Note that x postion of CRT modules in this plane is hardcoded below,
+		  //    same values for data and simulation.  One should not do this.
+		  if (hitlist[ah]->plane==2) {
+		    int feb1 = hitlist[ah]->feb_id[0];
+		    int feb2 = hitlist[ah]->feb_id[1];
+		    TVector3 dir = trackend-trackstart;
+		    if  (feb1==15 ||  feb1==20 ||  feb1==46 ||  feb1==48 ||  feb1==50 ||
+			 feb2==15 ||  feb2==20 ||  feb2==46 ||  feb2==48 ||  feb2==50  ||
+			 feb1==16 ||  feb1==21 ||  feb1==47 ||  feb1==49 ||  feb1==51 ||
+			 feb2==16 ||  feb2==21 ||  feb2==47 ||  feb2==49 ||  feb2==51  ) {
+		      float dx=CRTpoint.X()-398.0;
+		      float newy=CRTpoint.Y()+(dir.Y()/dir.X())*dx;
+		      CRTpoint.SetY(newy);
+		    }
+		    else if ((feb1>52 && feb1<56) || (feb2>52 && feb2<56)) {
+		      float dx=CRTpoint.X()-388.0;
+		      float newy=CRTpoint.Y()+(dir.Y()/dir.X())*dx;
+		      CRTpoint.SetY(newy);
+		    }
+		    if ((feb1>31 && feb1<39) || (feb2>31 && feb2<39) ) {
+		      float dx=CRTpoint.X()-378.0;
+		      float newz=CRTpoint.Z()+(dir.Z()/dir.X())*dx;
+		      CRTpoint.SetZ(newz);
+		    }
+		    else if  ((feb1>38 && feb1<46) || (feb2>38 && feb2<46) ) {
+		      float dx=CRTpoint.X()-388.0;
+		      float newz=CRTpoint.Z()+(dir.Z()/dir.X())*dx;
+		      CRTpoint.SetZ(newz);
+		    }
+		  }
+
 		  // calculate the distance of closest approach (DCA) of track to CRT hit
 		  TVector3 denom = trackend-trackstart;
 		  TVector3 a =CRTpoint-trackstart;  TVector3 b=CRTpoint-trackend;
@@ -494,6 +502,8 @@ void T0recoCRTHit::produce(art::Event & evt)
 	      hDistAn->Fill(dist_besthit); 
 	  }
 	  else if (plane_besthit==2) {
+		    
+		    
 	    hDist2->Fill(dist_besthit);
 	    if ((trackstart.X()>255 && trackstart.X()<268)  || (trackend.X()>255 && trackend.X()<268) )
 	      hDistCa->Fill(dist_besthit); 
