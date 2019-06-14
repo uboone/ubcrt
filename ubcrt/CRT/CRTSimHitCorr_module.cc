@@ -407,57 +407,52 @@ namespace crt{
     // Check if both FEBs are in section F
     const bool first_inF  = sectionF.find(firstFEB)  != sectionF.end();
     const bool second_inF = sectionF.find(secondFEB) != sectionF.end();
-    /*
-    if ( !first_inA &&  !first_inB &&  !first_inC &&
-	 !first_inD &&  !first_inE &&  !first_inF     ) {std::cout<<firstFEB<<"\n";}
 
-    if ( !second_inA &&  !second_inB &&  !second_inC &&
-	 !second_inD &&  !second_inE &&  !second_inF     ) {std::cout<<secondFEB<<"\n";}
-    */
     if ( !((first_inA && second_inA) ||  (first_inB && second_inB) ||  (first_inC && second_inC) ||
 	   (first_inD && second_inD) ||  (first_inE && second_inE) ||  (first_inF && second_inF)    ) ) {return false;}
     return true;
   }
 
     
-    void CRTSimHitCorr::produce(art::Event & event)
-    {
-      std::cout<<"-------------- puppa \n";
-      if(fVerbose){
-	std::cout<<"============================================"<<std::endl
-		 <<"Run = "<<event.run()<<", SubRun = "<<event.subRun()<<", Event = "<<event.id().event()<<std::endl
-		 <<"============================================"<<std::endl;
-      }
-
-      // Place to store corrected CRThits as they are created
-      std::unique_ptr<std::vector<crt::CRTHit>> CRTHitOutCol( new std::vector<crt::CRTHit>);
-      // Retrieve list of CRT hits
-      art::Handle< std::vector<crt::CRTHit>> crtHitsInHandle;
-      event.getByLabel(fCrtHitsIn_Label, crtHitsInHandle);
-      //check to make sure the data we asked for is valid
-      if(!crtHitsInHandle.isValid()){
-	std::cout << "Run " << event.run() << ", subrun " << event.subRun()
-		  << ", event " << event.event() << " has zero"
+  void CRTSimHitCorr::produce(art::Event & event)
+  {
+    
+    if(fVerbose){
+      std::cout<<"============================================"<<std::endl
+	       <<"Run = "<<event.run()<<", SubRun = "<<event.subRun()<<", Event = "<<event.id().event()<<std::endl
+	       <<"============================================"<<std::endl;
+    }
+    
+    // Place to store corrected CRThits as they are created
+    std::unique_ptr<std::vector<crt::CRTHit>> CRTHitOutCol( new std::vector<crt::CRTHit>);
+    // Retrieve list of CRT hits
+    art::Handle< std::vector<crt::CRTHit>> crtHitsInHandle;
+    event.getByLabel(fCrtHitsIn_Label, crtHitsInHandle);
+    //check to make sure the data we asked for is valid
+    if(!crtHitsInHandle.isValid()){
+      std::cout << "Run " << event.run() << ", subrun " << event.subRun()
+		<< ", event " << event.event() << " has zero"
 		<< " CRTHits " << " in module " << fCrtHitsIn_Label << std::endl;
-	std::cout << std::endl;
-	//add protection here
-	event.put(std::move(CRTHitOutCol));
-	return;
-      }
-      // Load the crt dead channel map only once per event
-      std::vector<std::pair<int,int>> deadMap;
-      if (fMaskDeadChannels){
-	DBCall(deadMap);
-      }
-
+      std::cout << std::endl;
+      //add protection here
+      event.put(std::move(CRTHitOutCol));
+      return;
+    }
+    // Load the crt dead channel map only once per event
+    std::vector<std::pair<int,int>> deadMap;
+    if (fMaskDeadChannels){
+      DBCall(deadMap);
+    }
+    
       std::vector<crt::CRTHit> const& crtHitInList(*crtHitsInHandle);
       if(fVerbose) std::cout<<"Number of CRT hits read in= "<<crtHitInList.size()<< std::endl;
       
+      if(fVerbose)std::cout<<"In Sim correction "<<crtHitInList.size()<<" "<<fCrtHitsIn_Label<<"\n";
 
       //Loop on CRT Hits
       for (size_t i = 0; i < crtHitInList.size(); i++){
 	// Let's start positive, let's keep this hit
-	bool keepMe = 1;
+	bool keepMe = true;
 
 	// Get hit
 	crt::CRTHit thisCrtHit = crtHitInList[i];

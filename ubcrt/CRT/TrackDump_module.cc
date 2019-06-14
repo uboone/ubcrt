@@ -519,7 +519,7 @@ void TrackDump::analyze(art::Event const & evt)
   }
   std::vector<crt::CRTHit> const& CRTHitCollection(*rawHandle_hit);
   if(verbose_==1){ 
-    std::cout<<"  CRTHitCollection.size()  "<<CRTHitCollection.size()<<std::endl; 
+    std::cout<<"  CRTHitCollection.size()  "<<CRTHitCollection.size()<<" label "<<data_labelhit_<<std::endl; 
     //  getchar();   
   }    //end get CRTHits
 
@@ -527,7 +527,7 @@ void TrackDump::analyze(art::Event const & evt)
   nCRThits = CRTHitCollection.size();
   if (nCRThits>kMaxCRThits) nCRThits=kMaxCRThits;
   for(int j = 0; j < nCRThits; j++) {
-    
+    //std::cout<<"in CRT hits "<<j<<"\n";
     //fill tree
     crt::CRTHit my_CRTHit = CRTHitCollection[j];
     hit_time_s[j]=(double)my_CRTHit.ts0_s;
@@ -543,6 +543,7 @@ void TrackDump::analyze(art::Event const & evt)
     
     std::vector<std::pair<int,float>> pes = my_CRTHit.pesmap.find(hit_feb1[j])->second; 
     if (pes.size()==2) { // is simulated hit
+      //std::cout<<"Sim CRT hits "<<j<<"\n";
       hit_mcflag[j]=1;
       //    std::map<uint8_t, std::vector<std::pair<int,float>>> pesmap;	      
       std::pair<int,float> ind_pes1 = pes[0];
@@ -577,7 +578,7 @@ void TrackDump::analyze(art::Event const & evt)
       //   which ones were used to make this particular hit
       //
       // use the largest pe deposit on the feb, not necessarily correct
-      
+      //std::cout<<"Data CRT hits "<<j<<"\n";
       //    std::map<uint8_t, std::vector<std::pair<int,float>>> pesmap;	       //vector of pairs  
       hit_mcflag[j]=0;
       float hitpe1 = 0; int hitsipm1=-1;
