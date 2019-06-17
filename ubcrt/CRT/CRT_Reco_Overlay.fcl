@@ -120,7 +120,7 @@ physics.producers.crttrackmatchAll.data_label_CRTtzero: "crttzero"
 physics.producers.crttrackmatchAll.data_label_TPCtrack: "pandoraAllOutcomesTrack"
 physics.producers.crttrackmatchAll.data_label_flash:    "simpleFlashCosmic"
 
-physics.analyzers.crt.SelectEvents: [p1]
-physics.filters.crtveto.SelectEvents: [p1]
+#physics.analyzers.crt.SelectEvents: [p1]
+#physics.filters.crtveto.SelectEvents: [p1]
 physics.filters.crtveto: @local::UBCRTCosmicFilterBNBOFF
 physics.filters.crtveto.useAsFilter: false
