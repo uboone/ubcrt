@@ -7,7 +7,7 @@
 #include "microboone_crtreco.fcl"
 #include "microboone_crthitcorr.fcl"
 #include "UBCRTCosmicFilter.fcl"
-#include "neutrinoselection.fcl"
+
 
 events_to_generate: 200
 run_number: 101
@@ -54,7 +54,6 @@ physics:
   filters:
       {
         crtveto: @local::UBCRTCosmicFilterBNBOFF
-        nuselection: @local::NuSelectionFilterRun3
         }
 
   producers:
@@ -69,7 +68,7 @@ physics:
    
   a1: [  crt]
   #p1: [ crthitcorr, crttzero,  crttrack, crttrackmatch, crttrackmatchAll, ubcrtVeto,nuselection]
-  p1: [ crthitcorrFirstPass,crthitcorr, crttzero,  crttrack, crttrackmatch, crtveto,nuselection]
+  p1: [ crthitcorrFirstPass,crthitcorr, crttzero,  crttrack, crttrackmatch, crtveto]
   e1: [ rootout ]
   trigger_paths: [p1]
   end_paths: [ a1]#,e1 ]
@@ -123,8 +122,5 @@ physics.producers.crttrackmatchAll.data_label_flash:    "simpleFlashCosmic"
 
 physics.analyzers.crt.SelectEvents: [p1]
 physics.filters.crtveto.SelectEvents: [p1]
-physics.filters.nuselection.SelectEvents: [p1]
-physics.filters.nuselection.AnalysisTools.default.BacktrackTag: "" #"gaushitTruthMatch"
-physics.filters.nuselection.IsData: true
 physics.filters.crtveto: @local::UBCRTCosmicFilterBNBOFF
 physics.filters.crtveto.useAsFilter: false
