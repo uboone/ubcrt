@@ -6,8 +6,8 @@ UBCRTCosmicFilter: {
  DAQHeaderProducer        : "daq"
  BeamStart                : 3.19  # us
  BeamEnd                  : 4.87 # us
- PEMin                    : 10.0   # PEs
- PEMin_CRT                : 100.0   # PEs
+ PEMin                    : 10.0   # PEs PMT
+ PEMin_CRT                : 70.0   # PEs CRT
  DTOffset                 : 68600. # us
  Resolution               : 1.0  # us
  useAsFilter              : false
