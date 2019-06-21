@@ -260,7 +260,7 @@ void crt::T0recoCRTTrack::produce(art::Event & evt)
       // auto const& bottom = sorted_trk.at(sorted_trk.size() - 1);
       auto & bottom = sorted_trk.at(sorted_trk.size() - 1);
       
-      int counter = 1;
+      unsigned int counter = 1;
       while(bottom.X()==-999 && sorted_trk.size() >= counter) {
 	bottom = sorted_trk.at(sorted_trk.size() - counter);
 	counter++;
