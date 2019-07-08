@@ -217,16 +217,18 @@ bool UBCRTCosmicFilter::filter(art::Event &e)
     // load neutrino mctruth
     auto const& mct_h = e.getValidHandle<std::vector<simb::MCTruth> >("generator");
     auto mct = mct_h->at(0);
-    auto neutrino = mct.GetNeutrino();
-    auto nu     = neutrino.Nu();
-    auto lepton = neutrino.Lepton();
-    auto ccnc   = neutrino.CCNC();
-    _nu_e    = nu.Trajectory().E(0);
-    _nu_ccnc = ccnc;
-    // vertex coordinates from neutrino end point
-    _nu_vtx_x = nu.Trajectory().X( nu.Trajectory().size() - 1 );
-    _nu_vtx_y = nu.Trajectory().Y( nu.Trajectory().size() - 1 );
-    _nu_vtx_z = nu.Trajectory().Z( nu.Trajectory().size() - 1 );
+    if (mct.NeutrinoSet()) {
+      auto neutrino = mct.GetNeutrino();
+      auto nu     = neutrino.Nu();
+      auto lepton = neutrino.Lepton();
+      auto ccnc   = neutrino.CCNC();
+      _nu_e    = nu.Trajectory().E(0);
+      _nu_ccnc = ccnc;
+      // vertex coordinates from neutrino end point
+      _nu_vtx_x = nu.Trajectory().X( nu.Trajectory().size() - 1 );
+      _nu_vtx_y = nu.Trajectory().Y( nu.Trajectory().size() - 1 );
+      _nu_vtx_z = nu.Trajectory().Z( nu.Trajectory().size() - 1 );
+    }
   }
 
   // load CRT hits.
