@@ -4,7 +4,7 @@
 // File:        CRTDataQuality_module.cc
 //
 // Generated at Thur March 28 2019 by Elena Gramellini
-// Scope of this analyszer is a simple data quality monitor
+// Scope of this analyzer is a simple data quality monitor
 // Compute the rate of cosmic rays in all CRT modules per date
 // 
 // [ x ] Read out CRT hits
@@ -98,6 +98,8 @@ public:
   void beginJob() override;
   void endJob() override;
   void ResetVar();
+  void calculateFlashMatch(std::vector<crt::CRTHit> const CRTHitCollection, int &nFlashes, int &nMatchedFlashes);
+  void calculateTrackMatch(std::vector<crt::CRTHit> const CRTHitCollection, int &nTracks , int &nMatchedTracks );
 
 private:
 
@@ -124,6 +126,10 @@ private:
   int subrun;
   int event;
   int date; // Time in seconds from linux start time
+  int nFlashes;
+  int nMatchedFlashes;
+  int nTracks;
+  int nMatchedTracks;
   // CRT Modules
   int nCRThits[73];
   double AvgPe[73];
@@ -142,26 +148,19 @@ private:
 
 void CRTDataQuality::ResetVar()
 {
-  run    = -9999;
-  subrun = -9999;
-  event  = -9999;
-  date   = -9999; 
+  run             = -9999;
+  subrun          = -9999;
+  event           = -9999;
+  date            = -9999; 
+  nFlashes        = -9999; 
+  nMatchedFlashes = -9999; 
+  nTracks         = -9999; 
+  nMatchedTracks  = -9999; 
   
   for (size_t i= 0; i < 73; i++ )
     {
       nCRThits[i]  = 0;
       AvgPe[i]     = 0.;
-      /*
-      AvgCountX[i] = -9999.;
-      AvgCountY[i] = -9999.;
-      AvgCountZ[i] = -9999.;
-      MaxCountX[i] = -9999.;
-      MaxCountY[i] = -9999.;
-      MaxCountZ[i] = -9999.;
-      MaxPositX[i] = -9999.;
-      MaxPositY[i] = -9999.;
-      MaxPositZ[i] = -9999.;
-      */
     }
    reaoutTime = -9999.;
 
@@ -205,21 +204,6 @@ void CRTDataQuality::analyze(art::Event const & evt)
   art::Timestamp evtTimeGPS = my_DAQHeader.gps_time();  
   double evt_timeGPS_nsec = (double)evtTimeGPS.timeLow();  
 
-  //  std::cout<< std::setprecision(9)<<evt_timeGPS_nsec<<" >>>>>> This guy \n";
-
-  /*
-
-  
-  time_t rawtime;
-  struct tm * timeinfo;
-  char buffer [80];
-
-  time (&rawtime);
-  timeinfo = localtime (&rawtime);
-
-  strftime (buffer,80,"Now it's %I:%M%p.",timeinfo);
-  puts (buffer);
-  */
 
   //get CRTHits
   art::Handle< std::vector<crt::CRTHit> > rawHandle_hit;
@@ -302,8 +286,29 @@ void CRTDataQuality::analyze(art::Event const & evt)
       else AvgPe[ i ] = -999.;
     } 
 
+ 
+  calculateFlashMatch(CRTHitCollection, nFlashes,nMatchedFlashes);
+  calculateTrackMatch(CRTHitCollection, nTracks ,nMatchedTracks );
+
+
 fTree->Fill();
 }
+
+
+
+void  CRTDataQuality::calculateFlashMatch(std::vector<crt::CRTHit> const CRTHitCollection, int &nFlashes, int &nMatchedFlashes)
+{
+  std::cout<<CRTHitCollection.size()<<"\n";
+  /*Michelle's code */
+}
+
+void  CRTDataQuality::calculateTrackMatch(std::vector<crt::CRTHit> const CRTHitCollection, int &nTracks ,int &nMatchedTracks )
+{
+  std::cout<<CRTHitCollection.size()<<"\n";
+  /*Michelle's code */
+}
+
+
 
 void CRTDataQuality::beginJob()
 {
@@ -314,9 +319,17 @@ void CRTDataQuality::beginJob()
   fTree->Branch("subrun"    ,&subrun    ,"subrun/I");
   fTree->Branch("event"     ,&event     ,"event/I" );
   fTree->Branch("date"      ,&date      ,"date/I"  );
+
+  fTree->Branch("nFlashes"         ,&nFlashes        ,"nFlashes/I"         );
+  fTree->Branch("nMatchedFlashes"  ,&nMatchedFlashes ,"nMatchedFlashes/I"  );
+  fTree->Branch("nTracks"          ,&nTracks         ,"nTracks/I"          );
+  fTree->Branch("nMatchedTracks"   ,&nMatchedTracks  ,"nMatchedTracks/I"   );
+  
   fTree->Branch("nCRThits"  ,nCRThits   ,"nCRThits[73]/I");
   fTree->Branch("febIndex"  ,febIndex   ,"febIndex[73]/I");
   fTree->Branch("AvgPe"     ,AvgPe      ,"AvgPe[73]/D"   );
+
+
   /*
   fTree->Branch("AvgCountX" ,AvgCountX  ,"AvgCountX[73]/D");
   fTree->Branch("AvgCountY" ,AvgCountY  ,"AvgCountY[73]/D");

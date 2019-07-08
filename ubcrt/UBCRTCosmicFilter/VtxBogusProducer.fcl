@@ -1,0 +1,6 @@
+BEGIN_PROLOG
+VtxBogus: {
+ module_type              : "ExternalVtx"  
+}
+END_PROLOG
+

@@ -1,0 +1,18 @@
+BEGIN_PROLOG
+CRTDistanceFilter: {
+ module_type        : "CRTDistanceFilter"  
+ TrackModuleLabel   : "pandora"
+ VtxModuleLabel     : "pandora"
+ CRTHitProducer     : "" 
+ useAsFilter        : false
+ verbose            : true
+ isThisMC           : false
+ useCRTTag          : true
+ useExternalVtx     : false
+ minDistance        : 14.
+}
+
+
+END_PROLOG
+
+
