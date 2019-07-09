@@ -540,6 +540,8 @@ void TrackDump::analyze(art::Event const & evt)
     hit_posz[j]=my_CRTHit.z_pos;
     hit_feb1[j]=int(my_CRTHit.feb_id[0]);
     hit_feb2[j]=int(my_CRTHit.feb_id[1]);
+    //    if (hit_time0[j]>10000000.0 || event==19097 || event==9482) 
+    //      std::cout << "  funky value " << event << " " << nCRThits << " " <<(double)my_CRTHit.ts0_ns << " " <<  (double)evt_timeGPS_nsec << " " << (double)fTimeZeroOffset << " " << hit_plane[j] << " " << hit_time_s[j]-1.53145e9 <<std::endl;
     
     std::vector<std::pair<int,float>> pes = my_CRTHit.pesmap.find(hit_feb1[j])->second; 
     if (pes.size()==2) { // is simulated hit
