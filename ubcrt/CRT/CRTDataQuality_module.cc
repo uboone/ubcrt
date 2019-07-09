@@ -107,8 +107,13 @@ private:
   // Declare member data here.
   std::string data_labelhit_;
   std::string data_label_DAQHeader_;
+  std::string data_label_TPCtrack_;
+  std::string data_label_flash_;
+  std::string data_label_match_;
   double minT_ ;
   double maxT_ ;
+  double flash_match_timecut;  // in us
+  double min_length_TPCtrack;
   int    fTimeZeroOffset; 
   bool   verbose_;
 
@@ -118,6 +123,9 @@ private:
   TH1D*  hModule_X[73];
   TH1D*  hModule_Y[73];
   TH1D*  hModule_Z[73];
+  TH1D* hFlashDiff;
+  TH1D* hTrackDCA;
+  TH1D* hTrackDCA3;
 
   TTree* fTree;
   int run;
@@ -127,6 +135,14 @@ private:
   // CRT Modules
   int nCRThits[73];
   double AvgPe[73];
+  // flash
+  int nFlash;
+  int nMFlash;
+  // TPC
+  int nTrack;
+  int nMTrack;
+
+
   double reaoutTime;
   int febIndex[73]  = {11  , 12 ,14 ,17  ,18  ,19  ,  22 ,23  ,  24,
 		       105 ,106 ,107,108 ,109 ,111 , 112 ,113 , 114, 
@@ -146,6 +162,10 @@ void CRTDataQuality::ResetVar()
   subrun = -9999;
   event  = -9999;
   date   = -9999; 
+  nFlash = -9999;
+  nMFlash = -9999;
+  nTrack = -9999;
+  nMTrack = -9999;
   
   for (size_t i= 0; i < 73; i++ )
     {
@@ -169,10 +189,15 @@ void CRTDataQuality::ResetVar()
 
 CRTDataQuality::CRTDataQuality(fhicl::ParameterSet const & p)
   : EDAnalyzer(p),
-    data_labelhit_(p.get<std::string>("data_labelhit_")),
-    data_label_DAQHeader_(p.get<std::string>("data_label_DAQHeader_")),  
+    data_labelhit_(p.get<std::string>("data_labelhit_","crthitcorr")),
+    data_label_DAQHeader_(p.get<std::string>("data_label_DAQHeader_","daq")),  
+    data_label_TPCtrack_(p.get<std::string>("data_label_TPCtrack_","pandora")),  
+    data_label_flash_(p.get<std::string>("data_label_flash_","simpleFlashCosmic")),  
+    data_label_match_(p.get<std::string>("data_label_match_","crttrackmatch")),  
     minT_(p.get<double>("minT_",-1500000.)),
     maxT_(p.get<double>("maxT_", 3500000.)),
+    flash_match_timecut(p.get<double>("flash_match_timecut",3.0)),  // in us
+    min_length_TPCtrack(p.get<double>("min_length_TPCtrack",20.0)),  // in cm
     fTimeZeroOffset(p.get<int>("fTimeZeroOffset",60000)),
     verbose_(p.get<bool>("verbose",true))
     // More initializers here.    
@@ -233,6 +258,19 @@ void CRTDataQuality::analyze(art::Event const & evt)
     return;
   } // This should throw an exception, but ok WRONG!
 
+  //get Optical Flash Collection
+  art::Handle< std::vector<recob::OpFlash> > rawHandle_OpFlash;
+  evt.getByLabel(data_label_flash_, rawHandle_OpFlash);  
+  std::vector<recob::OpFlash> const& OpFlashCollection(*rawHandle_OpFlash);
+  if(verbose_){ 
+    std::cout<<"  OpFlashCollection.size()  "<<OpFlashCollection.size()<<std::endl; 
+  }  //get Optical Flash
+  
+  int ntotFlash = OpFlashCollection.size();
+  if (ntotFlash>100) ntotFlash=100;
+  int fnum = 0.;
+  int iFlashM[100] = {0};
+  
 
   run    = evt.run() ;
   subrun = evt.subRun() ;
@@ -282,19 +320,43 @@ void CRTDataQuality::analyze(art::Event const & evt)
       hModule_X[ index ]->Fill(my_CRTHit.x_pos);
       hModule_Y[ index ]->Fill(my_CRTHit.y_pos);
       hModule_Z[ index ]->Fill(my_CRTHit.z_pos);
-    } 
-        
+    }         
     /*
     hit_charge[j]         = my_CRTHit.peshit;
     hit_plane[j]          = my_CRTHit.plane%10;
     hit_posx[j]           = my_CRTHit.x_pos;
     hit_posy[j]           = my_CRTHit.y_pos;
     hit_posz[j]           = my_CRTHit.z_pos;
-    
-   
-    */
-  }//Loop on CRT hits
+    */    
 
+    // Loop over PMT flashes
+    float bestdiff =  flash_match_timecut;
+    //    thisHitTime += (double)fTimeZeroOffset;
+    double signedbestdiff;
+    int ibestflash = -1;
+    for(int i = 0; i != ntotFlash; i++) {
+      if (iFlashM[i]==0) {
+	recob::OpFlash my_OpFlash = OpFlashCollection[i];
+	auto Timeflash = my_OpFlash.Time(); //in us from trigger time
+	//    auto Timeflash_ns = (Timeflash * 1000);
+	//	auto Timeflash_ns_GPS = (double)evt_timeGPS_nsec + Timeflash * 1000.0;      
+	float thisdiff = fabs(0.001*thisHitTime- Timeflash);
+		// std::cout << j<< " " << i << " " << thisdiff << " " << 0.001*thisHitTime << " " <<
+		//   Timeflash << std::endl;
+	if (thisdiff<bestdiff) {
+	  bestdiff=thisdiff;
+	  signedbestdiff = Timeflash-0.001*thisHitTime;
+	  ibestflash=i;
+	}
+      }
+    }// end loop on PMT flashes    
+    if (ibestflash>=0) {
+      iFlashM[ibestflash]=1;
+      hFlashDiff->Fill(signedbestdiff);
+      fnum++;
+    }       
+  }//Loop on CRT hits
+  std::cout << ntotFlash << " " << fnum << std::endl;
   
   for (size_t i = 0; i < 73; i++)
     {
@@ -302,7 +364,69 @@ void CRTDataQuality::analyze(art::Event const & evt)
       else AvgPe[ i ] = -999.;
     } 
 
-fTree->Fill();
+  // put flash matching efficiency into tree
+  nMFlash=fnum;
+  nFlash=ntotFlash;
+
+  // put track matching efficiency into tree
+  
+  // get TPC Track List 
+  art::Handle< std::vector<recob::Track>  > trackListHandle; 
+  std::vector<art::Ptr<recob::Track> >  tracklist;
+  if (evt.getByLabel(data_label_TPCtrack_,trackListHandle))
+    art::fill_ptr_vector(tracklist, trackListHandle);
+  //check to make sure the data we asked for is valid
+  if(!trackListHandle.isValid()){
+    std::cout << "Run " << evt.run() << ", subrun " << evt.subRun()
+	      << ", event " << evt.event() << " has zero"
+	      << " tracks " << " in module " << data_label_TPCtrack_ << std::endl;
+    std::cout << std::endl;
+    return;
+  }
+    
+  //check whether tzeros exist
+  bool iT0crt = false;
+  art::Handle< std::vector<anab::T0> > rawHandle_Tzero;
+  evt.getByLabel(data_label_match_, rawHandle_Tzero);
+  if(rawHandle_Tzero.isValid()) {
+    // grab T0 objects associated with tracks    
+    iT0crt=true;
+    art::FindMany<anab::T0> trk_t0C_assn_v(trackListHandle, evt, data_label_match_);
+  }
+  else {
+     std::cout << "no data product found for crt-track matching" << std::endl;
+  }
+  
+      
+  int denom = 0.; int numer = 0.;
+  int nTPCtracks = tracklist.size();
+  for(int j = 0; j < nTPCtracks; j++) {
+    art::Ptr<recob::Track> ptrack(trackListHandle, j);
+    const recob::Track& track = *ptrack;
+    
+    if (track.Length()>min_length_TPCtrack) {
+      denom++;
+      if (iT0crt) {
+	art::FindMany<anab::T0> trk_t0C_assn_v(trackListHandle, evt, data_label_match_);
+	const std::vector<const anab::T0*>& T0_v = trk_t0C_assn_v.at(j);
+	if (T0_v.size()==1) { 
+	  auto t0 = T0_v.at(0);
+	  //	  int tzerotime =t0->Time();	  
+	  int plane =t0->TriggerBits();  // this variable is not filled until MCC9.1, defaults to 0
+	  double dca = t0->TriggerConfidence();
+	  if (plane==3) hTrackDCA3->Fill(dca);
+	  else  hTrackDCA->Fill(dca);
+	  numer++;
+	}
+      }  // if we have t0tags available
+    }  // if length is at least 20 cm
+  } // end loop over tracks
+  //  std::cout << nTPCtracks << " " << denom << " " << numer << std::endl;
+  nTrack=denom;
+  nMTrack=numer;
+  
+  // load the tree for this event
+  fTree->Fill();
 }
 
 void CRTDataQuality::beginJob()
@@ -314,9 +438,13 @@ void CRTDataQuality::beginJob()
   fTree->Branch("subrun"    ,&subrun    ,"subrun/I");
   fTree->Branch("event"     ,&event     ,"event/I" );
   fTree->Branch("date"      ,&date      ,"date/I"  );
-  fTree->Branch("nCRThits"  ,nCRThits   ,"nCRThits[73]/I");
   fTree->Branch("febIndex"  ,febIndex   ,"febIndex[73]/I");
   fTree->Branch("AvgPe"     ,AvgPe      ,"AvgPe[73]/D"   );
+  fTree->Branch("nFlash"      ,&nFlash     ,"nFlash/I"  );
+  fTree->Branch("nMFlash"      ,&nMFlash      ,"nMFlash/I"  );
+  fTree->Branch("nTrack"      ,&nTrack      ,"nTrack/I"  );
+  fTree->Branch("nMTrack"      ,&nMTrack      ,"nMTrack/I"  );
+  fTree->Branch("nCRThits"  ,nCRThits   ,"nCRThits[73]/I");
   /*
   fTree->Branch("AvgCountX" ,AvgCountX  ,"AvgCountX[73]/D");
   fTree->Branch("AvgCountY" ,AvgCountY  ,"AvgCountY[73]/D");
@@ -332,6 +460,12 @@ void CRTDataQuality::beginJob()
   
   hHitTime         = tfs1->make<TH1D>("hHitTime"        ,"CRT Hit Time; time [ns]; ",2000, -10000000,10000000);
   hHitTimeAfterCut = tfs1->make<TH1D>("hHitTimeAfterCut","CRT Hit Time; time [ns]; ",2000, -10000000,10000000);
+  hFlashDiff = tfs1->make<TH1D>("hFlashDiff"," ",1000, -5.,5.);
+  hFlashDiff->GetXaxis()->SetTitle("Flash time - CRT Hit time (us)");
+  hTrackDCA = tfs1->make<TH1D>("hTrackDCA"," ",200,0.,50.);
+  hTrackDCA->GetXaxis()->SetTitle("DCA of TPC track and CRT hit side and bottom planes (cm))");
+  hTrackDCA3 = tfs1->make<TH1D>("hTrackDCA3"," ",200,0.,50.);
+  hTrackDCA3->GetXaxis()->SetTitle("DCA of TPC track and CRT hit top plane only (cm))");
   
   for (size_t i = 0; i<73; i++)
     {
