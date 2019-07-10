@@ -67,7 +67,8 @@ physics:
         }
   
   a1: [  crt ]
-  p1: [ crthitcorr, crttzero,  crttrack, crttrackmatch, crttrackmatchAll, ubcrtVeto]
+  #p1: [ crthitcorr, crttzero,  crttrack, crttrackmatch, crttrackmatchAll, ubcrtVeto]
+  p1: [ crthitcorr, crttzero,  crttrack, crttrackmatch,  ubcrtVeto]
   e1: [ rootout ]
   trigger_paths: [p1]
   end_paths: [ a1]#,e1 ]
