@@ -109,7 +109,15 @@ private:
   TH1F* hDist3;
   TH1F* hDistAn;
   TH1F* hDistCa;
-  TH1F* hDistNone;
+  TH1F *dla0;
+  TH1F *dla1;
+  TH1F *dla2;
+  TH1F *dla3;
+  TH1F *dcn0;
+  TH1F *dcn1;
+  TH1F *dcn2;
+  TH1F *dcn3;
+  // TH1F* hDistNone;
   TH1F* hTimeBest;
   
 };
@@ -337,7 +345,7 @@ void T0recoCRTHit::produce(art::Event & evt)
       
       //    int TrackGood=0;
       float dist_besthit = 99999999.; int plane_besthit=111;
-      double time_besthit=999999999.; 
+      double time_besthit=999999999.;  float dla_besthit = 999.;
       double theta,phi,trklen;
       // fetch track length, start and end points, theta and phi
       auto startP=tracklist[trkIter]->Start();      
@@ -462,7 +470,12 @@ void T0recoCRTHit::produce(art::Event & evt)
 		  TVector3 numer = a.Cross(b);
 		  double dca = numer.Mag()/denom.Mag();
 		  
+		  // calculate distance from track end to hit.  
+		  float dla = a.Mag();  float d2 = b.Mag();
+		  if (d2<dla) dla=d2;		  
+		  
 		  if (dca<dist_besthit) {
+		    dla_besthit = dla;
 		    besttz = tzIter;
 		    besthitid = ah;
 		    dist_besthit=dca;
@@ -497,19 +510,18 @@ void T0recoCRTHit::produce(art::Event & evt)
 	  TVector3 trackend(endP.X()-xshift,endP.Y(),endP.Z());
 	  
 	  if (plane_besthit==1) {
-	    hDist1->Fill(dist_besthit);
+	    hDist1->Fill(dist_besthit); dla1->Fill(dla_besthit);dcn1->Fill(100.0*dist_besthit/dla_besthit);
 	    if ((trackstart.X()>-10 && trackstart.X()<2)  || (trackend.X()>-10 && trackend.X()<2) )
 	      hDistAn->Fill(dist_besthit); 
 	  }
 	  else if (plane_besthit==2) {
-		    
-		    
 	    hDist2->Fill(dist_besthit);
+	    dla2->Fill(dla_besthit);dcn2->Fill(100.0*dist_besthit/dla_besthit);
 	    if ((trackstart.X()>255 && trackstart.X()<268)  || (trackend.X()>255 && trackend.X()<268) )
 	      hDistCa->Fill(dist_besthit); 
 	  }	  
-	  else if (plane_besthit==3) hDist3->Fill(dist_besthit);
-	  else hDist0->Fill(dist_besthit);
+	  else if (plane_besthit==3) { hDist3->Fill(dist_besthit); dla3->Fill(dla_besthit);dcn3->Fill(100.0*dist_besthit/dla_besthit);}
+	  else {hDist0->Fill(dist_besthit);dla0->Fill(dla_besthit);dcn0->Fill(100.0*dist_besthit/dla_besthit);}
 	  if ((dist_besthit<fMatchCut) || (dist_besthit<fMatchCutTop && plane_besthit==3)) {
 	    //	    double dT =0.0;
 	    // args are (time, triggertype, triggerbits, ?, trigger confidence)
@@ -533,7 +545,7 @@ void T0recoCRTHit::produce(art::Event & evt)
 	    trk_t0_assn_v_new->addSingle(trackptr,t0ptr);
 
 	  }
-	  else hDistNone->Fill(100.);
+	  //	  else hDistNone->Fill(100.);
 	  //
 	  hTimeBest->Fill(time_besthit*0.001);
 	} // if hit is close	  
@@ -584,10 +596,26 @@ void T0recoCRTHit::beginJob()
   hDistCa->GetXaxis()->SetTitle("distance (cm)");
   // hDistTwo= tfs->make<TH1F>("hDistTwo","hDistTwo",200,0.,200.);    
   // hDistTwo->GetXaxis()->SetTitle("distance (cm)");
-  hDistNone= tfs->make<TH1F>("hDistNone","hDistNone",200,0.,200.);    
-  hDistNone->GetXaxis()->SetTitle("distance (cm)");
+  // hDistNone= tfs->make<TH1F>("hDistNone","hDistNone",200,0.,200.);    
+  // hDistNone->GetXaxis()->SetTitle("distance (cm)");
   hTimeBest = tfs->make<TH1F>("hTimeBest","hTimeBest",200,0.,200.);
   hTimeBest->GetXaxis()->SetTitle("time (us)");
+  dla0 = tfs->make<TH1F>("dla0","dla0",200,0.,800.); 
+  dla0->GetXaxis()->SetTitle("distance (cm)");
+  dla1 =tfs->make<TH1F>("dla1","dla1",200,0.,800.);
+  dla1->GetXaxis()->SetTitle("distance (cm)");
+  dla2 = tfs->make<TH1F>("dla2","dla2",200,0.,800.);
+  dla2->GetXaxis()->SetTitle("distance (cm)");
+  dla3 = tfs->make<TH1F>("dla3","dla3",200,0.,2000.);
+  dla3->GetXaxis()->SetTitle("distance (cm)");
+  dcn0 = tfs->make<TH1F>("dcn0","dca/el",200,0.,40.); 
+  dcn0->GetXaxis()->SetTitle("distance (cm)");
+  dcn1 =tfs->make<TH1F>("dcn1","dca/el",200,0.,40.);
+  dcn1->GetXaxis()->SetTitle("distance (cm)");
+  dcn2 = tfs->make<TH1F>("dcn2","dca/el",200,0.,40.);
+  dcn2->GetXaxis()->SetTitle("dca/el");
+  dcn3 = tfs->make<TH1F>("dcn3","dcn3",200,0.,40.);
+  dcn3->GetXaxis()->SetTitle("distance (cm)");
 
   /*
   hThetaAll = tfs->make<TH1F>("hThetaAll","hThetaAll",100,0.,3.1416);
