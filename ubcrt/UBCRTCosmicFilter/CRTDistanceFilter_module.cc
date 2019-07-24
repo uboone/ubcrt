@@ -106,7 +106,6 @@ CRTDistanceFilter::CRTDistanceFilter(fhicl::ParameterSet const &p)
 
   fTrackModuleLabel     = p.get< std::string >("TrackModuleLabel"   , "pandora");
   fVtxModuleLabel       = p.get< std::string >("VtxModuleLabel"     , "pandora");
-  //OverlayRecoStage2... | crttrackmatch............. | ..................... | art::Assns<recob::Track,crt::CRTHit,void>............................... | ...13
   fCRTHitLabel          = p.get<std::string>("CRTHitLabel"         ,"crthitcorr");
   fCRTTrackAssnProducer = p.get<std::string>("CRTTrackAssnProducer","crttrackmatch");
   fuseAsFilter          = p.get<bool >("useAsFilter");
