@@ -389,7 +389,7 @@ void  CRTDataQuality::calculateFlashMatch( std::vector<crt::CRTHit> const CRTHit
       nMatchedFlashes++;
     }       
   }//Loop on CRT hits
-  std::cout << ntotFlash << " " << nMatchedFlashes << std::endl;
+  if(verbose_)std::cout << ntotFlash << " " << nMatchedFlashes << std::endl;
   
 }
 

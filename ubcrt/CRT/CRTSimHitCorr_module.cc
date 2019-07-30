@@ -42,6 +42,7 @@
 #include <algorithm>
 #include <vector>
 #include <unordered_set>
+#include <math.h>       /* floor */
 
 
 // LArSoft
@@ -66,6 +67,10 @@
 #include "TVector3.h"
 #include "TGeoManager.h"
 
+// Data base stuff
+#include "larevt/CalibrationDBI/Interface/ChannelStatusService.h"
+#include "ubevt/Database/CRTChannelStatusService.h"
+#include "larevt/CalibrationDBI/Interface/ChannelStatusProvider.h"
 
 const short feb2mod[200] = {
   -1,-1,-1,-1,-1,-1,-1,-1,-1,-1, //0-9
@@ -266,6 +271,25 @@ namespace crt{
 
     void CRTSimHitCorr::DBCall( std::vector<std::pair<int,int>> &deadMap )
     {
+      int febOrderArray[73] = {  11,  12,  14,  15,  16,  17,  18,  19,  20,  21,  22,  23,  24,  26,  27,  28,  29,  30,  31, 
+			         32,  33,  34,  35,  36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47,  48,  49,  50, 
+		 	         51,  52,  53,  54,  55,  56,  57,  58,  59,  60,  61, 105, 106, 107, 108, 109, 111, 112, 113, 
+				114, 115, 116, 117, 118, 119, 120, 121, 123, 124, 125, 126, 127, 128, 129, 195};
+
+      const lariov::ChannelStatusProvider& crt_status_provider = art::ServiceHandle<lariov::CRTChannelStatusService>()->GetProvider();
+      for (size_t iCh = 0; iCh < 2336; iCh++)
+	{
+	  if (crt_status_provider.Status(iCh) != 4)
+	    {
+	      // this channel is not good: it needs to be masked
+	      std::cout<<"CRT BAD Channel ----------------->  "<<crt_status_provider.Status(iCh)<<" --------------> "<<std::endl;
+	      int badFebIndex   = (int) floor( (float) iCh / 32.); // Get the FEB intex 
+	      int badFebChannel = (int)  ( iCh % 32); // Get the channel on FEB  
+	      fDeadFEB.push_back(febOrderArray[badFebIndex]);
+	      fDeadChannels.push_back(badFebChannel);
+	    }
+	}
+
       deadMap.clear();
       if (fDeadFEB.size() != fDeadChannels.size() ) {
 	std::cout<<"FEB and Channel sizes are different. I am not applying the dead channel masking\n";
