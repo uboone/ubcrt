@@ -12,6 +12,7 @@ add_subdirectory(CRTBernFEBDAQCore)
 
 art_make( BASENAME_ONLY
     EXCLUDE 
+        CRTTriggerTimeProducer_module.cc
         CRTChannelMapAlg.cc 
         CRTGeometryHelper_service.cc
         CRTFileManager_service.cc
@@ -301,6 +302,14 @@ simple_plugin(T0recoCRTAnal "module"
           ${ROOT_BASIC_LIB_LIST} )
 
 simple_plugin(CRTTiming "module"
+            CRT
+          bernfebdaq-core_Overlays
+          art_root_io_tfile_support ${ROOT_CORE}
+          art_Framework_Services_Registry
+          art_root_io_TFileService_service
+          ${ROOT_BASIC_LIB_LIST} )
+          
+simple_plugin(CRTTriggerTimeProducer "module"
             CRT
           bernfebdaq-core_Overlays
           art_root_io_tfile_support ${ROOT_CORE}
