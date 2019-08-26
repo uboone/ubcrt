@@ -1,0 +1,7 @@
+BEGIN_PROLOG
+VtxBogus: {
+ module_type  : "ExternalVtx"  
+ InputFileName: "VtxExample.txt"
+}
+END_PROLOG
+
