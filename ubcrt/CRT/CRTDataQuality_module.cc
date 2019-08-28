@@ -4,7 +4,7 @@
 // File:        CRTDataQuality_module.cc
 //
 // Generated at Thur March 28 2019 by Elena Gramellini
-// Scope of this analyszer is a simple data quality monitor
+// Scope of this analyzer is a simple data quality monitor
 // Compute the rate of cosmic rays in all CRT modules per date
 // 
 // [ x ] Read out CRT hits
@@ -98,6 +98,9 @@ public:
   void beginJob() override;
   void endJob() override;
   void ResetVar();
+  void calculateFlashMatch(std::vector<crt::CRTHit> const CRTHitCollection,    std::vector<recob::OpFlash> const OpFlashCollection, double event_timeGPS_ns, 
+			   int &nFlashes, int &nMatchedFlashes, std::vector<double> &CRTFlashMatchTimeDiff);
+  void calculateTrackMatch(   art::Handle< std::vector<recob::Track>  > trackListHandle,  art::FindMany<anab::T0> trk_t0C_assn_v, int Tcollsize, int &nTracks , int &nMatchedTracks );
 
 private:
 
@@ -107,9 +110,15 @@ private:
   // Declare member data here.
   std::string data_labelhit_;
   std::string data_label_DAQHeader_;
+  std::string data_label_TPCtrack_;
+  std::string data_label_flash_;
+  std::string data_label_match_;
   double minT_ ;
   double maxT_ ;
+  double flash_match_timecut;  // in us
+  double min_length_TPCtrack;
   int    fTimeZeroOffset; 
+  bool   applyTimeOffSet_;
   bool   verbose_;
 
   // TTree Variables
@@ -118,15 +127,25 @@ private:
   TH1D*  hModule_X[73];
   TH1D*  hModule_Y[73];
   TH1D*  hModule_Z[73];
+  TH1D* hFlashDiff;
+  TH1D* hTrackDCA;
+  TH1D* hTrackDCA3;
 
   TTree* fTree;
   int run;
   int subrun;
   int event;
   int date; // Time in seconds from linux start time
+  int nFlashes;
+  int nMatchedFlashes;
+  int nTracks;
+  int nMatchedTracks;
+  std::vector<double> CRTFlashMatchTimeDiff;
   // CRT Modules
   int nCRThits[73];
   double AvgPe[73];
+
+
   double reaoutTime;
   int febIndex[73]  = {11  , 12 ,14 ,17  ,18  ,19  ,  22 ,23  ,  24,
 		       105 ,106 ,107,108 ,109 ,111 , 112 ,113 , 114, 
@@ -142,38 +161,38 @@ private:
 
 void CRTDataQuality::ResetVar()
 {
-  run    = -9999;
-  subrun = -9999;
-  event  = -9999;
-  date   = -9999; 
+
+  run             = -9999;
+  subrun          = -9999;
+  event           = -9999;
+  date            = -9999; 
+  nFlashes        = -9999; 
+  nMatchedFlashes = -9999; 
+  nTracks         = -9999; 
+  nMatchedTracks  = -9999; 
   
   for (size_t i= 0; i < 73; i++ )
     {
       nCRThits[i]  = 0;
       AvgPe[i]     = 0.;
-      /*
-      AvgCountX[i] = -9999.;
-      AvgCountY[i] = -9999.;
-      AvgCountZ[i] = -9999.;
-      MaxCountX[i] = -9999.;
-      MaxCountY[i] = -9999.;
-      MaxCountZ[i] = -9999.;
-      MaxPositX[i] = -9999.;
-      MaxPositY[i] = -9999.;
-      MaxPositZ[i] = -9999.;
-      */
     }
    reaoutTime = -9999.;
-
+   CRTFlashMatchTimeDiff.clear();
 }
 
 CRTDataQuality::CRTDataQuality(fhicl::ParameterSet const & p)
   : EDAnalyzer(p),
-    data_labelhit_(p.get<std::string>("data_labelhit_")),
-    data_label_DAQHeader_(p.get<std::string>("data_label_DAQHeader_")),  
+    data_labelhit_(p.get<std::string>("data_labelhit_","crthitcorr")),
+    data_label_DAQHeader_(p.get<std::string>("data_label_DAQHeader_","daq")),  
+    data_label_TPCtrack_(p.get<std::string>("data_label_TPCtrack_","pandora")),  
+    data_label_flash_(p.get<std::string>("data_label_flash_","simpleFlashCosmic")),  
+    data_label_match_(p.get<std::string>("data_label_match_","crttrackmatch")),  
     minT_(p.get<double>("minT_",-1500000.)),
     maxT_(p.get<double>("maxT_", 3500000.)),
+    flash_match_timecut(p.get<double>("flash_match_timecut",3.0)),  // in us
+    min_length_TPCtrack(p.get<double>("min_length_TPCtrack",20.0)),  // in cm
     fTimeZeroOffset(p.get<int>("fTimeZeroOffset",60000)),
+    applyTimeOffSet_(p.get<bool>("applyTimeOffSet",true)),
     verbose_(p.get<bool>("verbose",true))
     // More initializers here.    
 {
@@ -182,18 +201,19 @@ CRTDataQuality::CRTDataQuality(fhicl::ParameterSet const & p)
 void CRTDataQuality::analyze(art::Event const & evt)
 {
   ResetVar();
+
+
   // This will be useful for the date
   art::Timestamp        evtTime  = evt.time();
-
   long int timeInNsSec = (long int) evtTime.value () ;
   date = (int) (timeInNsSec >>  32 ); // Convert ns time stamp into second time stamp
 
- 
   
+  // -------------------------------------- Check if all we need is valid -----------------------------------------
   //Get GPS Time
   art::Handle< raw::DAQHeaderTimeUBooNE > rawHandle_DAQHeader;  
   evt.getByLabel(data_label_DAQHeader_, rawHandle_DAQHeader);
-    
+  
   //check to make sure the data we asked for is valid 
   if(!rawHandle_DAQHeader.isValid()){
     std::cout << "Run " << evt.run() << ", subrun " << evt.subRun()
@@ -205,21 +225,6 @@ void CRTDataQuality::analyze(art::Event const & evt)
   art::Timestamp evtTimeGPS = my_DAQHeader.gps_time();  
   double evt_timeGPS_nsec = (double)evtTimeGPS.timeLow();  
 
-  //  std::cout<< std::setprecision(9)<<evt_timeGPS_nsec<<" >>>>>> This guy \n";
-
-  /*
-
-  
-  time_t rawtime;
-  struct tm * timeinfo;
-  char buffer [80];
-
-  time (&rawtime);
-  timeinfo = localtime (&rawtime);
-
-  strftime (buffer,80,"Now it's %I:%M%p.",timeinfo);
-  puts (buffer);
-  */
 
   //get CRTHits
   art::Handle< std::vector<crt::CRTHit> > rawHandle_hit;
@@ -234,6 +239,49 @@ void CRTDataQuality::analyze(art::Event const & evt)
   } // This should throw an exception, but ok WRONG!
 
 
+  // get TPC Track List
+  //check whether tracks exist
+  bool iTrackAssnCRT = false; 
+  art::Handle< std::vector<recob::Track>  > trackListHandle; 
+  std::vector<art::Ptr<recob::Track> >  tracklist;
+  if (evt.getByLabel(data_label_TPCtrack_,trackListHandle))
+    {
+      if(trackListHandle.isValid())
+	{ 
+	  iTrackAssnCRT = true;
+	  art::fill_ptr_vector(tracklist, trackListHandle);
+	}else{
+	std::cout << "no data product found for crt-track matching" << std::endl;
+      }
+    }else {
+    std::cout << "no data product found for crt-track matching" << std::endl;
+  }
+    
+  //check whether tzeros exist
+  bool iT0crt = false;
+  art::Handle< std::vector<anab::T0> > rawHandle_Tzero;
+  evt.getByLabel(data_label_match_, rawHandle_Tzero);
+  if(rawHandle_Tzero.isValid()) {
+    // grab T0 objects associated with tracks    
+    iT0crt=true;
+    //    art::FindMany<anab::T0> trk_t0C_assn_v(trackListHandle, evt, data_label_match_);
+  }
+  else {
+    std::cout << "no data product found for crt-track matching" << std::endl;
+  }
+
+
+  
+  //get Optical Flash Collection
+  art::Handle< std::vector<recob::OpFlash> > rawHandle_OpFlash;
+  evt.getByLabel(data_label_flash_, rawHandle_OpFlash);  
+  std::vector<recob::OpFlash> const& OpFlashCollection(*rawHandle_OpFlash);
+  if(verbose_){ 
+    std::cout<<"  OpFlashCollection.size()  "<<OpFlashCollection.size()<<std::endl; 
+  }  //get Optical Flash
+
+  // -------------------------------------- End of Check if all we need is valid -----------------------------------------
+
   run    = evt.run() ;
   subrun = evt.subRun() ;
   event  = evt.event() ;
@@ -242,22 +290,6 @@ void CRTDataQuality::analyze(art::Event const & evt)
   for (size_t iM = 0; iM<73 ; iM++ ) febIndexConversion[febIndex[iM] ] = iM;
  
   std::vector<crt::CRTHit> const& CRTHitCollection(*rawHandle_hit);
- 
-  /*
-  //    Stuff I care about
-      AvgCountX[i] = -9999.;
-      AvgCountY[i] = -9999.;
-      AvgCountZ[i] = -9999.;
-      MaxCountX[i] = -9999.;
-      MaxCountY[i] = -9999.;
-      MaxCountZ[i] = -9999.;
-      MaxPositX[i] = -9999.;
-      MaxPositY[i] = -9999.;
-      MaxPositZ[i] = -9999.;
-    }
-
-   */
-
   
   // Loop over CRT Hits, keep them if they're within some readout time
   for(size_t j = 0; j < CRTHitCollection.size(); j++) {   
@@ -265,7 +297,10 @@ void CRTDataQuality::analyze(art::Event const & evt)
     // Calculate the reaout time (time we're considering the CRT hit in)
     reaoutTime = maxT_ - minT_;
     // Calculate the time of this CRT Hit
-    double thisHitTime =(double)my_CRTHit.ts0_ns - (double)evt_timeGPS_nsec + (double)fTimeZeroOffset;
+    double thisHitTime =(double)my_CRTHit.ts0_ns;
+    double offset      =  ((double)fTimeZeroOffset - evt_timeGPS_nsec);
+    if ( applyTimeOffSet_ ) thisHitTime += offset; 
+
     hHitTime->Fill(thisHitTime);
     // If the hit time is not within the readout time, skip
     if (thisHitTime < minT_ ) continue;
@@ -282,28 +317,113 @@ void CRTDataQuality::analyze(art::Event const & evt)
       hModule_X[ index ]->Fill(my_CRTHit.x_pos);
       hModule_Y[ index ]->Fill(my_CRTHit.y_pos);
       hModule_Z[ index ]->Fill(my_CRTHit.z_pos);
-    } 
+    }         
         
-    /*
-    hit_charge[j]         = my_CRTHit.peshit;
-    hit_plane[j]          = my_CRTHit.plane%10;
-    hit_posx[j]           = my_CRTHit.x_pos;
-    hit_posy[j]           = my_CRTHit.y_pos;
-    hit_posz[j]           = my_CRTHit.z_pos;
-    
-   
-    */
   }//Loop on CRT hits
-
   
+
   for (size_t i = 0; i < 73; i++)
     {
       if (nCRThits[i]){  AvgPe[ i ] /= (float)nCRThits[i];}
       else AvgPe[ i ] = -999.;
     } 
 
-fTree->Fill();
+  CRTFlashMatchTimeDiff.clear();
+  calculateFlashMatch(CRTHitCollection, OpFlashCollection, evt_timeGPS_nsec,nFlashes, nMatchedFlashes, CRTFlashMatchTimeDiff);
+
+  if (iT0crt&&iTrackAssnCRT)  
+    {
+      art::FindMany<anab::T0> trk_t0C_assn_v(trackListHandle, evt, data_label_match_);
+      calculateTrackMatch(trackListHandle, trk_t0C_assn_v, tracklist.size(), nTracks ,nMatchedTracks );
+    }
+  // load the tree for this event
+  fTree->Fill();
+ 
+
 }
+
+
+
+void  CRTDataQuality::calculateFlashMatch( std::vector<crt::CRTHit> const CRTHitCollection,    
+					   std::vector<recob::OpFlash> const OpFlashCollection,
+					   double event_timeGPS_ns, int &nFlashes, int &nMatchedFlashes, std::vector<double> &CRTFlashMatchTimeDiff)
+{
+  
+  int ntotFlash = OpFlashCollection.size();
+  if (ntotFlash>100) ntotFlash=100;
+  nMatchedFlashes=0;
+  nFlashes=ntotFlash;
+  int iFlashM[100] = {0};
+  
+  
+  // Loop over CRT Hits, keep them if they're within some readout time
+  for(size_t j = 0; j < CRTHitCollection.size(); j++) {   
+    crt::CRTHit my_CRTHit = CRTHitCollection[j];
+    // Calculate the time of this CRT Hit
+    
+    double thisHitTime =(double)my_CRTHit.ts0_ns;
+    double offset      =  ((double)fTimeZeroOffset - event_timeGPS_ns);
+    if ( applyTimeOffSet_ ) thisHitTime += offset; 
+    // Loop over PMT flashes
+    float bestdiff =  flash_match_timecut;
+    //    thisHitTime += (double)fTimeZeroOffset;
+    double signedbestdiff;
+    int ibestflash = -1;
+    for(int i = 0; i != ntotFlash; i++) {
+      if (iFlashM[i]==0) {
+	recob::OpFlash my_OpFlash = OpFlashCollection[i];
+	auto Timeflash = my_OpFlash.Time(); //in us from trigger time
+	float thisdiff = fabs(0.001*thisHitTime- Timeflash);
+	if (thisdiff<bestdiff) {
+	  bestdiff=thisdiff;
+	  signedbestdiff = Timeflash-0.001*thisHitTime;
+	  ibestflash=i;
+	}
+      }
+    }// end loop on PMT flashes    
+    if (ibestflash>=0) {
+      iFlashM[ibestflash]=1;
+      hFlashDiff->Fill(signedbestdiff);
+      nMatchedFlashes++;
+      CRTFlashMatchTimeDiff.push_back(signedbestdiff);
+    }       
+  }//Loop on CRT hits
+  if(verbose_)std::cout << ntotFlash << " " << nMatchedFlashes << std::endl;
+  
+}
+
+void  CRTDataQuality::calculateTrackMatch(  art::Handle< std::vector<recob::Track>  > trackListHandle, 
+					     art::FindMany<anab::T0> trk_t0C_assn_v,
+					    int Tcollsize, int &nTracks ,int &nMatchedTracks )
+{
+    
+      
+  nMatchedTracks=0;
+  int nTPCtracks = Tcollsize;
+  nTracks=0;
+  for(int j = 0; j < nTPCtracks; j++) {
+    art::Ptr<recob::Track> ptrack(trackListHandle, j);
+    const recob::Track& track = *ptrack;
+    
+    if (track.Length()>min_length_TPCtrack) {
+      nTracks++;
+      const std::vector<const anab::T0*>& T0_v = trk_t0C_assn_v.at(j);
+      if (T0_v.size()==1) { 
+	auto t0 = T0_v.at(0);
+	//	  int tzerotime =t0->Time();	  
+	int plane =t0->TriggerBits();  // this variable is not filled until MCC9.1, defaults to 0
+	double dca = t0->TriggerConfidence();
+	if (plane==3) hTrackDCA3->Fill(dca);
+	else  hTrackDCA->Fill(dca);
+	nMatchedTracks++;
+      }  // if we have t0tags available
+    }  // if length is at least 20 cm
+  } // end loop over tracks
+  //  std::cout << nTPCtracks << " " << denom << " " << numer << std::endl;
+
+}
+
+
 
 void CRTDataQuality::beginJob()
 {
@@ -314,9 +434,17 @@ void CRTDataQuality::beginJob()
   fTree->Branch("subrun"    ,&subrun    ,"subrun/I");
   fTree->Branch("event"     ,&event     ,"event/I" );
   fTree->Branch("date"      ,&date      ,"date/I"  );
+  fTree->Branch("febIndex"  ,febIndex   ,"febIndex[73]/I");
+  fTree->Branch("AvgPe"     ,AvgPe      ,"AvgPe[73]/D"   );
+  fTree->Branch("nFlashes"         ,&nFlashes        ,"nFlashes/I"         );
+  fTree->Branch("nMatchedFlashes"  ,&nMatchedFlashes ,"nMatchedFlashes/I"  );
+  fTree->Branch("nTracks"          ,&nTracks         ,"nTracks/I"          );
+  fTree->Branch("nMatchedTracks"   ,&nMatchedTracks  ,"nMatchedTracks/I"   );
   fTree->Branch("nCRThits"  ,nCRThits   ,"nCRThits[73]/I");
   fTree->Branch("febIndex"  ,febIndex   ,"febIndex[73]/I");
   fTree->Branch("AvgPe"     ,AvgPe      ,"AvgPe[73]/D"   );
+  fTree->Branch("CRTFlashMatchTimeDiff","std::vector<double>",&CRTFlashMatchTimeDiff);
+
   /*
   fTree->Branch("AvgCountX" ,AvgCountX  ,"AvgCountX[73]/D");
   fTree->Branch("AvgCountY" ,AvgCountY  ,"AvgCountY[73]/D");
@@ -332,6 +460,12 @@ void CRTDataQuality::beginJob()
   
   hHitTime         = tfs1->make<TH1D>("hHitTime"        ,"CRT Hit Time; time [ns]; ",2000, -10000000,10000000);
   hHitTimeAfterCut = tfs1->make<TH1D>("hHitTimeAfterCut","CRT Hit Time; time [ns]; ",2000, -10000000,10000000);
+  hFlashDiff = tfs1->make<TH1D>("hFlashDiff"," ",1000, -5.,5.);
+  hFlashDiff->GetXaxis()->SetTitle("Flash time - CRT Hit time (us)");
+  hTrackDCA = tfs1->make<TH1D>("hTrackDCA"," ",200,0.,50.);
+  hTrackDCA->GetXaxis()->SetTitle("DCA of TPC track and CRT hit side and bottom planes (cm))");
+  hTrackDCA3 = tfs1->make<TH1D>("hTrackDCA3"," ",200,0.,50.);
+  hTrackDCA3->GetXaxis()->SetTitle("DCA of TPC track and CRT hit top plane only (cm))");
   
   for (size_t i = 0; i<73; i++)
     {

@@ -7,7 +7,6 @@ CRTDistanceFilter: {
  useAsFilter        : false
  verbose            : true
  useCRTTag          : true
- useExternalVtx     : false
  minDistance        : 14.
 }
 

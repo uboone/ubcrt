@@ -427,6 +427,15 @@ simple_plugin(CRTTiming "module"
           art_Framework_Services_Optional_TFileService_service
           ${ROOT_BASIC_LIB_LIST} )
 
+simple_plugin(CRTTriggerTimeProducer "module"
+            CRT
+          bernfebdaq-core_Overlays
+          art_Framework_Services_Optional
+          art_Framework_Services_Registry
+          art_Framework_Services_Optional_TFileService_service
+          ${ROOT_BASIC_LIB_LIST} )
+
+
 simple_plugin( CRTMerger "module"
   CRT
   bernfebdaq-core_Overlays

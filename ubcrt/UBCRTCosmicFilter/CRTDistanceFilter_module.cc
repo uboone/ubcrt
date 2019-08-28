@@ -72,7 +72,6 @@ private:
   bool  fuseAsFilter;
   bool  fVerbose;
   bool  fUseCRTTag;
-  bool  fUseExternalVtx;
   float fMinDistance;
   /// 
 
@@ -110,7 +109,6 @@ CRTDistanceFilter::CRTDistanceFilter(fhicl::ParameterSet const &p)
   fuseAsFilter          = p.get<bool >("useAsFilter"   , false );
   fVerbose              = p.get<bool >("verbose"       , false );
   fUseCRTTag            = p.get<bool >("useCRTTag"     ,  true );
-  fUseExternalVtx       = p.get<bool >("useExternalVtx", false );
   fMinDistance          = p.get<float>("minDistance"   , 14.   );
 }
 
