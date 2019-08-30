@@ -296,10 +296,12 @@ void CRTDataQuality::analyze(art::Event const & evt)
     // Calculate the reaout time (time we're considering the CRT hit in)
     reaoutTime = maxT_ - minT_;
     // Calculate the time of this CRT Hit
-    double thisHitTime =(double)my_CRTHit.ts0_ns;
-    double offset      =  ((double)fTimeZeroOffset - evt_timeGPS_nsec);
+    double thisHitTime = ( double) my_CRTHit.ts0_ns;
+    thisHitTime -= (double) evt_timeGPS_nsec; 
+    double offset      = ( (double) fTimeZeroOffset );
+    if (my_CRTHit.plane==0)  std::cout<<"Before offset in DQ "<<data_labelhit_<<" "<<applyTimeOffSet_<<" "<<thisHitTime<<" "<<my_CRTHit.x_pos<<" "<<my_CRTHit.y_pos<<" "<<my_CRTHit.z_pos<<" "<<offset <<"\n";
     if ( applyTimeOffSet_ ) thisHitTime += offset; 
-
+    if (my_CRTHit.plane==0)  std::cout<<"Apply  offset in DQ "<<data_labelhit_<<" "<<applyTimeOffSet_<<" "<<thisHitTime<<" "<<my_CRTHit.x_pos<<" "<<my_CRTHit.y_pos<<" "<<my_CRTHit.z_pos<<" "<<offset <<"\n";
     hHitTime->Fill(thisHitTime);
     // If the hit time is not within the readout time, skip
     if (thisHitTime < minT_ ) continue;
@@ -360,9 +362,12 @@ void  CRTDataQuality::calculateFlashMatch( std::vector<crt::CRTHit> const CRTHit
     crt::CRTHit my_CRTHit = CRTHitCollection[j];
     // Calculate the time of this CRT Hit
     
-    double thisHitTime =(double)my_CRTHit.ts0_ns;
-    double offset      =  ((double)fTimeZeroOffset - event_timeGPS_ns);
-    if ( applyTimeOffSet_ ) thisHitTime += offset; 
+
+    // Calculate the time of this CRT Hit                                                                                                                                                                                               
+    double thisHitTime = ( double) my_CRTHit.ts0_ns;
+    thisHitTime -= (double) event_timeGPS_ns;
+    double offset      = ( (double) fTimeZeroOffset );
+    if ( applyTimeOffSet_ ) thisHitTime += offset;
     // Loop over PMT flashes
     float bestdiff =  flash_match_timecut;
     //    thisHitTime += (double)fTimeZeroOffset;
