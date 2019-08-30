@@ -215,6 +215,8 @@ void CRTTriggerProducer::produce(art::Event &evt)
   art::FindMany<anab::T0> trk_T0_assn_v(rawHandle_TPCtrack, evt, data_label_crtT0asso_);
   
   
+  //std::cout<<"T:  TT, flashes: "<<fTriTim_nsec<<","<<OpFlashCollectionCosmic.size()<<"\n";
+
   for(std::vector<int>::size_type i = 0; i != TrackCollection.size(); i++) {    //start loop over tpc tracks
     reset_tree();
     const std::vector<const crt::CRTHit*>& CRTHit_v = trk_crt_assn_v.at(i);

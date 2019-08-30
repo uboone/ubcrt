@@ -49,6 +49,7 @@
 #include "Pandora/PdgTable.h"
 
 #include "TTree.h"
+#include "TH1D.h"
 #include "TBenchmark.h"
 #include "TRandom.h"
 #include "TSystem.h"
@@ -107,7 +108,7 @@ private:
     int crtt0_plane = -1;
     
     TTree * my_event_trigger;
-    
+  TH1D* hQuick;
     int flash_tot = 0;
     int flash_counter = 0;
     int t0_counter = 0;
@@ -200,46 +201,39 @@ void CRTTriggerProducerSimple::produce(art::Event &evt)
   std::vector<crt::CRTHit> const& CRTHit_v(*rawHandle_hit);
 
 
-
+  // Needs cleaning
   std::vector<anab::T0>  T0_v;
-  std::cout<<"--> Parameters fTimeZeroOffset, fTriTim_nsec: "<<fTimeZeroOffset<<","<<fTriTim_nsec<<"\n";
+
+  flash_tot = OpFlashCollectionCosmic.size();
+
+  //std::cout<<"S: Offset, TT, t0, crt, flashes:"<<fTimeZeroOffset<<","<<fTriTim_nsec<<","<<T0_v.size() <<","<<CRTHit_v.size()<<","<<OpFlashCollectionCosmic.size()<<"\n";
+
   for (size_t j = 0; j< CRTHit_v.size(); ++j)
     {
       // here I'm calculating a first estimate of the crt hit timing
       // this entails a fix offset and one coming from the gps
-      double time_besthit = (double)CRTHit_v.at(j).ts0_ns + fTimeZeroOffset - fTriTim_nsec; 
-      anab::T0 thist0(0.001*time_besthit, 2, CRTHit_v.at(j).plane, 1, 0);
-      T0_v.emplace_back(thist0);
-    }
+      crthit_ts0 = (double)CRTHit_v.at(j).ts0_ns; 
+      double crthittime = crthit_ts0 + fTimeZeroOffset - fTriTim_nsec; 
+      
+      for(std::vector<int>::size_type k = 0; k != OpFlashCollectionCosmic.size(); k++) {//B
+	recob::OpFlash my_flash = OpFlashCollectionCosmic.at(k);
+	if( abs( my_flash.Time() - crthittime*0.001)<5.0){
+	  fAbsTimFla = my_flash.Time();
+	  flash_PE = my_flash.TotalPE();
+	  flash_y = my_flash.YCenter();
+	  flash_z = my_flash.ZCenter();
+	  flash_inTime = 0;
+	  if(adc_length == 32){
+	    double time_diff = fAbsTimFla*1000 - (crthit_ts0 - fTriTim_nsec);
+	    flash_crthit_diff.push_back(time_diff);
+	    hQuick->Fill(time_diff);
+	    flash_counter++;
+	  }// Check if this is data... smart!          
+	}// if the CRT and flash time is small, calculate!
+      } // loop on cosmics flashes
+    } //end crtt0 loop
 
-
-  flash_tot = OpFlashCollectionCosmic.size();
-
-
-  for(std::vector<int>::size_type j = 0; j != T0_v.size(); j++) {//CRTt0 loop
-    crtt0_time  = (T0_v.at(j)).Time();
-    crtt0_trig  = (T0_v.at(j)).TriggerType();
-    crtt0_DCA   = (T0_v.at(j)).TriggerConfidence();
-    crtt0_plane = (T0_v.at(j)).TriggerBits();
-    
-    for(std::vector<int>::size_type k = 0; k != OpFlashCollectionCosmic.size(); k++) {//B
-      recob::OpFlash my_flash = OpFlashCollectionCosmic.at(k);
-      if( abs( my_flash.Time() - crtt0_time)<5.0){
-	fAbsTimFla = my_flash.Time();
-	flash_PE = my_flash.TotalPE();
-	flash_y = my_flash.YCenter();
-	flash_z = my_flash.ZCenter();
-	flash_inTime = 0;
-	if(adc_length == 32){
-	  double time_diff = fAbsTimFla*1000 - (crthit_ts0 - fTriTim_nsec);
-	  flash_crthit_diff.push_back(time_diff);
-	  flash_counter++;
-	}// Check if this is data... smart!          
-      }// if the CRT and flash time is small, calculate!
-    } // loop on cosmics flashes
-  } //end crtt0 loop
-
-
+  std::cout<<"flash_crthit_diff.size "<<flash_crthit_diff.size()<<"\n";
   // calculation using mean, cut everything outside 1 std
   if(flash_crthit_diff.size()>1){
     double mean_corr = 0;
@@ -285,7 +279,6 @@ void CRTTriggerProducerSimple::produce(art::Event &evt)
   
   // rerun over all t0 etc... now with the correction
   reset_tree();
-
 
   for(std::vector<int>::size_type j = 0; j != CRTHit_v.size(); j++) {//CRThitloop
     nr_crthit++;
@@ -341,6 +334,8 @@ void CRTTriggerProducerSimple::initialize_tmyevent()
   // Implementation of optional member function here.
   std::cout << "Initialize variables and histograms for root tree output" << std::endl;
   // tree stuff for tracks: ////////////////////////////////////////////////////////////////////////////////// 
+  hQuick = tfs->make<TH1D>("hQuick","hQuick",2000,-2000,2000);
+  // event infos                                
   my_event_ = tfs->make<TTree>("my_event","my_event");
   // event infos
   my_event_->Branch("event_counter", &event_counter, "event_counter/I");

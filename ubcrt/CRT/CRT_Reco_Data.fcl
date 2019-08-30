@@ -32,7 +32,7 @@ physics:
       data_label_t0CRT: "crttrackmatch"
       data_label_t0ACPT: ""
       fHardDelay: 38800            #default is 40000
-      fTimeZeroOffset: 69000 
+      fTimeZeroOffset: 0 
       verbose: 0
       TrackModuleLabel: "pandora"
       SaveTPCTrackInfo: true
