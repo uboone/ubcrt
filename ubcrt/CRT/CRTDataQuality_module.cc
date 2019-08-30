@@ -225,7 +225,6 @@ void CRTDataQuality::analyze(art::Event const & evt)
   art::Timestamp evtTimeGPS = my_DAQHeader.gps_time();  
   double evt_timeGPS_nsec = (double)evtTimeGPS.timeLow();  
 
-
   //get CRTHits
   art::Handle< std::vector<crt::CRTHit> > rawHandle_hit;
   evt.getByLabel(data_labelhit_, rawHandle_hit); 

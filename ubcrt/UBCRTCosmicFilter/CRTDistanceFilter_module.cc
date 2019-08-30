@@ -146,9 +146,11 @@ void CRTDistanceFilter::ResetVar()
 
 bool CRTDistanceFilter::filter(art::Event &e)
 {
+
+  std::cout<<"In Filter CRDTDistanceTagger\n";
   // Clear the tree
   ResetVar();
-
+  std::cout<<"In Filter CRDTDistanceTagger1\n";
   // This is what we want to produce
   std::unique_ptr<std::vector<recob::Vertex> > VtxCol(new std::vector<recob::Vertex>);
   std::unique_ptr<art::Assns<recob::Vertex, recob::Track>> vertex_track_assn_v(new art::Assns<recob::Vertex, recob::Track>);
@@ -157,19 +159,19 @@ bool CRTDistanceFilter::filter(art::Event &e)
   _event = e.event();
   _subrun = e.subRun();
   _run = e.run();
-
+  std::cout<<"In Filter CRDTDistanceTagger2\n";
   // Get the reconstructed verteces
   art::Handle< std::vector<recob::Vertex> > vtxListHandle;
   std::vector<art::Ptr<recob::Vertex> > vtxlist;
   if (!e.getByLabel(fVtxModuleLabel,vtxListHandle)) {  e.put(std::move(VtxCol));  e.put(std::move(vertex_track_assn_v));  return false;}
   art::fill_ptr_vector(vtxlist, vtxListHandle);
-    
+  std::cout<<"In Filter CRDTDistanceTagger3\n";
   // Get the reconstructed tracks
   art::Handle< std::vector<recob::Track> > trackListHandle;
   std::vector<art::Ptr<recob::Track> > tracklist;
   if (!e.getByLabel(fTrackModuleLabel,trackListHandle)) {  e.put(std::move(VtxCol)); e.put(std::move(vertex_track_assn_v)); return false;}
   art::fill_ptr_vector(tracklist, trackListHandle);
-
+  std::cout<<"In Filter CRDTDistanceTagger3\n";
 
   // Are we going to use the CRT information?
   // if so, let's fetch which reco tracks have a CRT Hit association
@@ -184,22 +186,25 @@ bool CRTDistanceFilter::filter(art::Event &e)
     // fill the container of crt hits                                                                                                                        
     art::fill_ptr_vector(crtHits, crtHitHandle);
     // Find associations
-    art::FindOneP<recob::Track> fCRT2TPC(crtHitHandle, e , fCRTTrackAssnProducer);
+    std::cout<<"Before Ass in CRDTDistanceTagger\n";
+    art::FindManyP<recob::Track> fCRT2TPC(crtHitHandle, e , fCRTTrackAssnProducer);
     if (fCRT2TPC.isValid())
       {
 	for (unsigned int indexAssn = 0; indexAssn < fCRT2TPC.size(); ++indexAssn )
 	  {
-	    cet::maybe_ref<recob::Track const> trackCRT2TPC(*fCRT2TPC.at(indexAssn));
-	    if (!trackCRT2TPC) continue;
-	    recob::Track const& aTrack(trackCRT2TPC.ref());
+	    auto assTracksPtr = fCRT2TPC.at(indexAssn);
+	    if (assTracksPtr.size()==0) continue;
+	    recob::Track const& aTrack = *assTracksPtr.front();
+	    //cet::maybe_ref<recob::Track const> trackCRT2TPC(*fCRT2TPC.at(indexAssn));
+	    //if (!trackCRT2TPC) continue;
+	    //recob::Track const& aTrack(trackCRT2TPC.ref());
 	    matchedRecoTrkKey.push_back(aTrack.ID()); 
 	  }// End Loop on Association
       }// if there's an associated track
     // Now we know what ID identifies the reco track we're interested in.                                                                                       
   }// if use CRT information
 
-
-
+  std::cout<<"After Ass in CRDTDistanceTagger\n";
 
   /*Scope of this bit of code is to create an association between bad vtx and tracks */
   // Let's determe if our verteces are good or not

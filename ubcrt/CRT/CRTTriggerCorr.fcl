@@ -2,12 +2,9 @@ BEGIN_PROLOG
 
 crttrigger:
 {
-    module_type:            "CRTTriggerTimeProducer"
-    TrackProducerLabel:     "pandora"
-    data_label_crtT0asso:   "crttrackmatch"
-    data_label_flash_beam:  "simpleFlashBeam"
+    module_type:            "CRTTriggerTimeProducerSimple"
     data_label_flash_cosmic:"simpleFlashCosmic"
-    data_label_crthit:      "crthitcorr"
+    data_label_crthit:      "merger"
     data_label_DAQHeader:   "daq"
     verbose:                0         # =0 no print outs
     saveTTree:              1         # =0 saves no tree, =1 saves no vectors, =2 saves all in TTree

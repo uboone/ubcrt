@@ -166,10 +166,14 @@ namespace crt{
 
     bool ApplyLightLossCorrection(int firstFEB,int secondFEB,float x, float y, float z, float &sf1, float &sf2);
 
+    double ApplyT0Correction();
 
     crt::CRTHit FillCrtHit(std::vector<uint8_t> tfeb_id, std::map<uint8_t,std::vector<std::pair<int,float>>> tpesmap, 
 			   float peshit, double time1, double time2, double time3, double time4, double time5, int plane,
 			   double x, double ex, double y, double ey, double z, double ez); 
+
+
+
 
   private:
 
@@ -187,6 +191,7 @@ namespace crt{
     bool fSumPE;
     bool fCorrectAlignment;
     bool fRemoveHits;
+    bool fCorrectTiming;
     float fDistOffStrip;
 			   //
     bool          fVerbose;             ///< print info
@@ -221,6 +226,7 @@ namespace crt{
     fRemoveHits             = (p.get<bool> ("RemoveHits"      ,false));
     fDistOffStrip           = (p.get<float>("DistOffStrip"    ,40.0));
     fVerbose                = (p.get<bool> ("Verbose"         ,false));
+    fCorrectTiming          = (p.get<bool> ("CorrectTiming"   ,false));
 
   }
 
@@ -230,6 +236,14 @@ namespace crt{
     
   } // beginJob()
 
+
+    double CRTDataHitCorr::ApplyT0Correction()
+    {
+      double correctionFactor = 0;
+      //CRTDataQuality.... | crtt0Correction..... | ..................... | std::vector<anab::T0>....................... | ....1
+      return correctionFactor;
+      
+    }
 
   void CRTDataHitCorr::CorrectAlignment(int plane, int feb1, int feb2, float &x, float &y, float &z)
   {
@@ -445,6 +459,12 @@ namespace crt{
 
 	if (fCorrectAlignment)  CorrectAlignment(plane, firstFEB, secondFEB, x, y, z);
 	  
+	if (fCorrectTiming ) {
+	  double t0correction = ApplyT0Correction();
+	  time3 += t0correction; //<-- wrong
+	  time4 += t0correction; //<-- wrong
+	}
+
 	// Create a corrected CRT hit
 	crt::CRTHit crtHit = FillCrtHit(tfeb_id, tpesmap, pestot, time1,  time2,  time3,  time4,  time5, 
 					plane, x, ex,y,ey,z,ez );
