@@ -42,6 +42,7 @@
 #include <algorithm>
 #include <vector>
 #include <unordered_set>
+#include <math.h>       /* floor */
 
 
 // LArSoft
@@ -66,6 +67,10 @@
 #include "TVector3.h"
 #include "TGeoManager.h"
 
+// Data base stuff
+#include "larevt/CalibrationDBI/Interface/ChannelStatusService.h"
+#include "ubevt/Database/CRTChannelStatusService.h"
+#include "larevt/CalibrationDBI/Interface/ChannelStatusProvider.h"
 
 const short feb2mod[200] = {
   -1,-1,-1,-1,-1,-1,-1,-1,-1,-1, //0-9
@@ -161,7 +166,8 @@ namespace crt{
     void endJob() override;
     void reconfigure(fhicl::ParameterSet const & p);
     
-   
+    int  generateChannelNumber(int FEB, int channel);
+    void DefaultMask( std::vector<std::pair<int,int>> &deadMap );
     void DBCall( std::vector<std::pair<int,int>> &deadMap );
     bool isHitFromDeadChannels(int febNumber1, int channel1Number1, int channel1Number2 , 
 			       int febNumber2, int channel2Number1, int channel2Number2 , std::vector<std::pair<int,int>> deadMap );
@@ -172,12 +178,13 @@ namespace crt{
     
     void ScaleMCtime  (float &time1,float &time5) {time1/=5.;time5/=5.;};
     
-
+    bool checkChannelStatusInDB(int aCh, int bCh, int cCh, int dCh);
     bool BottomSections(int firstFEB, int secondFEB);
     bool PipeSections(int firstFEB, int secondFEB);			   
     bool FTSections(int firstFEB, int secondFEB);			   
     bool TopSections(int firstFEB, int secondFEB);	
     bool ApplyDetectorResponse(crt::CRTHit thisCrtHit,  std::map<uint8_t, std::vector<std::pair<int,float>>> &tpesmap, float &pestot );
+	      
     /*
 
     void RestorePE             (crt::CRTHit hit);
@@ -208,12 +215,13 @@ namespace crt{
     std::vector<int> fDeadChannels;
     bool  fSections;
     bool  fSimulatedSaturation;
+    bool  fUseDBCall;
     
     ///< print info
     CLHEP::HepRandomEngine& fEngine;
-
-    std::vector<int> MichelleFEB      {29, 30, 32, 37, 37, 37, 37, 38, 41, 46, 109, 111, 113, 113,  124};   //117,
-    std::vector<int> MichelleChannels {23,  1,  3,  2,  6, 12, 26,  8,  0,  7,  11,  31,   6,   8,   14};   // 21, 
+			       
+    std::vector<int> MichelleFEB      {29, 30, 32, 37, 37, 37, 37, 38, 41, 46, 109, 111, 113, 113,  124, 117};   //117,
+    std::vector<int> MichelleChannels {23,  1,  3,  2,  6, 12, 26,  8,  0,  7,  11,  31,   6,   8,   14,21};   // 21, 
 			   
   }; // class CRTSimHitCorr
     
@@ -250,7 +258,7 @@ namespace crt{
 
       fDeadFEB               = (p.get< std::vector<int> > ("DeadFEB"    ,  MichelleFEB ));
       fDeadChannels          = (p.get< std::vector<int> > ("DeadChannel",  MichelleChannels ));
-
+      fUseDBCall             = (p.get<bool>          ("UseDBCall"            ,false));
       fVerbose               = (p.get<bool>          ("Verbose"              ,false));
     }
 
@@ -264,8 +272,10 @@ namespace crt{
     {
     }
 
-    void CRTSimHitCorr::DBCall( std::vector<std::pair<int,int>> &deadMap )
+
+    void CRTSimHitCorr::DefaultMask( std::vector<std::pair<int,int>> &deadMap )
     {
+      // This function creates a map with the dead FEB and channels... useful for default use 
       deadMap.clear();
       if (fDeadFEB.size() != fDeadChannels.size() ) {
 	std::cout<<"FEB and Channel sizes are different. I am not applying the dead channel masking\n";
@@ -277,19 +287,64 @@ namespace crt{
 	deadMap.push_back(p1);
       }
     }
-
-    bool  CRTSimHitCorr::isHitFromDeadChannels(int febNumber1, int channel1Number1, int channel1Number2 , 
-					       int febNumber2, int channel2Number1, int channel2Number2, std::vector<std::pair<int,int>> deadMap )
+    
+    int CRTSimHitCorr::generateChannelNumber(int FEB, int channel)
     {
-      for(auto const& value: deadMap)
-	{ 
-	  if (value.first == febNumber1 && value.second == channel1Number1) {return true;}
-	  if (value.first == febNumber1 && value.second == channel1Number2) {return true;}
-	  if (value.first == febNumber2 && value.second == channel2Number1) {return true;}
-	  if (value.first == febNumber2 && value.second == channel2Number2) {return true;}
+      int dbChannelNumber = -9999;
+      int febOrderArray[73] = {  11,  12,  14,  15,  16,  17,  18,  19,  20,  21,  22,  23,  24,  26,  27,  28,  29,  30,  31, 
+			         32,  33,  34,  35,  36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47,  48,  49,  50, 
+		 	         51,  52,  53,  54,  55,  56,  57,  58,  59,  60,  61, 105, 106, 107, 108, 109, 111, 112, 113, 
+				 114, 115, 116, 117, 118, 119, 120, 121, 123, 124, 125, 126, 127, 128, 129, 195};
+      
+      for (int iFEB = 0; iFEB < 73; iFEB++)
+	{
+	  if (FEB == febOrderArray[iFEB] )
+	    {
+	      dbChannelNumber = iFEB*32;
+	      break;
+	    }
 	}
-      return false;
+      if (dbChannelNumber < 0) std::cout<<"PUPPPPPPPAAAAA \n"; 
+      dbChannelNumber += channel;
+      if (fVerbose) std::cout<<dbChannelNumber<<" "<<FEB<<" "<<channel<<"\n";
+      std::cout<<dbChannelNumber<<" "<<FEB<<" "<<channel<<"\n";
+      return dbChannelNumber;
+      
     }
+    bool CRTSimHitCorr:: checkChannelStatusInDB(int aCh, int bCh, int cCh, int dCh)
+    {
+      const lariov::ChannelStatusProvider& crt_status_provider = art::ServiceHandle<lariov::CRTChannelStatusService>()->GetProvider();
+      bool debugOn = false;
+      if (debugOn){
+	std::cout<<"Status of one of the bad strips -----------> "<< crt_status_provider.Status(535)<<"\n";
+	std::cout<<"Status of one of the good strips -----------> "<< crt_status_provider.Status(21)<<"\n";
+	std::cout<<"Status of strip on 117           -----------> "<< crt_status_provider.Status(1941)<<"\n";
+	int badChannels =0;
+	for (int dummyI=0; dummyI < 2236; dummyI++ )
+	  if (crt_status_provider.Status(dummyI)==1) badChannels++;
+	std::cout<<"badChannels ----> "<<badChannels<<"\n";
+      }
+      //std::cout<<"Stata "<<crt_status_provider.Status(aCh)<<" "<<crt_status_provider.Status(bCh)<<" "<<crt_status_provider.Status(cCh)<<" "<<crt_status_provider.Status(dCh)<<"\n";
+      if (crt_status_provider.Status(aCh) != 4) return false;
+      if (crt_status_provider.Status(bCh) != 4) return false;
+      if (crt_status_provider.Status(cCh) != 4) return false;
+      if (crt_status_provider.Status(dCh) != 4) return false;
+      return true;
+    }
+  
+  
+  bool  CRTSimHitCorr::isHitFromDeadChannels(int febNumber1, int channel1Number1, int channel1Number2 , 
+					     int febNumber2, int channel2Number1, int channel2Number2, std::vector<std::pair<int,int>> deadMap )
+  {
+    for(auto const& value: deadMap)
+      { 
+	if (value.first == febNumber1 && value.second == channel1Number1) {return true;}
+	if (value.first == febNumber1 && value.second == channel1Number2) {return true;}
+	if (value.first == febNumber2 && value.second == channel2Number1) {return true;}
+	if (value.first == febNumber2 && value.second == channel2Number2) {return true;}
+      }
+    return false;
+  }
 
   crt::CRTHit CRTSimHitCorr::FillCrtHit(std::vector<uint8_t> tfeb_id, std::map<uint8_t, std::vector<std::pair<int,float>>> tpesmap, float peshit,
 					double time1, double time2, double time3, double time4, double time5, 
@@ -441,52 +496,52 @@ namespace crt{
     // Load the crt dead channel map only once per event
     std::vector<std::pair<int,int>> deadMap;
     if (fMaskDeadChannels){
-      DBCall(deadMap);
+      DefaultMask(deadMap);
     }
     
-      std::vector<crt::CRTHit> const& crtHitInList(*crtHitsInHandle);
-      if(fVerbose) std::cout<<"Number of CRT hits read in= "<<crtHitInList.size()<< std::endl;
+    std::vector<crt::CRTHit> const& crtHitInList(*crtHitsInHandle);
+    if(fVerbose) std::cout<<"Number of CRT hits read in= "<<crtHitInList.size()<< std::endl;
+    
+    if(fVerbose)std::cout<<"In Sim correction "<<crtHitInList.size()<<" "<<fCrtHitsIn_Label<<"\n";
+    
+    //Loop on CRT Hits
+    for (size_t i = 0; i < crtHitInList.size(); i++){
+      // Let's start positive, let's keep this hit
+      bool keepMe = true;
       
-      if(fVerbose)std::cout<<"In Sim correction "<<crtHitInList.size()<<" "<<fCrtHitsIn_Label<<"\n";
-
-      //Loop on CRT Hits
-      for (size_t i = 0; i < crtHitInList.size(); i++){
-	// Let's start positive, let's keep this hit
-	bool keepMe = true;
-
-	// Get hit
-	crt::CRTHit thisCrtHit = crtHitInList[i];
-	// Get all memebers you need to check if this is data or MC.
-	// only change/remove MC hits. 
-	std::vector<uint8_t> tfeb_id = thisCrtHit.feb_id;
-	int firstFEB  = (int)tfeb_id[0];
-	int secondFEB = (int)tfeb_id[1];
-	std::map<uint8_t, std::vector<std::pair<int,float>>> tpesmap=thisCrtHit.pesmap;
-	std::vector<std::pair<int,float>> firstStrip  = tpesmap.find(firstFEB)->second; 
-	std::vector<std::pair<int,float>> secondStrip = tpesmap.find(secondFEB)->second; 
-	// if this is data, push the hit and continue with the next
-	if (firstStrip.size() == 32) { CRTHitOutCol->push_back(thisCrtHit); continue;}
-	// At this point, throw an exeption if the size is strange
-	if (firstStrip.size() !=  2) {std::cerr << "\033[93m[ERROR]\033[00m Hit has wrong number of strips: "<<tpesmap.size()  << std::endl;
-	  event.put(std::move(CRTHitOutCol));
-	  return; }
-	
-	// Ok, now we just made sure we have only MC hit... let modify them!
-	
-	float time1 = thisCrtHit.ts0_s;
-	float time2 = thisCrtHit.ts0_s_corr;
-	float time3 = thisCrtHit.ts0_ns;
-	float time4 = thisCrtHit.ts0_ns_corr;
-	float time5 = thisCrtHit.ts1_ns;
-	int   plane = thisCrtHit.plane;
-	float    x  = thisCrtHit.x_pos;
-	float    ex = thisCrtHit.x_err;
-	float    y  = thisCrtHit.y_pos;
-	float    ey = thisCrtHit.y_err;
-	float    z  = thisCrtHit.z_pos;
-	float    ez = thisCrtHit.z_err;
-	float pestot = thisCrtHit.peshit;      
-
+      // Get hit
+      crt::CRTHit thisCrtHit = crtHitInList[i];
+      // Get all memebers you need to check if this is data or MC.
+      // only change/remove MC hits. 
+      std::vector<uint8_t> tfeb_id = thisCrtHit.feb_id;
+      int firstFEB  = (int)tfeb_id[0];
+      int secondFEB = (int)tfeb_id[1];
+      std::map<uint8_t, std::vector<std::pair<int,float>>> tpesmap=thisCrtHit.pesmap;
+      std::vector<std::pair<int,float>> firstStrip  = tpesmap.find(firstFEB)->second; 
+      std::vector<std::pair<int,float>> secondStrip = tpesmap.find(secondFEB)->second; 
+      // if this is data, push the hit and continue with the next
+      if (firstStrip.size() == 32) { CRTHitOutCol->push_back(thisCrtHit); continue;}
+      // At this point, throw an exeption if the size is strange
+      if (firstStrip.size() !=  2) {std::cerr << "\033[93m[ERROR]\033[00m Hit has wrong number of strips: "<<tpesmap.size()  << std::endl;
+	event.put(std::move(CRTHitOutCol));
+	return; }
+      
+      // Ok, now we just made sure we have only MC hit... let modify them!
+      
+      float time1 = thisCrtHit.ts0_s;
+      float time2 = thisCrtHit.ts0_s_corr;
+      float time3 = thisCrtHit.ts0_ns;
+      float time4 = thisCrtHit.ts0_ns_corr;
+      float time5 = thisCrtHit.ts1_ns;
+      int   plane = thisCrtHit.plane;
+      float    x  = thisCrtHit.x_pos;
+      float    ex = thisCrtHit.x_err;
+      float    y  = thisCrtHit.y_pos;
+      float    ey = thisCrtHit.y_err;
+      float    z  = thisCrtHit.z_pos;
+      float    ez = thisCrtHit.z_err;
+      float pestot = thisCrtHit.peshit;      
+      
 
 	// Modify the timing of ts1 due to bug in
 	// in Oct2018 simulation. May not apply anymore
@@ -505,10 +560,37 @@ namespace crt{
 	
 
 	//Let's mask the dead channels
-	if (fMaskDeadChannels) keepMe = !(isHitFromDeadChannels(firstFEB , firstStrip [0].first, firstStrip [0].first, 
-								secondFEB, secondStrip[0].first, secondStrip[0].first, 
-								deadMap));
-
+	if (fMaskDeadChannels) 
+	  {
+	    // if we don't want to use the database
+	    if (!fUseDBCall)
+	      {
+		//std::cout<<"firstStrip [0].first, firstStrip [1].first, "<<firstStrip [0].first <<" "<< firstStrip [1].first<<"\n";
+		keepMe = !(isHitFromDeadChannels(firstFEB , firstStrip [0].first, firstStrip [1].first, 
+						 secondFEB, secondStrip[0].first, secondStrip[1].first, 
+						 deadMap));
+	      }
+	    else
+	      {
+		// ok, now we're using the DB
+		int aDBChannel = generateChannelNumber(firstFEB ,firstStrip [0].first);
+		int bDBChannel = generateChannelNumber(firstFEB ,firstStrip [1].first);
+		int cDBChannel = generateChannelNumber(secondFEB,secondStrip[0].first);
+		int dDBChannel = generateChannelNumber(secondFEB,secondStrip[1].first);
+		keepMe = checkChannelStatusInDB(aDBChannel,bDBChannel,cDBChannel,dDBChannel);
+		if (fVerbose) 
+		  {
+		    if (!keepMe) 
+		      {
+			std::cout<<"----------------------------------------\n";
+			checkChannelStatusInDB(aDBChannel,bDBChannel,cDBChannel,dDBChannel);
+			std::cout<<aDBChannel<<" "<<bDBChannel<<" "<<firstFEB<<" "<<firstStrip [0].first<<" "<< firstStrip [1].first<<"\n";
+			std::cout<<cDBChannel<<" "<<dDBChannel<<" "<<secondFEB<<" "<<secondStrip [0].first<<" "<< secondStrip [1].first<<"\n";
+			std::cout<<"----------------------------------------\n\n\n";
+		      }
+		  }
+	      }
+	  }
 	if (!keepMe) continue; // If this hit is to trash, skip the rest
 
 	// Apply the detector response & threshold at the sipm & strip level

@@ -42,7 +42,7 @@ physics:
         {
         extVertices :{
             module_type  : "ExternalVtx"
-            InputFileName: "VtxExample2.txt"
+            InputFileName: "VtxExample.txt"
             }
         }
     analyzers:

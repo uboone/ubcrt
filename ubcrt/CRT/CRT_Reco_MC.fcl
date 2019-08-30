@@ -8,6 +8,7 @@
 #include "microboone_crthitcorr.fcl"
 #include "triggeralgo_service.fcl"
 #include "UBCRTCosmicFilter.fcl"
+#include "database_microboone.fcl"  
 
 events_to_generate: 200
 run_number: 101
@@ -16,6 +17,7 @@ services:{
   TFileService: { fileName: "CRTReco_histo_sim.root" }
   RandomNumberGenerator: {} #ART native random number generator
   @table::microboone_services_reco
+  CRTChannelStatusService: @local::crt_channelstatus_service 
   TimeTracker:             {}
   ExptGeoHelperInterface:         @local::microboone_geometry_helper
   Geometry:                       @local::microboone_geo

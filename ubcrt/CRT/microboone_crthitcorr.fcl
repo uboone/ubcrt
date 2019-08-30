@@ -38,6 +38,7 @@ crtsimhitcorr:
     MaskDeadChannels:     true   # Mask Dead Channels?
     Sections:             true   # Constrain the hits to belong to one of the sections
     SimulatedSaturation:  true   # Simulate Sipm saturation?
+    UseDBCall:            true   # Use the DB for dead channels
     Verbose:              false  # Talk?
 }
 
