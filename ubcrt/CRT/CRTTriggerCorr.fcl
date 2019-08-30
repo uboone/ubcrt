@@ -10,7 +10,7 @@ crttrigger:
     saveTTree:              1         # =0 saves no tree, =1 saves no vectors, =2 saves all in TTree
     run_MC:                 0         # 0: data is real data, 1: data contains MC (overlay)
     store_t0:               1         # add a t0 object as a tag
-    TimeZeroOffset: 69000.y
+    TimeZeroOffset: 69000
 }
 
 crttriggerT:
