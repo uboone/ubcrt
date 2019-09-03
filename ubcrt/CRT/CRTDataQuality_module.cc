@@ -193,7 +193,7 @@ CRTDataQuality::CRTDataQuality(fhicl::ParameterSet const & p)
     min_length_TPCtrack(p.get<double>("min_length_TPCtrack",20.0)),  // in cm
     fTimeZeroOffset(p.get<int>("fTimeZeroOffset",60000)),
     applyTimeOffSet_(p.get<bool>("applyTimeOffSet",true)),
-    verbose_(p.get<bool>("verbose",true))
+    verbose_(p.get<bool>("verbose",false))
     // More initializers here.    
 {
 }
@@ -299,9 +299,9 @@ void CRTDataQuality::analyze(art::Event const & evt)
     double thisHitTime = ( double) my_CRTHit.ts0_ns;
     thisHitTime -= (double) evt_timeGPS_nsec; 
     double offset      = ( (double) fTimeZeroOffset );
-    if (my_CRTHit.plane==0)  std::cout<<"Before offset in DQ "<<data_labelhit_<<" "<<applyTimeOffSet_<<" "<<thisHitTime<<" "<<my_CRTHit.x_pos<<" "<<my_CRTHit.y_pos<<" "<<my_CRTHit.z_pos<<" "<<offset <<"\n";
+    if (my_CRTHit.plane==0&&verbose_)  std::cout<<"Before offset in DQ "<<data_labelhit_<<" "<<applyTimeOffSet_<<" "<<thisHitTime<<" "<<my_CRTHit.x_pos<<" "<<my_CRTHit.y_pos<<" "<<my_CRTHit.z_pos<<" "<<offset <<"\n";
     if ( applyTimeOffSet_ ) thisHitTime += offset; 
-    if (my_CRTHit.plane==0)  std::cout<<"Apply  offset in DQ "<<data_labelhit_<<" "<<applyTimeOffSet_<<" "<<thisHitTime<<" "<<my_CRTHit.x_pos<<" "<<my_CRTHit.y_pos<<" "<<my_CRTHit.z_pos<<" "<<offset <<"\n";
+    if (my_CRTHit.plane==0&&verbose_)  std::cout<<"Apply  offset in DQ "<<data_labelhit_<<" "<<applyTimeOffSet_<<" "<<thisHitTime<<" "<<my_CRTHit.x_pos<<" "<<my_CRTHit.y_pos<<" "<<my_CRTHit.z_pos<<" "<<offset <<"\n";
     hHitTime->Fill(thisHitTime);
     // If the hit time is not within the readout time, skip
     if (thisHitTime < minT_ ) continue;
