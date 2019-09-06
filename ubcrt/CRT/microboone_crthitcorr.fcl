@@ -5,19 +5,26 @@ crtdatahitcorr:
     module_type: CRTDataHitCorr
     CrtHitsIn_Label1: "merger"
     CrtHitsIn_Label2: "remergeextra"
+    correction_label:    "crtt0Correction"
     NumberCollections:  1  # if =2 then combine hit collections in label1 and label2
     Plane3Only_Coll2: true  # if false, use all hits from collection2. IF true, use only plane 3 hits from collection2.
+
+    HitThreshold:    0.0  # threshold in PE applied to the total of 4 SiPMs in hit
+                          #     scintillator attached to the sipms
+    StripThreshold:  0.0    # threshold in PE applied to the total of 2 SiPMs in a strip
+    SiPMThreshold:   0.0    # threshold in PE applied to the individual SiPMs 
+    DistOffStrip:    40.0   
+
+
     CorrectAlignment: true
     RestorePE: true       #  Correct sipm and hit PE values for light attenuation using distrance from hit to sipm
     SumPE: false          #  Calculate the hitpe using the sum of all sipms/strips in each FEB (16 strips/32 sipms)
     RemoveHits: true      #  Remove hits if the 3D hit coordinate doesn't is more than DistOffStrip away from the edge of the
-                          #     scintillator attached to the sipms
-    DistOffStrip:    40.0   
-    HitThreshold:    0.0   # threshold in PE applied to the total of 4 SiPMs in hit
-    StripThreshold:  0.0    # threshold in PE applied to the total of 2 SiPMs in a strip
-    SiPMThreshold:   0.0    # threshold in PE applied to the individual SiPMs 
-    Verbose:         false
 
+    Verbose:         false
+    ApplyTimeOffsetHere: true
+    CorrectTiming:       true
+    TimeZeroOffset:      69000
 }
 
 
@@ -38,6 +45,7 @@ crtsimhitcorr:
     MaskDeadChannels:     true   # Mask Dead Channels?
     Sections:             true   # Constrain the hits to belong to one of the sections
     SimulatedSaturation:  true   # Simulate Sipm saturation?
+    UseDBCall:            true   # Use the DB for dead channels
     Verbose:              false  # Talk?
 }
 

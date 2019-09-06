@@ -8,7 +8,7 @@ UBCRTCosmicFilter: {
  BeamEnd                  : 4.87 # us
  PEMin                    : 10.0   # PEs PMT
  PEMin_CRT                : 70.0   # PEs CRT
- DTOffset                 : 68600. # us
+ DTOffset                 : 0. # us
  Resolution               : 1.0  # us
  useAsFilter              : false
  verbose                  : false

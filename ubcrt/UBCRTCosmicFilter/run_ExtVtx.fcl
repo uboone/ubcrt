@@ -1,8 +1,8 @@
 #include "services_microboone.fcl"
 #include "triggeralgo_service.fcl"
-#include "UBCRTCosmicFilter.fcl"
+#include "VtxBogusProducer.fcl"
 
-process_name: UBCRTCosmicFilter
+process_name: BogusVtx
 
 services:
 {
@@ -38,15 +38,18 @@ source:
 physics:
 {
 
-    filters:
- {
- ubcrt : @local::UBCRTCosmicFilterBNBOFF
- }
- analyzers:
- {
+    producers:
+        {
+        extVertices :{
+            module_type  : "ExternalVtx"
+            InputFileName: "VtxExample.txt"
+            }
+        }
+    analyzers:
+        {
  }
  
- reco: [ ubcrt ]
+ reco: [ extVertices ]
  ana: []
 
  #define the output stream, there could be more than one if using filters 
@@ -54,14 +57,10 @@ physics:
 
  #end_paths is a keyword and contains the paths that do not modify the art::Event, 
  #ie analyzers and output streams.  these all run simultaneously
- end_paths:   [] # [stream1]
+ end_paths:   [stream1]
 }
 
-# MC
-#physics.filters.ubcrt.CRTHitProducer: "crthitsim"
-#physics.filters.ubcrt.DAQHeaderProducer: ""
-#physics.filters.ubcrt.DTOffset: 0.
-physics.filters.ubcrt.verbose: true
+
 
 #block to define where the output goes.  if you defined a filter in the physics
 #block and put it in the trigger_paths then you need to put a SelectEvents: {SelectEvents: [XXX]}
@@ -72,7 +71,7 @@ outputs:
  {
    SelectEvents: [reco]
    module_type: RootOutput
-   fileName:    "UBFlashFilterOutput.root"
+   fileName:    "AddedExtVtx.root"
    dataTier:    "reco"
    compressionLevel: 1
    }
@@ -107,4 +106,5 @@ services.message.destinations :
      }
   }
 }
+
 

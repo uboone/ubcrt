@@ -24,6 +24,7 @@
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art/Framework/Core/ModuleMacros.h"
 #include "canvas/Persistency/Common/FindManyP.h"
+#include "lardataobj/AnalysisBase/T0.h"
 
 #include "canvas/Utilities/InputTag.h"
 #include "fhiclcpp/ParameterSet.h"
@@ -49,6 +50,7 @@
 #include "lardataobj/RawData/ExternalTrigger.h"
 #include "larcoreobj/SimpleTypesAndConstants/PhysicalConstants.h"
 #include "larcoreobj/SimpleTypesAndConstants/geo_types.h"
+#include "ubobj/RawData/DAQHeaderTimeUBooNE.h"  
 
 // ROOT
 #include "TTree.h"
@@ -167,15 +169,19 @@ namespace crt{
     bool ApplyLightLossCorrection(int firstFEB,int secondFEB,float x, float y, float z, float &sf1, float &sf2);
 
 
-    crt::CRTHit FillCrtHit(std::vector<uint8_t> tfeb_id, std::map<uint8_t,std::vector<std::pair<int,float>>> tpesmap, 
-			   float peshit, double time1, double time2, double time3, double time4, double time5, int plane,
-			   double x, double ex, double y, double ey, double z, double ez); 
+    void FillCrtHit(crt::CRTHit &crtHit, std::vector<uint8_t> tfeb_id, std::map<uint8_t,std::vector<std::pair<int,float>>> tpesmap, 
+				    float peshit, double time1, double time2, double time3, double time4, double time5, int plane,
+				    double x, double ex, double y, double ey, double z, double ez); 
+    
+
+
 
   private:
 
     // Params got from fcl file.......
     art::InputTag fCrtHitsIn_Label1;      ///< name of crt producer
     art::InputTag fCrtHitsIn_Label2;      ///< name of crt producer
+    art::InputTag correction_label_;      ///< name of crt producer
     int fNumberCollections;
     bool fPlane3Only_Coll2;
     float fHitThreshold;
@@ -187,10 +193,14 @@ namespace crt{
     bool fSumPE;
     bool fCorrectAlignment;
     bool fRemoveHits;
+    bool fCorrectTiming;
+    bool  fApplyTimeOffsetHere;
     float fDistOffStrip;
+    double fTimeZeroOffset;
 			   //
     bool          fVerbose;             ///< print info
-   
+    int beforeEvt;
+    int afterEvt;
   }; // class CRTDataHitCorr
     
   CRTDataHitCorr::CRTDataHitCorr(fhicl::ParameterSet const & p)
@@ -208,6 +218,7 @@ namespace crt{
   {
     fCrtHitsIn_Label1       = (p.get<art::InputTag> ("CrtHitsIn_Label1","merger")); 
     fCrtHitsIn_Label2       = (p.get<art::InputTag> ("CrtHitsIn_Label2","remerge")); 
+    correction_label_       = (p.get<art::InputTag> ("correction_label","crtt0Correction")); 
     fNumberCollections      = (p.get<int>  ("NumberCollections",1));
     fPlane3Only_Coll2       = (p.get<bool> ("Plane3Only_Coll2",true));
     //
@@ -215,20 +226,27 @@ namespace crt{
     fStripThreshold         = (p.get<float>("StripThreshold",0.0));
     fSiPMThreshold          = (p.get<float>("SiPMThreshold" ,0.0));
     //alignment params
-    fCorrectAlignment       = (p.get<bool> ("CorrectAlignment",true));
-    fRestorePE              = (p.get<bool> ("RestorePE"       ,false));
-    fSumPE                  = (p.get<bool> ("SumPE"           ,false));
-    fRemoveHits             = (p.get<bool> ("RemoveHits"      ,false));
-    fDistOffStrip           = (p.get<float>("DistOffStrip"    ,40.0));
-    fVerbose                = (p.get<bool> ("Verbose"         ,false));
-
+    fCorrectAlignment       = (p.get<bool> ("CorrectAlignment"   ,true));
+    fRestorePE              = (p.get<bool> ("RestorePE"          ,false));
+    fSumPE                  = (p.get<bool> ("SumPE"              ,false));
+    fRemoveHits             = (p.get<bool> ("RemoveHits"         ,false));
+    fDistOffStrip           = (p.get<float>("DistOffStrip"       ,40.0));
+    fVerbose                = (p.get<bool> ("Verbose"            ,false));
+    fApplyTimeOffsetHere    = (p.get<bool> ("ApplyTimeOffsetHere",true));
+    fCorrectTiming          = (p.get<bool> ("CorrectTiming"      ,false));
+    fTimeZeroOffset         = (p.get<double> ("TimeZeroOffset"   ,69000));
   }
 
   void CRTDataHitCorr::beginJob()
     {
+
     if(fVerbose){std::cout<<"----------------- CRT Hit Reco Module -------------------"<<std::endl;}
-    
+    beforeEvt =0;
+    afterEvt =0;
   } // beginJob()
+
+
+
 
 
   void CRTDataHitCorr::CorrectAlignment(int plane, int feb1, int feb2, float &x, float &y, float &z)
@@ -297,15 +315,18 @@ namespace crt{
     
   void CRTDataHitCorr::produce(art::Event & event)
   {
+    beforeEvt++;
     if(fVerbose){
       std::cout<<"============================================"<<std::endl
                <<"Run = "<<event.run()<<", SubRun = "<<event.subRun()<<", Event = "<<event.id().event()<<std::endl
                <<"============================================"<<std::endl;
     }
 
-    // Place to store corrected CRThits as they are created
-    std::unique_ptr<std::vector<crt::CRTHit>> CRTHitOutCol( new std::vector<crt::CRTHit>);
 
+
+
+    // Place to store corrected CRThits as they are created
+    std::unique_ptr<std::vector<crt::CRTHit>> CRTHitOutCol( new std::vector<crt::CRTHit>);    
 
     std::vector<crt::CRTHit> crtHitInList;
     // Retrieve first list of CRT hits
@@ -442,13 +463,36 @@ namespace crt{
 	tpesmap.emplace(firstFEB,pesAnew);
 	tpesmap.emplace(secondFEB,pesBnew);
 	
-
 	if (fCorrectAlignment)  CorrectAlignment(plane, firstFEB, secondFEB, x, y, z);
-	  
-	// Create a corrected CRT hit
-	crt::CRTHit crtHit = FillCrtHit(tfeb_id, tpesmap, pestot, time1,  time2,  time3,  time4,  time5, 
-					plane, x, ex,y,ey,z,ez );
+	if (fVerbose) std::cout<<"fApplyTimeOffsetHere "<<fApplyTimeOffsetHere<<"\n";
+	if (plane==0&&fVerbose) std::cout<<"CRTDataHitCorr "<<time3<<" "<<time4<<" "<<x<<" "<<y<<" "<<z<<" precorrection "<<"\n";
 	
+	//fApplyTimeOffsetHere=true; //<<<<< CHANGE
+	//fCorrectTiming=false; //<<<<< CHANGE
+	
+	if (fApplyTimeOffsetHere)
+	  {
+	    double correctionFactor = (double)fTimeZeroOffset;
+	    if (plane==0&&fVerbose) std::cout<<"CRTDataHitCorr in ApplyOfff "<<time3<<" "<<time4<<" "<<x<<" "<<y<<" "<<z<<" correctionFactor "<<correctionFactor<<"\n";
+	    if (fCorrectTiming){
+	      art::Handle< std::vector<anab::T0>  > t0ListHandle;
+	      std::vector<art::Ptr<anab::T0> >  t0list;
+	      if (event.getByLabel(correction_label_,t0ListHandle))
+		{
+		  art::fill_ptr_vector(t0list, t0ListHandle);
+		  if (t0list.size()) correctionFactor = (double)t0list[0]->Time();
+		  if (correctionFactor < 0) correctionFactor = fTimeZeroOffset; 
+		}
+	    }
+	    time3 += (double)correctionFactor;
+	  }
+	
+	// Create a corrected CRT hit
+
+	if (plane==0&&fVerbose) std::cout<<"CRTDataHitCorr "<<time3<<" "<<time4<<" "<<x<<" "<<y<<" "<<z<<" after corr  gross "<<"\n";
+	crt::CRTHit crtHit; 
+	FillCrtHit(crtHit, tfeb_id, tpesmap, pestot, time1,  time2,  time3,  time4,  time5, plane, x, ex,y,ey,z,ez );
+	if (plane== 0&&fVerbose) std::cout<<"Before pushback  "<<crtHit.ts0_ns<<" "<<crtHit.ts0_ns_corr<<" "<<crtHit.x_pos<<" \n";
 	CRTHitOutCol->push_back(crtHit);
 	
     } // loop over hits
@@ -464,10 +508,10 @@ namespace crt{
       
     }
     
-    crt::CRTHit CRTDataHitCorr::FillCrtHit(std::vector<uint8_t> tfeb_id, std::map<uint8_t, std::vector<std::pair<int,float>>> tpesmap, float peshit,double time1, double time2, double time3, double time4, double time5, 
+  void CRTDataHitCorr::FillCrtHit(crt::CRTHit &crtHit, std::vector<uint8_t> tfeb_id, std::map<uint8_t, std::vector<std::pair<int,float>>> tpesmap, float peshit,double time1, double time2, double time3, double time4, double time5, 
 int plane, double x, double ex, double y, double ey, double z, double ez){
 	
-	crt::CRTHit crtHit;
+      if (plane== 0&&fVerbose) std::cout<<"help "<<time3<<" "<<time4<<" "<<x<<" \n";
 	crtHit.feb_id = tfeb_id;
 	crtHit.pesmap = tpesmap;
 	crtHit.peshit = peshit;
@@ -483,7 +527,7 @@ int plane, double x, double ex, double y, double ey, double z, double ez){
 	crtHit.y_err = ey;
 	crtHit.z_pos = z;
 	crtHit.z_err = ez;
-	return crtHit;
+	if (plane== 0&&fVerbose) std::cout<<"After Assignment  "<<(double)crtHit.ts0_ns<<" "<<crtHit.ts0_ns_corr<<" "<<crtHit.x_pos<<" \n";
       }
       
 

@@ -1,6 +1,6 @@
 #include "services_microboone.fcl"
 #include "triggeralgo_service.fcl"
-#include "UBCRTCosmicFilter.fcl"
+#include "CRTDistanceFilter.fcl"
 
 process_name: UBCRTCosmicFilter
 
@@ -39,14 +39,14 @@ physics:
 {
 
     filters:
- {
- ubcrt : @local::UBCRTCosmicFilterBNBOFF
- }
- analyzers:
- {
+        {
+        crtdistance : @local::CRTDistanceFilter
+        }
+    analyzers:
+        {
  }
  
- reco: [ ubcrt ]
+ reco: [ crtdistance ]
  ana: []
 
  #define the output stream, there could be more than one if using filters 
@@ -54,14 +54,10 @@ physics:
 
  #end_paths is a keyword and contains the paths that do not modify the art::Event, 
  #ie analyzers and output streams.  these all run simultaneously
- end_paths:   [] # [stream1]
+ end_paths:   [stream1]
 }
 
-# MC
-#physics.filters.ubcrt.CRTHitProducer: "crthitsim"
-#physics.filters.ubcrt.DAQHeaderProducer: ""
-#physics.filters.ubcrt.DTOffset: 0.
-physics.filters.ubcrt.verbose: true
+
 
 #block to define where the output goes.  if you defined a filter in the physics
 #block and put it in the trigger_paths then you need to put a SelectEvents: {SelectEvents: [XXX]}
@@ -84,6 +80,10 @@ services.DetectorClocksService.InheritClockConfig:                         false
 services.DetectorClocksService.TriggerOffsetTPC:                          -0.400e3
 
 ### Here we include the file giving us run/data dependent overrides
+physics.filters.crtdistance.verbose: false
+#physics.filters.crtdistance.VtxModuleLabel: "extVertices"
+#physics.filters.crtdistance.useCRTTag: false
+#physics.filters.crtdistance.verbose: true
 
 ### Here we try to suppress known and pointless messages
 services.message.destinations :
@@ -107,4 +107,5 @@ services.message.destinations :
      }
   }
 }
+
 
