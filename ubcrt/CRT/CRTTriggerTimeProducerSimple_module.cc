@@ -170,34 +170,44 @@ CRTTriggerProducerSimple::CRTTriggerProducerSimple(fhicl::ParameterSet const &ps
 
 void CRTTriggerProducerSimple::produce(art::Event &evt)
 {
+  // produce anab::t0 object to tag event
+  std::unique_ptr<std::vector<anab::T0> > T0_collection(new std::vector<anab::T0>);
   reset_tree_event();
-  std::cout << "Prozessing event nr: " << event_counter << std::endl;
+  if(verbose_!=0) std::cout << "Prozessing event nr: " << event_counter << std::endl;
   if(verbose_!=0) std::cout << "Run " << evt.run() << ", subrun " << evt.subRun() << std::endl;
   frunNum    = evt.run();
   fsubRunNum = evt.subRun();
   fEvtNum = evt.event();
   event_counter++;
+
   
+  if (data_label_DAQHeader_ != "") { 
   art::Handle< raw::DAQHeaderTimeUBooNE > rawHandle_DAQHeader;
   evt.getByLabel(data_label_DAQHeader_, rawHandle_DAQHeader);
+  if(!rawHandle_DAQHeader.isValid()) {  
+    evt.put(std::move(T0_collection));
+    std::cerr << "\033[93m[ERROR]\033[00m ... could not locate DAQ header in CRTTriggerProducerSimple Module." << std::endl;  
+    return;
+  }
   raw::DAQHeaderTimeUBooNE const& my_DAQHeader(*rawHandle_DAQHeader);
   art::Timestamp evtTimeGPS = my_DAQHeader.gps_time();  
   fTriTim_sec = evtTimeGPS.timeHigh();
   fTriTim_nsec = evtTimeGPS.timeLow();
-  
+  }
   art::Timestamp evtTime = evt.time();
   fTimeHigh = evtTime.timeHigh();
   fTimeLow = evtTime.timeLow();
   
-  
   art::Handle< std::vector<recob::OpFlash> > rawHandle_OpFlashCosmic;
-  evt.getByLabel(data_label_flash_cosmic_, rawHandle_OpFlashCosmic);
+  evt.getByLabel(data_label_flash_cosmic_, rawHandle_OpFlashCosmic);  
+  
+
   std::vector<recob::OpFlash> const& OpFlashCollectionCosmic(*rawHandle_OpFlashCosmic);
   if(verbose_!=0) std::cout << "There are: " << OpFlashCollectionCosmic.size() << " in the cosmic flash collection" << std::endl;
 
-
   art::Handle< std::vector<crt::CRTHit> > rawHandle_hit;
   evt.getByLabel(data_label_crthit_, rawHandle_hit); 
+
   std::vector<crt::CRTHit> const& CRTHit_v(*rawHandle_hit);
 
 
@@ -311,8 +321,7 @@ void CRTTriggerProducerSimple::produce(art::Event &evt)
   
   
 
-  // produce anab::t0 object to tag event
-  std::unique_ptr<std::vector<anab::T0> > T0_collection(new std::vector<anab::T0>);
+
   
   if(store_t0_ == 1){
     anab::T0 my_t0;
@@ -431,7 +440,7 @@ void CRTTriggerProducerSimple::beginJob()
   std::cout << "verbose:\t\t\t" << verbose_ << std::endl;
   std::cout << "store_t0:\t\t\t" << store_t0_ << std::endl;
   std::cout << "------------end fcl parameters-------------------" << std::endl;
-  std::cout<<"puppa\n";
+
 }
 void CRTTriggerProducerSimple::endJob()
 {
