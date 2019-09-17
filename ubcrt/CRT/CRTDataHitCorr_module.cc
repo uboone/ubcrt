@@ -467,8 +467,6 @@ namespace crt{
 	if (fVerbose) std::cout<<"fApplyTimeOffsetHere "<<fApplyTimeOffsetHere<<"\n";
 	if (plane==0&&fVerbose) std::cout<<"CRTDataHitCorr "<<time3<<" "<<time4<<" "<<x<<" "<<y<<" "<<z<<" precorrection "<<"\n";
 	
-	//fApplyTimeOffsetHere=true; //<<<<< CHANGE
-	//fCorrectTiming=false; //<<<<< CHANGE
 	
 	if (fApplyTimeOffsetHere)
 	  {
