@@ -5,7 +5,7 @@ CRTDistanceFilter: {
  VtxModuleLabel     : "pandora"
  CRTHitProducer     : "" 
  useAsFilter        : false
- verbose            : true
+ verbose            : false
  useCRTTag          : true
  minDistance        : 14.
 }

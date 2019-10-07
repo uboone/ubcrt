@@ -349,7 +349,7 @@ bool UBCRTCosmicFilter::filter(art::Event &e)
     double _crt_time_temp = ((crthit_h->at(j).ts0_ns - evt_timeGPS_nsec + fDTOffset) / 1000.);
     //std::cout<<"-------------- fIsThisMC "<<fIsThisMC<<" "<<_crt_time_temp<<"\n";
     if (fIsThisMC) _crt_time_temp = crthit_h->at(j).ts1_ns / 1000.;
-    //    std::cout<<"--------------  "<<_crt_time_temp<<"\n\n";
+    std::cout<<"--------------  CRT Time "<<_crt_time_temp<<"\n\n";
 
     // Fill the vector variables.
     _CRT_hits_time.push_back(_crt_time_temp);
