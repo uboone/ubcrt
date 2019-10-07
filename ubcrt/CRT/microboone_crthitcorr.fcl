@@ -46,6 +46,8 @@ crtsimhitcorr:
     Sections:             true   # Constrain the hits to belong to one of the sections
     SimulatedSaturation:  true   # Simulate Sipm saturation?
     UseDBCall:            true   # Use the DB for dead channels
+    IsOverlay: false
+    TimeZeroOffset:      69000.
     Verbose:              false  # Talk?
 }
 

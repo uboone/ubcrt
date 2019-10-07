@@ -216,7 +216,8 @@ namespace crt{
     bool  fSections;
     bool  fSimulatedSaturation;
     bool  fUseDBCall;
-    
+    bool  fIsOverlay;
+    double fTimeZeroOffset;
     ///< print info
     CLHEP::HepRandomEngine& fEngine;
 			       
@@ -259,6 +260,8 @@ namespace crt{
       fDeadFEB               = (p.get< std::vector<int> > ("DeadFEB"    ,  MichelleFEB ));
       fDeadChannels          = (p.get< std::vector<int> > ("DeadChannel",  MichelleChannels ));
       fUseDBCall             = (p.get<bool>          ("UseDBCall"            ,false));
+      fIsOverlay             = (p.get<bool>          ("IsOverlay"            ,false));
+      fTimeZeroOffset        = (p.get<double>          ("TimeZeroOffset"           ));
       fVerbose               = (p.get<bool>          ("Verbose"              ,false));
     }
 
@@ -543,6 +546,15 @@ namespace crt{
       float pestot = thisCrtHit.peshit;      
       
 
+
+     
+      if (fIsOverlay)
+	{
+	  double correctionFactor = (double)fTimeZeroOffset;
+	  time3 += (double)correctionFactor;
+	}
+      
+      
 	// Modify the timing of ts1 due to bug in
 	// in Oct2018 simulation. May not apply anymore
 	if (fScaleMCtime) ScaleMCtime(time1,time5);
