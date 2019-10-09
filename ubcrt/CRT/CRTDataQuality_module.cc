@@ -136,6 +136,8 @@ private:
   int subrun;
   int event;
   int date; // Time in seconds from linux start time
+  int sizeTwoHit;
+  int sizeThirtyTwoHit;
   int nFlashes;
   int nMatchedFlashes;
   int nTracks;
@@ -162,14 +164,16 @@ private:
 void CRTDataQuality::ResetVar()
 {
 
-  run             = -9999;
-  subrun          = -9999;
-  event           = -9999;
-  date            = -9999; 
-  nFlashes        = -9999; 
-  nMatchedFlashes = -9999; 
-  nTracks         = -9999; 
-  nMatchedTracks  = -9999; 
+  run              = -9999;
+  subrun           = -9999;
+  event            = -9999;
+  date             = -9999; 
+  sizeThirtyTwoHit = -9999;
+  sizeTwoHit       = -9999;
+  nFlashes         = -9999; 
+  nMatchedFlashes  = -9999; 
+  nTracks          = -9999; 
+  nMatchedTracks   = -9999; 
   
   for (size_t i= 0; i < 73; i++ )
     {
@@ -289,12 +293,21 @@ void CRTDataQuality::analyze(art::Event const & evt)
   for (size_t iM = 0; iM<73 ; iM++ ) febIndexConversion[febIndex[iM] ] = iM;
  
   std::vector<crt::CRTHit> const& CRTHitCollection(*rawHandle_hit);
-  
+  sizeTwoHit       = 0;
+  sizeThirtyTwoHit = 0;
   // Loop over CRT Hits, keep them if they're within some readout time
   for(size_t j = 0; j < CRTHitCollection.size(); j++) {   
     crt::CRTHit my_CRTHit = CRTHitCollection[j];
     // Calculate the reaout time (time we're considering the CRT hit in)
     reaoutTime = maxT_ - minT_;
+    std::vector<uint8_t> tfeb_id = my_CRTHit.feb_id;
+    int firstFEB  = (int)tfeb_id[0];
+    std::map< uint8_t, std::vector<std::pair<int,float> > > tpesmap=my_CRTHit.pesmap;
+    std::vector<std::pair<int,float>> firstStrip  = tpesmap.find(firstFEB)->second;
+    // find hit size
+    if (firstStrip.size() == 2) sizeTwoHit++;
+    if (firstStrip.size() == 32) sizeThirtyTwoHit++;
+
     // Calculate the time of this CRT Hit
     double thisHitTime = ( double) my_CRTHit.ts0_ns;
     thisHitTime -= (double) evt_timeGPS_nsec; 
@@ -438,6 +451,8 @@ void CRTDataQuality::beginJob()
   fTree->Branch("subrun"    ,&subrun    ,"subrun/I");
   fTree->Branch("event"     ,&event     ,"event/I" );
   fTree->Branch("date"      ,&date      ,"date/I"  );
+  fTree->Branch("sizeTwoHit"      ,&sizeTwoHit      ,"sizeTwoHit/I"  );
+  fTree->Branch("sizeThirtyTwoHit"      ,&sizeThirtyTwoHit      ,"sizeThirtyTwoHit/I"  );
   fTree->Branch("febIndex"  ,febIndex   ,"febIndex[73]/I");
   fTree->Branch("AvgPe"     ,AvgPe      ,"AvgPe[73]/D"   );
   fTree->Branch("nFlashes"         ,&nFlashes        ,"nFlashes/I"         );
