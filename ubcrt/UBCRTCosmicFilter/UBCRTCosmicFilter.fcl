@@ -21,13 +21,13 @@ UBCRTCosmicFilter: {
 
 # NuMI beam on
 UBCRTCosmicFilterNuMION: @local::UBCRTCosmicFilter
-UBCRTCosmicFilterNuMION.BeamStart: 5.70
-UBCRTCosmicFilterNuMION.BeamEnd:   15.50
+UBCRTCosmicFilterNuMION.BeamStart: 5.64
+UBCRTCosmicFilterNuMION.BeamEnd:   15.44
 
 # NuMI beam off
 UBCRTCosmicFilterNuMIOFF: @local::UBCRTCosmicFilter
-UBCRTCosmicFilterNuMIOFF.BeamStart: 6.06
-UBCRTCosmicFilterNuMIOFF.BeamEnd:   15.86
+UBCRTCosmicFilterNuMIOFF.BeamStart: 6.00
+UBCRTCosmicFilterNuMIOFF.BeamEnd:   15.80
 
 # NuMI MC (note beam window not adjusted w.r.t. on beam)
 UBCRTCosmicFilterNuMIMC: @local::UBCRTCosmicFilterNuMION
