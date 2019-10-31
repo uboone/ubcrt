@@ -32,8 +32,8 @@ product                 version
 ubobj                   v08_33_00
 lardata                 v08_09_00
 larpandora              v08_07_22
-gallery                 v1_12_07
-cetbuildtools	        v7_12_01	-	only_for_build
+gallery                 v1_13_01
+cetbuildtools	        v7_14_00	-	only_for_build
 end_product_list
 
 qualifier      ubobj          lardata        larpandora      gallery        
