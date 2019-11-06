@@ -2,30 +2,26 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 cet_add_compiler_flags(CXX -Wno-return-type-c-linkage )
 endif()
 
-link_libraries( ${LIB_NAME} ${Boost_SYSTEM_LIBRARY} ${ROOTLIB} )
-
 art_make( BASENAME_ONLY
-          MODULE_LIBRARIES 
+          DICT_LIBRARIES
+                        ${ART_UTILITIES}
+          MODULE_LIBRARIES
                         larpandora_LArPandoraInterface
-                        lardataobj_RecoBase			
-                        ${ART_FRAMEWORK_CORE}
-                        ${ART_FRAMEWORK_PRINCIPAL}
+                        lardataobj_RecoBase
                         ${ART_FRAMEWORK_SERVICES_REGISTRY}
                         ${ART_ROOT_IO_TFILE_SUPPORT} ${ROOT_CORE}
                         ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR_SERVICE}
                         ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-                        art_Persistency_Common canvas
-                        art_Persistency_Provenance canvas
-                        art_Utilities canvas
-                        ${MF_MESSAGELOGGER}                        
-                        ${FHICLCPP}
-                        cetlib cetlib_except
-			nusimdata_SimulationBase
+                        art_Persistency_Common
+                        art_Persistency_Provenance
+                        ${MF_MESSAGELOGGER}
+                        nusimdata_SimulationBase
                         ${CLHEP}
                         ${ROOT_GEOM}
                         ${ROOT_XMLIO}
                         ${ROOT_GDML}
                         ${ROOT_BASIC_LIB_LIST}
+
         )
 
 install_headers()
