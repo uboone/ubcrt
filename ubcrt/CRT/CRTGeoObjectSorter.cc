@@ -15,10 +15,10 @@ namespace crt {
   }
   
   template<class DetType>
-  bool CRTGeoObjectSorter::SortFunctor<DetType>::operator()(DetType* d1, DetType* d2)
+  bool CRTGeoObjectSorter::SortFunctor<DetType>::operator()(DetType const& d1, DetType const& d2)
   {
-    std::string name1 = d1->Name();
-    std::string name2 = d2->Name();
+    std::string name1 = d1.Name();
+    std::string name2 = d2.Name();
     uint32_t mod1=0, mod2=0, strip1=0, strip2=0;
     for(uint32_t i=0; i<host.GetNModules();++i){
       std::ostringstream stream;
@@ -42,11 +42,6 @@ namespace crt {
       fhicl::ParameterSet const& pSet):
       fNModules(pSet.get<uint32_t>("NModules", 76)),
       fNStripsPerModule(pSet.get<uint32_t>("NStripsPerModule", 16)) 
-  {
-
-  }
-
-  CRTGeoObjectSorter::~CRTGeoObjectSorter() 
   {
 
   }
