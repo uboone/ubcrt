@@ -10,22 +10,12 @@
 namespace crt
 {
 
-  CRTGeometryHelper::CRTGeometryHelper( fhicl::ParameterSet const & pset, art::ActivityRegistry & reg ) : fChannelMap(), fPset( pset ){}
+  CRTGeometryHelper::CRTGeometryHelper( fhicl::ParameterSet const & pset ) : fPset( pset ){}
 
-  CRTGeometryHelper::~CRTGeometryHelper(){}
-
-  void CRTGeometryHelper::doConfigureAuxDetChannelMapAlg( fhicl::ParameterSet const & sortingParameters, geo::AuxDetGeometryCore* geom )
+  CRTGeometryHelper::AuxDetChannelMapAlgPtr_t
+  CRTGeometryHelper::doConfigureAuxDetChannelMapAlg(fhicl::ParameterSet const & sortingParameters) const
   {
-    fChannelMap.reset();
-    fChannelMap = std::make_shared<CRTChannelMapAlg>( fPset, sortingParameters );
-    if ( fChannelMap )
-      	geom->ApplyChannelMap(fChannelMap);
-
-  }
-
-  CRTGeometryHelper::AuxDetChannelMapAlgPtr_t CRTGeometryHelper::doGetAuxDetChannelMapAlg() const
-  {
-    return fChannelMap;
+    return std::make_unique<CRTChannelMapAlg>( fPset, sortingParameters );
   }
 
 }
