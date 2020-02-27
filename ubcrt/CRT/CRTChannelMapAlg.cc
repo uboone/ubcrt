@@ -16,11 +16,6 @@ namespace crt {
   
   }
 
-  CRTChannelMapAlg::~CRTChannelMapAlg()
-  {
-    return;
-  }
-
   void CRTChannelMapAlg::Initialize(geo::AuxDetGeometryData_t& geodata)
   {
     /**
@@ -39,7 +34,7 @@ namespace crt {
     *        This will make the code more extensible.
     **/
     this->Uninitialize();
-    std::vector<geo::AuxDetGeo*>& adgeo = geodata.auxDets;
+    std::vector<geo::AuxDetGeo>& adgeo = geodata.auxDets;
     fSorter.SortAuxDets(adgeo);
 
     fADGeoToName.clear();
@@ -63,7 +58,7 @@ namespace crt {
 
   uint32_t CRTChannelMapAlg::PositionToAuxDetChannel(
     double const worldLoc[3],
-    std::vector<geo::AuxDetGeo*> const& auxDets,
+    std::vector<geo::AuxDetGeo> const& auxDets,
     size_t& ad,
     size_t& sv) const
   {
@@ -80,7 +75,7 @@ namespace crt {
     sv = this->NearestSensitiveAuxDet(worldLoc, auxDets, ad);
     double svOrigin[3] = {0, 0, 0};
     double localOrigin[3] = {0, 0, 0};
-    auxDets[ad]->SensitiveVolume(sv).LocalToWorld(localOrigin, svOrigin);
+    auxDets[ad].SensitiveVolume(sv).LocalToWorld(localOrigin, svOrigin);
     auto gnItr = fADGeoToName.find(ad);
     if (gnItr != fADGeoToName.end())
     {
@@ -105,7 +100,7 @@ namespace crt {
   const TVector3 CRTChannelMapAlg::AuxDetChannelToPosition(
     uint32_t const& channel,
     std::string const& auxDetName,
-    std::vector<geo::AuxDetGeo*> const& auxDets) const
+    std::vector<geo::AuxDetGeo> const& auxDets) const
   {
     /**
     * Given a channel number and auxdet name, gets the position of the 
@@ -140,7 +135,7 @@ namespace crt {
     {
       if (csv.first == channel) 
       {
-        auxDets[ad]->SensitiveVolume(csv.second).LocalToWorld(localOrigin,
+        auxDets[ad].SensitiveVolume(csv.second).LocalToWorld(localOrigin,
                     svOrigin);
         x = svOrigin[0];
         y = svOrigin[1];

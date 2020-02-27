@@ -7,7 +7,7 @@
  *
  * See `geo::AuxDetExptGeoHelperInterface` for full explanation.
  *
- * \author $Author: Kevin Wierman<kevin.wierman@pnnl.gov> 
+ * \author $Author: Kevin Wierman<kevin.wierman@pnnl.gov>
  *
  * \version $Revision: 1.0 $
  *
@@ -36,20 +36,15 @@ namespace crt
 
   class CRTGeometryHelper: public geo::AuxDetExptGeoHelperInterface {
   public:
-    CRTGeometryHelper(fhicl::ParameterSet const& pset,
-                      art::ActivityRegistry& reg);
-    ~CRTGeometryHelper();
+    explicit CRTGeometryHelper(fhicl::ParameterSet const& pset);
   private:
 
-    virtual void doConfigureAuxDetChannelMapAlg(fhicl::ParameterSet const & sortingParameters,
-                                        geo::AuxDetGeometryCore* geom) override;
+    AuxDetChannelMapAlgPtr_t
+    doConfigureAuxDetChannelMapAlg(fhicl::ParameterSet const & sortingParameters) const override;
 
-    virtual AuxDetChannelMapAlgPtr_t doGetAuxDetChannelMapAlg() const override;
-
-    std::shared_ptr<geo::AuxDetChannelMapAlg> fChannelMap;
     fhicl::ParameterSet fPset;
   };
 }
-DECLARE_ART_SERVICE_INTERFACE_IMPL(crt::CRTGeometryHelper, geo::AuxDetExptGeoHelperInterface, LEGACY)
+DECLARE_ART_SERVICE_INTERFACE_IMPL(crt::CRTGeometryHelper, geo::AuxDetExptGeoHelperInterface, SHARED)
 
 #endif // define

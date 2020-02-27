@@ -59,9 +59,6 @@ namespace crt {
     CRTChannelMapAlg(fhicl::ParameterSet const& pset,
                         fhicl::ParameterSet const& sortingParameters );
 
-    /// Default d'tor
-    ~CRTChannelMapAlg();
-
     /// Sets up channel sorting based off the auxiliary detector information
     void Initialize(geo::AuxDetGeometryData_t& geodata);
 
@@ -70,14 +67,14 @@ namespace crt {
     
     /// Given a position, return the channel number aux det number and sens det number.
     uint32_t PositionToAuxDetChannel(double const  worldLoc[3],
-                                     std::vector<geo::AuxDetGeo*> const& auxDets,
+                                     std::vector<geo::AuxDetGeo> const& auxDets,
                                      size_t& ad,
                                      size_t& sv) const;
 
     /// Given an aux det, returns the center of the detector
     const TVector3 AuxDetChannelToPosition(uint32_t const& channel,
                                            std::string const& auxDetName,
-                                           std::vector<geo::AuxDetGeo*> const& auxDets) const;
+                                           std::vector<geo::AuxDetGeo> const& auxDets) const;
   };
 }
 

@@ -32,8 +32,8 @@ namespace crt {
   class CRTGeoObjectSorter : public geo::AuxDetGeoObjectSorter {
     
     /// Convenience typedef for templating on  geometry type
-    typedef std::vector<geo::AuxDetGeo*> AuxDetList;
-    typedef std::vector<geo::AuxDetSensitiveGeo*> SensDetList;
+    typedef std::vector<geo::AuxDetGeo> AuxDetList;
+    typedef std::vector<geo::AuxDetSensitiveGeo> SensDetList;
 
     /// Number of modules in a geometry
     uint32_t fNModules;
@@ -44,7 +44,7 @@ namespace crt {
     template<class DetType>
     struct SortFunctor{
       SortFunctor(const CRTGeoObjectSorter& c);
-      bool operator()(DetType* d1, DetType* d2);
+      bool operator()(DetType const& d1, DetType const& d2);
       const CRTGeoObjectSorter& host;
     };
 
@@ -57,9 +57,6 @@ namespace crt {
 
     /// Artistic c'tor
     CRTGeoObjectSorter(fhicl::ParameterSet const& p);
-
-    /// Default d'tor
-    ~CRTGeoObjectSorter();
 
     /// Default sorter
     void SortAuxDets (AuxDetList& adgeo) const;
