@@ -179,7 +179,6 @@ namespace crt{
    
     // Other variables shared between different methods.
     geo::GeometryCore const* fGeometryService;                 ///< pointer to Geometry provider
-    detinfo::DetectorProperties const* fDetectorProperties;    ///< pointer to detector properties provider
     art::ServiceHandle<geo::AuxDetGeometry> fAuxDetGeoService;
     const geo::AuxDetGeometry* fAuxDetGeo;
     const geo::AuxDetGeometryCore* fAuxDetGeoCore;
@@ -194,7 +193,6 @@ namespace crt{
     
     // Get a pointer to the geometry service provider
     fGeometryService = lar::providerFrom<geo::Geometry>();
-    fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>(); 
     fAuxDetGeo = &(*fAuxDetGeoService);
     fAuxDetGeoCore = fAuxDetGeo->GetProviderPtr();
 
@@ -238,8 +236,9 @@ namespace crt{
     }
 
     // Detector properties
-    double readoutWindow  = (double)fDetectorProperties->ReadOutWindowSize();
-    double driftTimeTicks = 2.0*(2.*fGeometryService->DetHalfWidth()+3.)/fDetectorProperties->DriftVelocity();
+    auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService>()->DataFor(event);
+    double readoutWindow  = (double)detProp.ReadOutWindowSize();
+    double driftTimeTicks = 2.0*(2.*fGeometryService->DetHalfWidth()+3.)/detProp.DriftVelocity();
 
     // Place to store CRThits as they are created
     std::unique_ptr<std::vector<crt::CRTHit>> CRTHitcol( new std::vector<crt::CRTHit>);
