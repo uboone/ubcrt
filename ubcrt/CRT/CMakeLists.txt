@@ -158,6 +158,7 @@ simple_plugin(CRTCalibration "module"
 simple_plugin(CRTSimHitProducer "module"
           larcorealg_Geometry
         larcore_Geometry_Geometry_service
+          lardataalg_DetectorInfo
 	  CRT
 	  CRTData
 	          ${ART_FRAMEWORK_CORE}

@@ -176,7 +176,7 @@ namespace crt{
     double t = t0 + tProp + tDelay;
 
     // Get clock ticks
-    clock.SetTime(t/1000.);  // SetTime takes microseconds
+    clock = clock.WithTime(t/1000.);  // SetTime takes microseconds
     // convert to CRT clock ticks instead (1 tick = 1 ns)    
     double cticks = uint(t/fCRTClockFreq);
     
@@ -206,7 +206,7 @@ namespace crt{
 
     // not used
     art::ServiceHandle<detinfo::DetectorClocksService> detClocks;
-    detinfo::ElecClock trigClock = detClocks->provider()->TriggerClock();
+    detinfo::ElecClock trigClock = detClocks->DataFor(evt).TriggerClock();
 
     // Handle for (truth) AuxDetSimChannels
     art::Handle<std::vector<sim::AuxDetSimChannel> > channels;
