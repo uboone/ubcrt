@@ -25,7 +25,7 @@
 #include "lardata/Utilities/AssociationUtil.h"
 #include <artdaq-core/Data/Fragment.hh>
 
-#include "art/Framework/Services/Optional/TFileService.h"
+#include "art_root_io/TFileService.h"
 #include "canvas/Persistency/Common/Ptr.h"
 #include "canvas/Persistency/Common/Assns.h"
 #include "canvas/Persistency/Provenance/ProductID.h"
@@ -116,7 +116,7 @@ private:
 
 
 T0recoCRTHit::T0recoCRTHit(fhicl::ParameterSet const & p)
-  : 
+  : art::EDProducer(p),
     data_label_TPCtrack_(p.get<std::string>("data_label_TPCtrack")),
     data_label_CRTtzero_(p.get<std::string>("data_label_CRTtzero")),
     data_label_CRThit_(p.get<std::string>("data_label_CRThit")),
@@ -405,13 +405,13 @@ void T0recoCRTHit::produce(art::Event & evt)
 		  geo::Point_t newStartP = startP; geo::Point_t newEndP = endP;
 		  if(sce->EnableCalSpatialSCE()) {
 		    geo::Point_t fTrackPos = startP;  fTrackPos.SetX(startP.X()-xshift);
-		    geo::Vector_t fPosOffsets = sce->GetCalPosOffsets(geo::Point_t{fTrackPos.X(),fTrackPos.Y(),fTrackPos.Z()});
+		    geo::Vector_t fPosOffsets = sce->GetCalPosOffsets(geo::Point_t{fTrackPos.X(),fTrackPos.Y(),fTrackPos.Z()}, 0);
 		    newStartP = geo::Point_t{fTrackPos.X() - fPosOffsets.X(), fTrackPos.Y() + fPosOffsets.Y(), 
 							  fTrackPos.Z() + fPosOffsets.Z()};
 		    // std::cout << fPosOffsets.X() << " " <<   fPosOffsets.Y() << " " <<  fPosOffsets.Z() << std::endl;
 		    
 		    fTrackPos = endP;  fTrackPos.SetX(endP.X()-xshift);
-		    fPosOffsets = sce->GetCalPosOffsets(geo::Point_t{fTrackPos.X(),fTrackPos.Y(),fTrackPos.Z()});
+		    fPosOffsets = sce->GetCalPosOffsets(geo::Point_t{fTrackPos.X(),fTrackPos.Y(),fTrackPos.Z()}, 0);
 		    newEndP = geo::Point_t{fTrackPos.X() - fPosOffsets.X(), fTrackPos.Y() + fPosOffsets.Y(), 
 							fTrackPos.Z() + fPosOffsets.Z()};
 		    

@@ -44,7 +44,6 @@ art_make( BASENAME_ONLY
 	T0recoCRTTrack_module.cc                     
         T0recoCRTHit_module.cc                     
         T0recoCRTAnal_module.cc 
-	CRTTiming_module.cc
 	T0recoCRTTrackAnal_module.cc
         T0recoCRTHitAnal_module.cc 
 	T0recoCRTHitAna2_module.cc 
@@ -200,9 +199,11 @@ simple_plugin(CRTSimHitCorr "module"
         art_Persistency_Provenance canvas
         art_Utilities canvas
         lardata_DetectorInfoServices_DetectorClocksServiceStandard_service
-        nutools_RandomUtils_NuRandomService_service
+        nurandom_RandomUtils_NuRandomService_service
+        art_root_io_tfile_support ${ROOT_CORE}
         ${ART_FRAMEWORK_SERVICES_REGISTRY}
         ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR_SERVICE}
+        art_root_io_TFileService_service
         ${MF_MESSAGELOGGER}        
         ${ROOT_BASIC_LIB_LIST}
         ${CLHEP}
@@ -223,9 +224,11 @@ simple_plugin(CRTDataHitCorr "module"
         art_Persistency_Provenance canvas
         art_Utilities canvas
         lardata_DetectorInfoServices_DetectorClocksServiceStandard_service
-        nutools_RandomUtils_NuRandomService_service
+        nurandom_RandomUtils_NuRandomService_service
+ 	art_root_io_tfile_support ${ROOT_CORE}
         ${ART_FRAMEWORK_SERVICES_REGISTRY}
         ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR_SERVICE}
+        art_root_io_TFileService_service
         ${MF_MESSAGELOGGER}        
         ${ROOT_BASIC_LIB_LIST}
         ${CLHEP}
@@ -299,9 +302,9 @@ simple_plugin(CRTDataQuality "module"
             CRT
 	  bernfebdaq-core_Overlays
 	  lardataobj_RecoBase
-          art_Framework_Services_Optional
+          art_root_io_tfile_support ${ROOT_CORE}
           art_Framework_Services_Registry
-          art_Framework_Services_Optional_TFileService_service
+	  art_root_io_TFileService_service
           ${ROOT_BASIC_LIB_LIST} )
 
 simple_plugin(CRTHitPositionPerModule "module"
@@ -358,25 +361,25 @@ simple_plugin(T0recoCRT "module"
 simple_plugin(T0recoCRTTrack "module"
             CRT
           bernfebdaq-core_Overlays
-          art_Framework_Services_Optional
+          art_root_io_tfile_support ${ROOT_CORE}
           art_Framework_Services_Registry
-          art_Framework_Services_Optional_TFileService_service
+	  art_root_io_TFileService_service
           ${ROOT_BASIC_LIB_LIST} )
 
 simple_plugin(T0recoCRTTrackAnal "module"
             CRT
           bernfebdaq-core_Overlays
-          art_Framework_Services_Optional
+          art_root_io_tfile_support ${ROOT_CORE}
           art_Framework_Services_Registry
-          art_Framework_Services_Optional_TFileService_service
+	  art_root_io_TFileService_service
           ${ROOT_BASIC_LIB_LIST} )
 
 simple_plugin(T0recoCRTHit "module"
             CRT
           bernfebdaq-core_Overlays
-          art_Framework_Services_Optional
+          art_root_io_tfile_support ${ROOT_CORE}
           art_Framework_Services_Registry
-          art_Framework_Services_Optional_TFileService_service
+	  art_root_io_TFileService_service
           ${ROOT_BASIC_LIB_LIST} )
 
 simple_plugin(T0recoCRTAnal "module"
@@ -406,42 +409,26 @@ simple_plugin(CRTTriggerTimeProducer "module"
 simple_plugin(T0recoCRTHitAnal "module"
             CRT
           bernfebdaq-core_Overlays
-          art_Framework_Services_Optional
+          art_root_io_tfile_support ${ROOT_CORE}
           art_Framework_Services_Registry
-          art_Framework_Services_Optional_TFileService_service
+	  art_root_io_TFileService_service
           ${ROOT_BASIC_LIB_LIST} )
 
 
 simple_plugin(T0recoCRTHitAna2 "module"
             CRT
           bernfebdaq-core_Overlays
-          art_Framework_Services_Optional
+          art_root_io_tfile_support ${ROOT_CORE}
           art_Framework_Services_Registry
-          art_Framework_Services_Optional_TFileService_service
-          ${ROOT_BASIC_LIB_LIST} )
-
-simple_plugin(CRTTiming "module"
-            CRT
-          bernfebdaq-core_Overlays
-          art_Framework_Services_Optional
-          art_Framework_Services_Registry
-          art_Framework_Services_Optional_TFileService_service
-          ${ROOT_BASIC_LIB_LIST} )
-
-simple_plugin(CRTTriggerTimeProducer "module"
-            CRT
-          bernfebdaq-core_Overlays
-          art_Framework_Services_Optional
-          art_Framework_Services_Registry
-          art_Framework_Services_Optional_TFileService_service
+	  art_root_io_TFileService_service
           ${ROOT_BASIC_LIB_LIST} )
 
 simple_plugin(CRTTriggerTimeProducerSimple "module"
             CRT
           bernfebdaq-core_Overlays
-          art_Framework_Services_Optional
+          art_root_io_tfile_support ${ROOT_CORE}
           art_Framework_Services_Registry
-          art_Framework_Services_Optional_TFileService_service
+	  art_root_io_TFileService_service
           ${ROOT_BASIC_LIB_LIST} )
 
 

@@ -25,7 +25,7 @@
 #include "lardata/Utilities/AssociationUtil.h"
 #include <artdaq-core/Data/Fragment.hh>
 
-#include "art/Framework/Services/Optional/TFileService.h"
+#include "art_root_io/TFileService.h"
 #include "canvas/Persistency/Common/Ptr.h"
 #include "canvas/Persistency/Common/Assns.h"
 #include "canvas/Persistency/Provenance/ProductID.h"
@@ -579,13 +579,13 @@ void T0recoCRTHitAna2::analyze(art::Event const & evt)
 		  geo::Point_t newStartP = startP; geo::Point_t newEndP = endP;
 		  if(sce->EnableCalSpatialSCE()) {
 		    geo::Point_t fTrackPos = startP;  fTrackPos.SetX(startP.X()-xshift);
-		    geo::Vector_t fPosOffsets = sce->GetCalPosOffsets(geo::Point_t{fTrackPos.X(),fTrackPos.Y(),fTrackPos.Z()});
+		    geo::Vector_t fPosOffsets = sce->GetCalPosOffsets(geo::Point_t{fTrackPos.X(),fTrackPos.Y(),fTrackPos.Z()}, 0);
 		    newStartP = geo::Point_t{fTrackPos.X() - fPosOffsets.X(), fTrackPos.Y() + fPosOffsets.Y(), 
 							  fTrackPos.Z() + fPosOffsets.Z()};
 		    // std::cout << fPosOffsets.X() << " " <<   fPosOffsets.Y() << " " <<  fPosOffsets.Z() << std::endl;
 		    
 		    fTrackPos = endP;  fTrackPos.SetX(endP.X()-xshift);
-		    fPosOffsets = sce->GetCalPosOffsets(geo::Point_t{fTrackPos.X(),fTrackPos.Y(),fTrackPos.Z()});
+		    fPosOffsets = sce->GetCalPosOffsets(geo::Point_t{fTrackPos.X(),fTrackPos.Y(),fTrackPos.Z()}, 0);
 		    newEndP = geo::Point_t{fTrackPos.X() - fPosOffsets.X(), fTrackPos.Y() + fPosOffsets.Y(), 
 							fTrackPos.Z() + fPosOffsets.Z()};
 		    
@@ -655,13 +655,13 @@ void T0recoCRTHitAna2::analyze(art::Event const & evt)
 	  geo::Point_t newStartP = startP; geo::Point_t newEndP = endP;
 	  if(sce->EnableCalSpatialSCE()) {
 	    geo::Point_t fTrackPos = startP;  fTrackPos.SetX(startP.X()-xshift);
-	    geo::Vector_t fPosOffsets = sce->GetCalPosOffsets(geo::Point_t{fTrackPos.X(),fTrackPos.Y(),fTrackPos.Z()});
+	    geo::Vector_t fPosOffsets = sce->GetCalPosOffsets(geo::Point_t{fTrackPos.X(),fTrackPos.Y(),fTrackPos.Z()}, 0);
 	    newStartP = geo::Point_t{fTrackPos.X() - fPosOffsets.X(), fTrackPos.Y() + fPosOffsets.Y(), 
 				     fTrackPos.Z() + fPosOffsets.Z()};
 	    //	    std::cout << fPosOffsets.X() << " " <<   fPosOffsets.Y() << " " <<  fPosOffsets.Z() << std::endl;
 	    
 	    fTrackPos = endP;  fTrackPos.SetX(endP.X()-xshift);
-	    fPosOffsets = sce->GetCalPosOffsets(geo::Point_t{fTrackPos.X(),fTrackPos.Y(),fTrackPos.Z()});
+	    fPosOffsets = sce->GetCalPosOffsets(geo::Point_t{fTrackPos.X(),fTrackPos.Y(),fTrackPos.Z()}, 0);
 	    newEndP = geo::Point_t{fTrackPos.X() - fPosOffsets.X(), fTrackPos.Y() + fPosOffsets.Y(), 
 				   fTrackPos.Z() + fPosOffsets.Z()};
 	    //	    std::cout << fPosOffsets.X() << " " <<   fPosOffsets.Y() << " " <<  fPosOffsets.Z() << std::endl;

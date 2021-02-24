@@ -33,6 +33,7 @@
 #include "ubobj/CRT/CRTTrack.hh"
 #include "ubcrt/CRT/CRTAuxFunctions.hh"
 #include "ubobj/RawData/DAQHeaderTimeUBooNE.h"
+#include "larcore/CoreUtils/ServiceUtil.h"
 #include "larevt/SpaceCharge/SpaceCharge.h"
 #include "larevt/SpaceChargeServices/SpaceChargeService.h"
 
@@ -436,13 +437,13 @@ void TrackDump::analyze(art::Event const & evt)
 	    if(sce->EnableCalSpatialSCE()) {
 
 	      geo::Point_t fTrackPos = startP;  fTrackPos.SetX(startP.X()-xshift);
-	      geo::Vector_t fPosOffsets = sce->GetCalPosOffsets(geo::Point_t{fTrackPos.X(),fTrackPos.Y(),fTrackPos.Z()});
+	      geo::Vector_t fPosOffsets = sce->GetCalPosOffsets(geo::Point_t{fTrackPos.X(),fTrackPos.Y(),fTrackPos.Z()}, 0);
 	      newStartP = geo::Point_t{fTrackPos.X() - fPosOffsets.X(), fTrackPos.Y() + fPosOffsets.Y(), 
 				       fTrackPos.Z() + fPosOffsets.Z()};
 	      // std::cout << fPosOffsets.X() << " " <<   fPosOffsets.Y() << " " <<  fPosOffsets.Z() << std::endl;
 	      
 	      fTrackPos = endP;  fTrackPos.SetX(endP.X()-xshift);
-	      fPosOffsets = sce->GetCalPosOffsets(geo::Point_t{fTrackPos.X(),fTrackPos.Y(),fTrackPos.Z()});
+	      fPosOffsets = sce->GetCalPosOffsets(geo::Point_t{fTrackPos.X(),fTrackPos.Y(),fTrackPos.Z()}, 0);
 	      newEndP = geo::Point_t{fTrackPos.X() - fPosOffsets.X(), fTrackPos.Y() + fPosOffsets.Y(), 
 				     fTrackPos.Z() + fPosOffsets.Z()};
 	      

@@ -13,7 +13,7 @@
 #include "art/Framework/Principal/SubRun.h"
 #include "canvas/Utilities/InputTag.h"
 #include "fhiclcpp/ParameterSet.h"
-#include "art/Framework/Services/Optional/TFileService.h"
+#include "art_root_io/TFileService.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 // declare the package with the CRT hit information.
@@ -95,7 +95,7 @@ private:
 
 
 CRTDistanceFilter::CRTDistanceFilter(fhicl::ParameterSet const &p)
-// :
+  : art::EDFilter(p)
 // Initialize member data here.
 {
   // Call appropriate produces<>() functions here.
