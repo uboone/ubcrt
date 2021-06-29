@@ -9,7 +9,11 @@
 ////////////////////////////////////////////////////////////////////////
 
 #include <iostream>
+#include <sstream>
 #include <ctime>
+#include <fstream>
+#include <dirent.h>
+#include <sys/types.h>
 #include "CRTFileManager.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art/Framework/Services/Registry/ActivityRegistry.h"
@@ -37,13 +41,151 @@ crt::CRTFileManager::CRTFileManager(fhicl::ParameterSet const & p, art::Activity
   fDebug(p.get<bool>("debug")),
   fMaxFiles(p.get<unsigned int>("maxFiles")),
   fCRTHitLabel(p.get<std::string>("CRTHitLabel")),
-  fCRTVersion(p.get<std::string>("ubversion_CRTHits"))
+  fCRTVersion(p.get<std::string>("ubversion_CRTHits")),
+  fCRTVersionTop(p.get<std::string>("ubversion_CRTHits_top", fCRTVersion)),
+  fCRTMetadataDir(p.get<std::string>("CRTMetadataDir", std::string()))
 {
   setenv("TZ", "CST6CDT", 1);  // Fermilab time zone.
   tzset();
+
+  // Message.
+
+  std::cout << "CRTFileManager service configured.\n"
+	    << "  Max files = " << fMaxFiles  << "\n"
+	    << "  CRT Hit Label = " << fCRTHitLabel  << "\n"
+	    << "  CRT Version = " << fCRTVersion << "\n"
+	    << "  CRT Top Version = " << fCRTVersionTop << "\n"
+	    << "  CRT metadata directory = " << fCRTMetadataDir << std::endl;
 }
 
-// Use sam to find swizzled CRT files that match the event time stamp.
+
+// Fetch CRT metadata from extracted metadata directory.
+
+void crt::CRTFileManager::prefetch(const std::vector<boost::posix_time::ptime>& posix_times) const
+{
+  // Can't do anything if there is no extracted crt metadata.
+
+  if(fCRTMetadataDir == std::string())
+    return;
+
+  std::cout << "Prefech CRT metadata." << std::endl;
+
+  // Loop over posix times -> subdirectories.
+
+  for(auto const& posix_time : posix_times) {
+    std::string subdir = boost::posix_time::to_iso_string(posix_time).substr(0,8);
+
+    // Loop over files in this subdirectory
+
+    std::string dirpath = fCRTMetadataDir + "/" + subdir;
+    DIR* dir = opendir(dirpath.c_str());
+    struct dirent* entry;
+    if(dir != 0) {
+      while((entry = readdir(dir)) != 0) {
+	std::string filename = entry->d_name;
+	if(filename != "." && filename != "..") {
+
+	  // Read this file and construct CRTFileInfo object.
+
+	  CRTFileInfo fileinfo;
+	  std::cout << "Reading " << filename << std::endl;
+	  std::string filepath = dirpath + "/" + filename;
+	  std::ifstream mdfile(filepath);
+	  std::string line;
+	  if(mdfile.is_open()) {
+
+	    // Read CRT binary file name.
+
+	    getline(mdfile, line);
+	    //std::cout << "CRT binary file = " << line << std::endl;
+	    fileinfo.fFileName = line;
+	    if(fCRTFiles.count(fileinfo.fFileName) > 0)
+	      std::cout << "Already in cache." << std::endl;
+	    else {
+
+	      // Not in cache.
+	      // Read start time.
+
+	      getline(mdfile, line);
+	      //std::cout << "Start time = " << line << std::endl;
+	      boost::posix_time::ptime start_time_ptime =
+		boost::date_time::parse_delimited_time<boost::posix_time::ptime>(line, 'T');
+	      std::string start_time2 = boost::posix_time::to_iso_extended_string(start_time_ptime);
+	      if(start_time2 != line) {
+		//std::cout << "Converted start time = " << start_time2 << std::endl;
+		throw cet::exception("CRTFileManager") << "Problem converting start time.";
+	      }
+	      fileinfo.fStartTime = start_time_ptime;
+
+	      // Read end time.
+
+	      getline(mdfile, line);
+	      //std::cout << "End time = " << line << std::endl;
+	      boost::posix_time::ptime end_time_ptime =
+		boost::date_time::parse_delimited_time<boost::posix_time::ptime>(line, 'T');
+	      std::string end_time2 = boost::posix_time::to_iso_extended_string(end_time_ptime);
+	      if(end_time2 != line) {
+		//std::cout << "Converted end time = " << end_time2 << std::endl;
+		throw cet::exception("CRTFileManager") << "Problem converting end time.";
+	      }
+	      fileinfo.fEndTime = end_time_ptime;
+
+	      // Remainder of file contains information about swizzled files.
+	      // Loop over remaining lines.
+
+	      std::string ubproject, ubstage, ubversion, swizzled_file;
+	      while(!mdfile.eof()) {
+		getline(mdfile, line);
+
+		// Parse line into four words.
+
+		ubproject = std::string();
+		ubstage = std::string();
+		ubversion = std::string();
+		swizzled_file = std::string();
+		std::istringstream ss(line);
+		ss >> ubproject;
+		ss >> ubstage;
+		ss >> ubversion;
+		ss >> swizzled_file;
+
+		// Do the same metadata selection as if we were querying from sam.
+
+		if(swizzled_file != std::string() &&
+		   ((ubversion == fCRTVersionTop &&
+		     (ubstage == "crt_swizzle1a" ||
+		      ubstage == "crt_swizzle1b" ||
+		      ubstage == "crt_swizzle1c")) ||
+		    (ubversion == fCRTVersion &&
+		     (ubstage == "crt_swizzle2" ||
+		      ubstage == "crt_swizzle3" || 
+		      ubstage == "crt_swizzle4")))) {
+		  //std::cout << "Adding this CRT swizzled file to cache." << std::endl;
+		  fileinfo.fSwizzled.push_back(swizzled_file);
+
+		} // End metadata selection.
+	      } // End loop over swizzled files.
+	    } // End if in cache.
+
+	    // Done reading file.
+
+	    mdfile.close();
+
+	    // Add this file info to cache.
+
+	    fCRTFiles[fileinfo.fFileName] = fileinfo;
+
+	  } // End if is open.
+	} // End if not "." or ".."
+      } // End loop over directory contents.
+      closedir(dir);
+    } 
+  }
+  return;
+}
+
+
+// Use sam or extracted CRT metadata to find swizzled CRT files that match the event time stamp.
 
 std::vector<std::string> crt::CRTFileManager::findMatchingCRTFiles(art::Timestamp event_time) const
 {
@@ -62,6 +204,11 @@ std::vector<std::string> crt::CRTFileManager::findMatchingCRTFiles(art::Timestam
   
   unsigned long time_tpc = evt_time_sec*1000000000 + evt_time_nsec;   // Nanoseconds
   unsigned long time_tpc1= time_tpc/1000;                             // Microseconds.
+
+  // Lower bound of earliest possible start time of matching CRT binary file.
+  // One day earlier than even time.
+
+  unsigned long time_tpc0 = time_tpc1 - 86400000000;  // Microseconds.
   
   const char* tz = getenv("TZ");
   std::string tzs(tz);
@@ -90,18 +237,48 @@ std::vector<std::string> crt::CRTFileManager::findMatchingCRTFiles(art::Timestam
   std::cout << "UTC time of event:   "
 	    << boost::posix_time::to_iso_extended_string(this_event_time)<<std::endl;
 
+  boost::posix_time::ptime this_event_time0 = 
+    time_epoch + boost::posix_time::microseconds(time_tpc0);
+  boost::posix_time::ptime this_event_localtime0 = local_adj::utc_to_local(this_event_time0);
+
   // Check cached files.
+  // Make two attempts.
+  // Call prefetch after the first attempt if we don't find enough matching files on
+  // the first attempt.
 
   boost::posix_time::time_duration one_minute(0, 1, 0, 0);
-  for(const auto& crtfileinfo : fCRTFiles) {
-    const std::string& crtfile = crtfileinfo.first;    // crt swizzled file.
-    const CRTFileInfo& fileinfo = crtfileinfo.second;  // crt binary file.
-    if(this_event_localtime >= fileinfo.fStartTime + one_minute && 
-       this_event_localtime <= fileinfo.fEndTime - one_minute) {
-      std::cout << "Found cached file " << crtfile << std::endl;
-      for(auto const& crt_swizzled : fileinfo.fSwizzled)
-	crtrootfiles.push_back(crt_swizzled);
+
+  for(int itry=0; itry<2; ++itry) {
+
+    crtrootfiles.erase(crtrootfiles.begin(), crtrootfiles.end());
+
+    // Call prefetch on second attempt.
+
+    if(itry > 0) {
+      std::vector<boost::posix_time::ptime> posix_times;
+      posix_times.push_back(this_event_localtime);
+      posix_times.push_back(this_event_localtime0);
+      prefetch(posix_times);
     }
+
+    for(const auto& crtfileinfo : fCRTFiles) {
+      const std::string& crtfile = crtfileinfo.first;    // crt swizzled file.
+      const CRTFileInfo& fileinfo = crtfileinfo.second;  // crt binary file.
+      if(this_event_localtime >= fileinfo.fStartTime + one_minute && 
+	 this_event_localtime <= fileinfo.fEndTime - one_minute) {
+	std::cout << "Found cached file " << crtfile << std::endl;
+	for(auto const& crt_swizzled : fileinfo.fSwizzled)
+	  crtrootfiles.push_back(crt_swizzled);
+      }
+    }
+
+    // Break out of loop after first attempt if number of matching files is sufficient,
+    // or if there is no extracted crt metadata to read for second attempt.
+
+    std::cout << crtrootfiles.size() << " matching CRT binary files found in cache." << std::endl;
+
+    if(crtrootfiles.size() >= 6 || fCRTMetadataDir == std::string())
+      break;
   }
   if(crtrootfiles.size() < 6) {
 
@@ -117,7 +294,10 @@ std::vector<std::string> crt::CRTFileManager::findMatchingCRTFiles(art::Timestam
     dim << "file_format " << "crt-binaryraw"
 	<<" and file_type " << "data"
 	<<" and start_time < " << stringTime 
-	<< " and end_time > " << stringTime;
+	<< " and end_time > " << stringTime
+	<< " and file_name " 
+	<< "ProdRun" << boost::posix_time::to_iso_string(this_event_localtime0).substr(0,8) << "%,"
+	<< "ProdRun" << boost::posix_time::to_iso_string(this_event_localtime).substr(0,8) << "%";
   
     if (fDebug)
       std::cout<<"dim = "<<dim.str()<<std::endl;
@@ -185,9 +365,12 @@ std::vector<std::string> crt::CRTFileManager::findMatchingCRTFiles(art::Timestam
 
       std::ostringstream dim1;
       dim1 << "file_format " << "artroot"
-	   <<" and ub_project.version " << fCRTVersion
+	   <<" and ((ub_project.version " << fCRTVersionTop
+	   << " and ub_project.stage crt_swizzle1a,crt_swizzle1b,crt_swizzle1c)"
+	   << " or (ub_project.version " << fCRTVersion
+	   << " and ub_project.stage crt_swizzle2,crt_swizzle3,crt_swizzle4))"
 	   << " and ischildof: (file_name " << crtfile
-	   <<" with availability physical )";
+	   << " with availability physical )";
 
       if (fDebug)
 	std::cout << "dim1 = " << dim1.str() << std::endl;
@@ -218,15 +401,12 @@ std::vector<std::string> crt::CRTFileManager::findMatchingCRTFiles(art::Timestam
       }
     }
   }
+  std::sort(crtrootfiles.begin(), crtrootfiles.end());
   std::cout<<"\nNumber of matching CRT swizzled files: "<<crtrootfiles.size()<<std::endl;
-  if(fDebug) {
-    for(const auto& crt_swizzled : crtrootfiles)
-      std::cout << crt_swizzled << std::endl;
-  }
+  for(const auto& crt_swizzled : crtrootfiles)
+    std::cout << crt_swizzled << std::endl;
   if (!crtrootfiles.size())
-    std::cout << "\n\t CRTFileManager_module: No child CRT files found that conform to constraints: "
-	      << "file_format " << "artroot" << " and ub_project.version "
-	      << fCRTVersion << std::endl;
+    std::cout << "\n\t CRTFileManager_module: No child CRT files found" << std::endl;
 
   // Throw exception if there are fewer than six CRT files.
 
@@ -340,8 +520,12 @@ gallery::Event& crt::CRTFileManager::openFile(std::string file_name)
   }
   else {
     std::cout << "Failed to open CRT root file xrootd URL." << std::endl;
-    throw cet::exception("CRTFileManager") << "Could not open CRT file: " 
-					   << file_name << "\n";
+    //throw cet::exception("CRTFileManager") << "Could not open CRT file: " 
+    //				   << file_name << "\n";
+
+    // Don't give art the chance to clean up.
+
+    abort();
   }
 
   // Done.

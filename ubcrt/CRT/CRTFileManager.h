@@ -24,6 +24,11 @@
 // Debug      - Debug flag.
 // MaxFiles   - Maximum number of open gallery files to cache.
 // ubversion_CRTHits - Swizzled CRT version.
+// ubversion_CRTHits_top - Swizzled CRT version for top panel CRT hits (stream 1).
+//                         Optional, default same as ubversion_CRTHits.
+// CRTMetadataDir - Directory containing extracted CRT metadata.  If defined,
+//                  CRT metadata will be looked up in this directory instead
+//                  of being queried from SAM.
 // 
 //
 ////////////////////////////////////////////////////////////////////////
@@ -67,6 +72,10 @@ public:
   // The compiler-generated destructor is fine for non-base
   // classes without bare pointers or other resource use.
 
+  // Prefetch extracted CRT metadata into metadata cache.
+
+  void prefetch(const std::vector<boost::posix_time::ptime>& posix_times) const;
+
   // Find matching swizzled CRT files based on art time stamp.
   // Use GPS time from DAQHeaderTimeUBooNE data product.
 
@@ -100,6 +109,8 @@ private:
   unsigned int fMaxFiles;    // Maximum number of open files to cache.
   std::string fCRTHitLabel;  // CRT hit module label.
   std::string fCRTVersion;   // Swizzled CRT version (ub_project.version).
+  std::string fCRTVersionTop;// Swizzled CRT version for top CRT panels (ub_project.version).
+  std::string fCRTMetadataDir; // Directoroy containing extracted CRT metadata.
 
   // This data structure contains information that is known from sam metadata about
   // CRT binary and swizzled files.

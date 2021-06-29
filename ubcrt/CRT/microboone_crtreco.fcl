@@ -1,0 +1,49 @@
+BEGIN_PROLOG
+
+crttzero: {
+   module_type: CRTTzeroProducer
+   data_label: "crthitcorr"
+   max_time_difference: 100.
+   store_tzero: 1
+   verbose: 0
+}
+crttrack: {
+   module_type: CRTTrackProducer
+   data_label_hits: "crthitcorr"
+   data_label_tzeros: "crttzero"
+   ## method 1 = all, method 2 = ave, method 3 = pure
+   track_method_type: 2
+   store_track: 1
+   verbose: 0
+}
+
+
+
+
+t0recocrthit_data:  {
+   module_type: T0recoCRTHit
+   data_label_TPCtrack: "pandora"
+   data_label_CRTtzero: "crttzero"
+   data_label_CRThit: "crthitcorr"
+   data_label_flash: "simpleFlashCosmic"
+   data_label_DAQHeader: "daq"
+   HardDelay:      40000   #BNB data is 35520, for TimeSelect=1
+   TimeZeroOffset: 0   #used for TimeSelect=0
+   verbose: false
+   TimeSelect:  0  # set =0 for GPS ref and =1 to use trigger time
+   # distance squared in cm^2 from track extrapolation to CRT hit 
+   #   must be less than this to be considered a match
+   MatchCut: 25
+   MatchCutTop: 40
+   DriftVel: 0.11436  # in cm/us, should be 0.1098 eventually
+   fMinCRTPe: 70.
+}
+
+
+t0recocrthit_sim: @local::t0recocrthit_data
+t0recocrthit_sim.HardDelay: 0 
+t0recocrthit_sim.TimeZeroOffset: 0 
+t0recocrthit_sim.TimeSelect: 1   # Simulation only fills the time1 variable for crt hits (time since last trigger)
+
+
+END_PROLOG

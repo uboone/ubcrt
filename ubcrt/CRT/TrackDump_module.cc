@@ -33,6 +33,8 @@
 #include "ubobj/CRT/CRTTrack.hh"
 #include "ubcrt/CRT/CRTAuxFunctions.hh"
 #include "ubobj/RawData/DAQHeaderTimeUBooNE.h"
+#include "larevt/SpaceCharge/SpaceCharge.h"
+#include "larevt/SpaceChargeServices/SpaceChargeService.h"
 
 #include "TTree.h"
 #include "TH1F.h"
@@ -51,8 +53,10 @@
 
 
 const int kMaxCRThits = 1000;
+const int kMaxCRTtzs = 1000;
 const int kMaxCRTtracks = 1000;
 const int kMaxTPCtracks = 100;
+const int kMaxPMTflash = 100;
 
 
  // namespace crt {
@@ -90,12 +94,18 @@ private:
   uint32_t fsubRunNum;             //Subrun Number taken from event         
   std::string  fTrackModuleLabel;
   bool fSaveTPCTrackInfo;
+  bool fSavePMTFlashInfo;
   std::string  data_labeltrack_;
+  std::string  data_labeltzero_;
+  std::string  data_label_t0A_;
+  std::string  data_label_t0C_;
   std::string  data_labelhit_;
   std::string  data_label_flash_;
   std::string  data_label_DAQHeader_;
-  bool fIsMC;
+  //  bool fIsMC;
   int fHardDelay_;
+  int fTimeZeroOffset;
+  int fDriftVel;
   int verbose_;
   
 
@@ -144,6 +154,24 @@ private:
   int hit_strip2[kMaxCRThits]; 
   double hit_pe1[kMaxCRThits]; 
   double hit_pe2[kMaxCRThits]; 
+  double hit_sipm1a[kMaxCRThits]; 
+  double hit_sipm1b[kMaxCRThits]; 
+  double hit_sipm2a[kMaxCRThits]; 
+  double hit_sipm2b[kMaxCRThits]; 
+  int hit_mcflag[kMaxCRThits]; 
+  // CRT Tzeros
+  int nCRTtzeros;
+  double tz_time_s[kMaxCRTtzs];
+  double tz_time0[kMaxCRTtzs];
+  double tz_time1[kMaxCRTtzs];
+  int tz_hits0[kMaxCRTtzs];
+  int tz_hits1[kMaxCRTtzs];
+  int tz_hits2[kMaxCRTtzs];
+  int tz_hits3[kMaxCRTtzs];
+  double tz_pes0[kMaxCRTtzs];
+  double tz_pes1[kMaxCRTtzs];
+  double tz_pes2[kMaxCRTtzs];
+  double tz_pes3[kMaxCRTtzs];
   // CRT tracks
   int nCRTtracks;
   double ct_theta[kMaxCRTtracks];
@@ -175,6 +203,25 @@ private:
   double trktheta[kMaxTPCtracks];
   double trkphi[kMaxTPCtracks];
   double trklen[kMaxTPCtracks];
+  double tzeroACPT[kMaxTPCtracks];
+  double tzeroCRT[kMaxTPCtracks];
+  //  double dcaCRT[kMaxTPCtracks];
+  int planeCRT[kMaxTPCtracks];
+  int feb1CRT[kMaxTPCtracks];
+  int feb2CRT[kMaxTPCtracks];
+  double pes1CRT[kMaxTPCtracks];
+  double pes2CRT[kMaxTPCtracks];
+  double xCRT[kMaxTPCtracks];
+  double yCRT[kMaxTPCtracks];
+  double zCRT[kMaxTPCtracks];
+  double angCRT[kMaxTPCtracks];
+  // PMT flash
+  int nPMTflash;
+  double fl_time[kMaxPMTflash];
+  double fl_pe[kMaxPMTflash];
+  double fl_y[kMaxPMTflash];
+  double fl_z[kMaxPMTflash];
+
   
 };
 
@@ -183,12 +230,17 @@ TrackDump::TrackDump(fhicl::ParameterSet const & p)
   : EDAnalyzer(p),
     fTrackModuleLabel(p.get<std::string>("TrackModuleLabel")),
     fSaveTPCTrackInfo(p.get< bool >("SaveTPCTrackInfo", false)), 
+    fSavePMTFlashInfo(p.get< bool >("SavePMTFlashInfo", false)), 
     data_labeltrack_(p.get<std::string>("data_labeltrack")),
+    data_labeltzero_(p.get<std::string>("data_labeltzero")),
+    data_label_t0A_(p.get<std::string>("data_label_t0ACPT", "pandoraCosmicT0Reco" )),
+    data_label_t0C_(p.get<std::string>("data_label_t0CRT")),
     data_labelhit_(p.get<std::string>("data_labelhit")),
     data_label_flash_(p.get<std::string>("data_label_flash_")),
     data_label_DAQHeader_(p.get<std::string>("data_label_DAQHeader_")),
-    fIsMC(p.get< bool >("IsMC", false)), 
-    fHardDelay_(p.get<int>("fHardDelay",40000)),
+    fHardDelay_(p.get<int>("HardDelay",40000)),
+    fTimeZeroOffset(p.get<int>("TimeZeroOffset",60000)),
+    fDriftVel(p.get<float>("DriftVel",0.111436)),   // cm/us
     verbose_(p.get<int>("verbose"))
     // More initializers here.    
 {
@@ -196,7 +248,6 @@ TrackDump::TrackDump(fhicl::ParameterSet const & p)
 
 void TrackDump::analyze(art::Event const & evt)
 {
-  
   ResetVars();
 
   frunNum    = evt.run();
@@ -211,8 +262,10 @@ void TrackDump::analyze(art::Event const & evt)
   double evt_timeNTP_sec = 0.0;
   double evt_timeNTP_nsec = 0.0;
   double timstp_diff = 0.0;
-  
-  if (!fIsMC) {  // get DAQ timestamps if this is data
+
+  //  fIsMC=1;
+  if (evt.isRealData()) {  // get DAQ timestamps if this is data
+    //    fIsMC=0;
    //get DAQ Header                                                                  
   //Commentar para old swizzler, sin DAQ Header
     art::Handle< raw::DAQHeaderTimeUBooNE > rawHandle_DAQHeader;  
@@ -257,8 +310,8 @@ void TrackDump::analyze(art::Event const & evt)
   
 
   if (fSaveTPCTrackInfo) {
-
-    // get TPC Track List 
+    
+      // get TPC Track List 
     art::Handle< std::vector<recob::Track>  > trackListHandle; 
     std::vector<art::Ptr<recob::Track> >  tracklist;
     if (evt.getByLabel(fTrackModuleLabel,trackListHandle))
@@ -271,27 +324,47 @@ void TrackDump::analyze(art::Event const & evt)
       std::cout << std::endl;
       return;
     }
+  //check whether tzeros exist
+    bool iT0acpt=false;
+    bool iT0crt = false;
+    art::Handle< std::vector<anab::T0> > rawHandle_Tzero;
+    evt.getByLabel(data_label_t0A_, rawHandle_Tzero);
+    if(rawHandle_Tzero.isValid()) { iT0acpt=true;
+      // grab flashes associated with tracks (anode or cathode crossers)
+      //      art::FindMany<anab::T0> trk_t0A_assn_v(trackListHandle, evt, data_label_t0A_);
+      //      std::cout << "found data product for acpt times" << std::endl;
+    }
+    evt.getByLabel(data_label_t0C_, rawHandle_Tzero);
+    if(rawHandle_Tzero.isValid()) {iT0crt=true;
+      // grab T0 objects associated with tracks    
+      //      art::FindMany<anab::T0> trk_t0C_assn_v(trackListHandle, evt, data_label_t0C_);
+      std::cout << "found data product for crt times" << std::endl;
+    }
+    auto const* sce = lar::providerFrom<spacecharge::SpaceChargeService>();
     
+    double const vdrift = fDriftVel;  // in cm/us
     
     nTPCtracks = tracklist.size();
     if (nTPCtracks>kMaxTPCtracks) nTPCtracks=kMaxTPCtracks;
     for(int j = 0; j < nTPCtracks; j++) {
-      
+      if (verbose_)std::cout<<"in iTrackloop\n";
       art::Ptr<recob::Track> ptrack(trackListHandle, j);
       const recob::Track& track = *ptrack;
       
       auto pos       = track.Vertex();
       auto dir_start = track.VertexDirection();
       auto dir_end   = track.EndDirection();
-      auto end       = track.End();
+      auto startP       = track.Start();
+      auto endP       = track.End();
+
       //
       trklen[j]= track.Length(); //length(track);
       trkstartx[j]=pos.X();
       trkstarty[j]=pos.Y();
       trkstartz[j]=pos.Z();
-      trkendx[j]=end.X();
-      trkendy[j]=end.Y();
-      trkendz[j]=end.Z();
+      trkendx[j]=endP.X();
+      trkendy[j]=endP.Y();
+      trkendz[j]=endP.Z();
       trkstartdcosx[j]=dir_start.X();
       trkstartdcosy[j]=dir_start.Y();
       trkstartdcosz[j]=dir_start.Z();
@@ -300,12 +373,109 @@ void TrackDump::analyze(art::Event const & evt)
       trkenddcosz[j]=dir_end.Z();
       trktheta[j]=dir_start.Theta();
       trkphi[j]=dir_start.Phi();
+      tzeroACPT[j]=-9999.0;
+      if (iT0acpt) { 
+	art::FindMany<anab::T0> trk_t0A_assn_v(trackListHandle, evt, data_label_t0A_);
+	const std::vector<const anab::T0*>& T0_acpt = trk_t0A_assn_v.at(j);
+	if (T0_acpt.size()==1) { 
+	  auto t0 = T0_acpt.at(0);
+	  tzeroACPT[j]=t0->Time();  //track time in us, t0->time() in us
+	}
+      }
+      tzeroCRT[j]=-9999.0; planeCRT[j]=-1;
+      if (iT0crt) {
+	if (verbose_)std::cout<<"in iT0crt\n";
+	//	art::FindMany<anab::T0> trk_t0C_assn_v("pandora", evt, "pandoraCrtHitMatch");
+	art::FindMany<anab::T0> trk_t0C_assn_v(trackListHandle, evt, data_label_t0C_);
+	const std::vector<const anab::T0*>& T0_v = trk_t0C_assn_v.at(j);
+	if (T0_v.size()==1) { 
+	  auto t0 = T0_v.at(0);
+	  tzeroCRT[j]=t0->Time();	  
+	  planeCRT[j]=t0->TriggerBits();  
+	  //	  std::cout << "dca value is " << t0->TriggerConfidence() << std::endl;
+	  art::FindMany<crt::CRTHit> trk_hit_assn_v(trackListHandle, evt, data_label_t0C_);
+	  const std::vector<const crt::CRTHit*>& hit_v = trk_hit_assn_v.at(j);
+	  if (hit_v.size()>0) {
+	    auto thishit = hit_v.at(0);
+	    feb1CRT[j]=thishit->feb_id[0];	    feb2CRT[j]=thishit->feb_id[1];
+	    xCRT[j]=thishit->x_pos;	    yCRT[j]=thishit->y_pos;	    zCRT[j]=thishit->z_pos;
+
+	    std::vector<std::pair<int,float>> pes1 = thishit->pesmap.find(feb1CRT[j])->second; 
+	    std::vector<std::pair<int,float>> pes2 = thishit->pesmap.find(feb2CRT[j])->second; 
+	    if (pes1.size()==2) { // is simulated hit
+	      std::pair<int,float> ind_pes1 = pes1[0];
+	      std::pair<int,float> ind_pes2 = pes1[1];
+	      pes1CRT[j]=ind_pes1.second+ind_pes2.second;
+	      std::pair<int,float> ind2_pes1 = pes2[0];
+	      std::pair<int,float> ind2_pes2 = pes2[1];
+	      pes2CRT[j]=ind2_pes1.second+ind2_pes2.second;
+	    }
+	    else {
+	      float hitpe1 = 0; 
+	      for (uint isp=0;isp<pes1.size();isp+=2) {
+		std::pair<int,float> ind_pes1=pes1[isp];
+		std::pair<int,float> ind_pes2=pes1[isp+1];
+		float tot = ind_pes1.second+ind_pes2.second;
+		if (tot>hitpe1)	  hitpe1=tot;
+	      }
+	      pes1CRT[j]=hitpe1;
+	      hitpe1 = 0; 
+	      for (uint isp=0;isp<pes2.size();isp+=2) {
+		std::pair<int,float> ind_pes1=pes2[isp];
+		std::pair<int,float> ind_pes2=pes2[isp+1];
+		float tot = ind_pes1.second+ind_pes2.second;
+		if (tot>hitpe1)	  hitpe1=tot;
+	      }
+	      pes2CRT[j]=hitpe1;	      
+	    }
+
+	    // Correct start and end points for space charge
+
+	    geo::Point_t newStartP = startP; geo::Point_t newEndP = endP;
+	    double xshift = vdrift*tzeroCRT[j];	  
+	    if(sce->EnableCalSpatialSCE()) {
+
+	      geo::Point_t fTrackPos = startP;  fTrackPos.SetX(startP.X()-xshift);
+	      geo::Vector_t fPosOffsets = sce->GetCalPosOffsets(geo::Point_t{fTrackPos.X(),fTrackPos.Y(),fTrackPos.Z()});
+	      newStartP = geo::Point_t{fTrackPos.X() - fPosOffsets.X(), fTrackPos.Y() + fPosOffsets.Y(), 
+				       fTrackPos.Z() + fPosOffsets.Z()};
+	      // std::cout << fPosOffsets.X() << " " <<   fPosOffsets.Y() << " " <<  fPosOffsets.Z() << std::endl;
+	      
+	      fTrackPos = endP;  fTrackPos.SetX(endP.X()-xshift);
+	      fPosOffsets = sce->GetCalPosOffsets(geo::Point_t{fTrackPos.X(),fTrackPos.Y(),fTrackPos.Z()});
+	      newEndP = geo::Point_t{fTrackPos.X() - fPosOffsets.X(), fTrackPos.Y() + fPosOffsets.Y(), 
+				     fTrackPos.Z() + fPosOffsets.Z()};
+	      
+	      trkstartx[j]=newStartP.X();
+	      trkstarty[j]=newStartP.Y();
+	      trkstartz[j]=newStartP.Z();
+	      trkendx[j]=newEndP.X();
+	      trkendy[j]=newEndP.Y();
+	      trkendz[j]=newEndP.Z();
+	      // std::cout << fPosOffsets.X() << " " <<   fPosOffsets.Y() << " " <<  fPosOffsets.Z() << std::endl;
+	    }
+	    else {
+	      newStartP.SetX(startP.X()-xshift); newEndP.SetX(endP.X()-xshift);
+	    }
       
-    }
+	    TVector3 trackstart(newStartP.X(),newStartP.Y(),newStartP.Z());
+	    TVector3 trackend(newEndP.X(),newEndP.Y(),newEndP.Z());
+	    
+	    // angle between track extrap and CRT plane
+	    TVector3 trackdir = trackstart-trackend;
+	    TVector3 proj=trackdir;  
+	    if (planeCRT[j]==0 || planeCRT[j]==3) proj.SetY(0.0);
+	    else proj.SetX(0.0);
+	    trackdir.SetMag(1.0); proj.SetMag(1.0);
+	    double cosang=trackdir.Dot(proj);
+	    if (cosang<0) cosang*=-1.0;
+	    if (cosang>1) { if (verbose_) std::cout << "bad value cosang " << cosang << std::endl; cosang=0.0;}
+	    angCRT[j]= acos(cosang);
+	    
+	  }}}// if there is a crt hit associated to the track
+    }  // loop over tracks
   }   //  if (saveTPCtrackinfo)
 
-  /*
-  
   //get Optical Flash
   art::Handle< std::vector<recob::OpFlash> > rawHandle_OpFlash;
   evt.getByLabel(data_label_flash_, rawHandle_OpFlash);
@@ -316,14 +486,25 @@ void TrackDump::analyze(art::Event const & evt)
     std::cout<<"  OpFlashCollection.size()  "<<OpFlashCollection.size()<<std::endl; 
   }  //get Optical Flash
   
-  */
-
 
   //  fill tree
   run=frunNum;
   event=fEvtNum;
   subrun=fsubRunNum;
   
+
+  // flashinfo
+  nPMTflash = OpFlashCollection.size();
+  if (nPMTflash>kMaxPMTflash) nPMTflash=kMaxPMTflash;
+  for(int j = 0; j < nPMTflash; j++) {
+    recob::OpFlash my_flash = OpFlashCollection[j];
+    fl_time[j]=my_flash.Time();
+    fl_pe[j]=my_flash.TotalPE();
+    fl_y[j]=my_flash.YCenter();
+    fl_z[j]=my_flash.ZCenter();
+  }    
+  
+
   //get CRTHits
   art::Handle< std::vector<crt::CRTHit> > rawHandle_hit;
   evt.getByLabel(data_labelhit_, rawHandle_hit); //
@@ -338,7 +519,7 @@ void TrackDump::analyze(art::Event const & evt)
   }
   std::vector<crt::CRTHit> const& CRTHitCollection(*rawHandle_hit);
   if(verbose_==1){ 
-    std::cout<<"  CRTHitCollection.size()  "<<CRTHitCollection.size()<<std::endl; 
+    std::cout<<"  CRTHitCollection.size()  "<<CRTHitCollection.size()<<" label "<<data_labelhit_<<std::endl; 
     //  getchar();   
   }    //end get CRTHits
 
@@ -346,83 +527,98 @@ void TrackDump::analyze(art::Event const & evt)
   nCRThits = CRTHitCollection.size();
   if (nCRThits>kMaxCRThits) nCRThits=kMaxCRThits;
   for(int j = 0; j < nCRThits; j++) {
-    
+    //std::cout<<"in CRT hits "<<j<<"\n";
     //fill tree
     crt::CRTHit my_CRTHit = CRTHitCollection[j];
     hit_time_s[j]=(double)my_CRTHit.ts0_s;
-    hit_time0[j]=(double)my_CRTHit.ts0_ns - (double)evt_timeGPS_nsec;
-    hit_time1[j]=(double)my_CRTHit.ts1_ns + (double)fHardDelay_;  //  + 40000 for hardware offset;
+    hit_time0[j]=(double)my_CRTHit.ts0_ns - (double)evt_timeGPS_nsec + (double)fTimeZeroOffset;
+    hit_time1[j]=(double)my_CRTHit.ts1_ns + (double)fHardDelay_; 
     hit_charge[j]=my_CRTHit.peshit;
-    hit_plane[j]=my_CRTHit.plane;
+    hit_plane[j]=(my_CRTHit.plane)%10;
     hit_posx[j]=my_CRTHit.x_pos;
     hit_posy[j]=my_CRTHit.y_pos;
     hit_posz[j]=my_CRTHit.z_pos;
     hit_feb1[j]=int(my_CRTHit.feb_id[0]);
     hit_feb2[j]=int(my_CRTHit.feb_id[1]);
     
-    if (fIsMC) { 
-
-    //    std::map<uint8_t, std::vector<std::pair<int,float>>> pesmap;	      
-    std::vector<std::pair<int,float>> pes = my_CRTHit.pesmap.find(hit_feb1[j])->second;  //vector of pairs  
-    std::pair<int,float> ind_pes1 = pes[0];
-    std::pair<int,float> ind_pes2 = pes[1];
-
-    // std::cout << "first strip: feb  " << hit_feb1[j] << " map index feb " <<
-    //   int(my_CRTHit.pesmap.find(hit_feb1[j])->first) << " sipm no " <<
-    //   ind_pes1.first << " pes " << ind_pes1.second << " sipm no " <<
-    //   ind_pes2.first << " pes " << ind_pes2.second << " strip no " <<
-    //   int(0.5*(ind_pes1.first)) << std::endl;
-
-    hit_strip1[j]=int(0.5*(ind_pes1.first));
-    hit_pe1[j]=ind_pes1.second+ind_pes2.second;
-    pes = my_CRTHit.pesmap.find(hit_feb2[j])->second;
-    ind_pes1 = pes[0]; ind_pes2 = pes[1];
-    hit_strip2[j]=int(0.5*ind_pes1.first);
-    hit_pe2[j]=ind_pes1.second+ind_pes2.second;
-
-    // std::cout << "second strip: feb " << hit_feb2[j] << " map index feb " <<
-    //   int(my_CRTHit.pesmap.find(hit_feb2[j])->first) << " sipm no " <<
-    //   ind_pes1.first << " pes " << ind_pes1.second << " simp no " <<
-    //   ind_pes2.first << " pes " << ind_pes2.second << " strip no " <<
-    //   int(0.5*ind_pes1.first) << std::endl;
+    std::vector<std::pair<int,float>> pes = my_CRTHit.pesmap.find(hit_feb1[j])->second; 
+    if (pes.size()==2) { // is simulated hit
+      //std::cout<<"Sim CRT hits "<<j<<"\n";
+      hit_mcflag[j]=1;
+      //    std::map<uint8_t, std::vector<std::pair<int,float>>> pesmap;	      
+      std::pair<int,float> ind_pes1 = pes[0];
+      std::pair<int,float> ind_pes2 = pes[1];
+      
+      // std::cout << "first strip: feb  " << hit_feb1[j] << " map index feb " <<
+      //   int(my_CRTHit.pesmap.find(hit_feb1[j])->first) << " sipm no " <<
+      //   ind_pes1.first << " pes " << ind_pes1.second << " sipm no " <<
+      //   ind_pes2.first << " pes " << ind_pes2.second << " strip no " <<
+      //   int(0.5*(ind_pes1.first)) << std::endl;
+      
+      hit_strip1[j]=int(0.5*(ind_pes1.first));
+      hit_pe1[j]=ind_pes1.second+ind_pes2.second;
+      hit_sipm1a[j]=ind_pes1.second;    hit_sipm1b[j]=ind_pes2.second;
+      pes = my_CRTHit.pesmap.find(hit_feb2[j])->second;
+      ind_pes1 = pes[0]; ind_pes2 = pes[1];
+      hit_strip2[j]=int(0.5*ind_pes1.first);
+      hit_pe2[j]=ind_pes1.second+ind_pes2.second;
+      hit_sipm2a[j]=ind_pes1.second;    hit_sipm2b[j]=ind_pes2.second;
+      
+      // if (hit_charge[j]>500.) hit_charge[j]=500.;
+      // if (hit_pe1[j]>300.) hit_pe1[j]=300.;
+      // if (hit_pe2[j]>300.) hit_pe2[j]=300.;
+      // std::cout << "second strip: feb " << hit_feb2[j] << " map index feb " <<
+      //   int(my_CRTHit.pesmap.find(hit_feb2[j])->first) << " sipm no " <<
+      //   ind_pes1.first << " pes " << ind_pes1.second << " simp no " <<
+      //   ind_pes2.first << " pes " << ind_pes2.second << " strip no " <<
+      //   int(0.5*ind_pes1.first) << std::endl;
     }
     else {
       //  Data has info from all 32 sipms with no indication
       //   which ones were used to make this particular hit
       //
       // use the largest pe deposit on the feb, not necessarily correct
-      
-    //    std::map<uint8_t, std::vector<std::pair<int,float>>> pesmap;	       //vector of pairs  
-      std::vector<std::pair<int,float>> pes1 = my_CRTHit.pesmap.find(hit_feb1[j])->second; 
+      //std::cout<<"Data CRT hits "<<j<<"\n";
+      //    std::map<uint8_t, std::vector<std::pair<int,float>>> pesmap;	       //vector of pairs  
+      hit_mcflag[j]=0;
       float hitpe1 = 0; int hitsipm1=-1;
-      for (uint isp=0;isp<pes1.size();isp+=2) {
-	std::pair<int,float> ind_pes1=pes1[isp];
-	std::pair<int,float> ind_pes2=pes1[isp+1];
+      float spe1=0; float spe2=0;
+      for (uint isp=0;isp<pes.size();isp+=2) {
+	std::pair<int,float> ind_pes1=pes[isp];
+	std::pair<int,float> ind_pes2=pes[isp+1];
 	// std::cout << isp << " " << ind_pes1.first << " " << ind_pes1.second << std::endl;
 	// std::cout << isp+1 << " " << ind_pes2.first << " " << ind_pes2.second << std::endl;
 	float tot = ind_pes1.second+ind_pes2.second;
 	if (tot>hitpe1) {
 	  hitpe1=tot;
+	  spe1=ind_pes1.second; spe2=ind_pes2.second;
 	  hitsipm1=0.5*ind_pes1.first;
 	}
       }
       hit_strip1[j]=-1;hit_pe1[j]=-1;
-      if (hitsipm1>=0) {hit_strip1[j]=hitsipm1;       hit_pe1[j]=hitpe1;}
+      if (hitsipm1>=0) {hit_strip1[j]=hitsipm1;      
+	hit_sipm1a[j]=spe1;	hit_sipm1b[j]=spe2;
+	hit_pe1[j]=hitpe1;}
       //
       std::vector<std::pair<int,float>> pes2 = my_CRTHit.pesmap.find(hit_feb2[j])->second; 
       float hitpe2 = 0; int hitsipm2=-1;
+      spe1=0; spe2=0;
       for (uint isp=0;isp<pes2.size();isp+=2) {
 	std::pair<int,float> ind_pes1=pes2[isp];
 	std::pair<int,float> ind_pes2=pes2[isp+1];
 	float tot = ind_pes1.second+ind_pes2.second;
 	if (tot>hitpe2) {
 	  hitpe2=tot;
+	  spe1=ind_pes1.second; spe2=ind_pes2.second;
 	  hitsipm2=0.5*ind_pes1.first;
 	}
       }
       hit_strip2[j]=-1; hit_pe2[j]=-1;
-      if (hitsipm2>=0) {hit_strip2[j]=hitsipm2;      hit_pe2[j]=hitpe2;}
-      //
+      if (hitsipm2>=0) {hit_strip2[j]=hitsipm2;
+	hit_sipm2a[j]=spe1;	hit_sipm2b[j]=spe2; 
+	hit_pe2[j]=hitpe2;
+      }
+     //
 	// std::cout << " feb1 strip1 pe1 " << hit_feb1[j] << " " << hit_strip1[j] << " " << 
 	//   hit_pe1[j] << std::endl;
 	// std::cout << " feb2 strip2 pe2 " << hit_feb2[j] << " " << hit_strip2[j] << " " << 
@@ -432,12 +628,49 @@ void TrackDump::analyze(art::Event const & evt)
     
 
     //fillhistograms
-    if (my_CRTHit.plane==0) HitDistBot->Fill(my_CRTHit.z_pos,my_CRTHit.x_pos);
-    else if (my_CRTHit.plane==1) HitDistFT->Fill(my_CRTHit.z_pos,my_CRTHit.y_pos);
-    else if (my_CRTHit.plane==2) HitDistPipe->Fill(my_CRTHit.z_pos,my_CRTHit.y_pos);
-    else if (my_CRTHit.plane==3) HitDistTop->Fill(my_CRTHit.z_pos,my_CRTHit.x_pos);
+    int thisplane = (my_CRTHit.plane%10);
+    if (thisplane==0) HitDistBot->Fill(my_CRTHit.z_pos,my_CRTHit.x_pos);
+    else if (thisplane==1) HitDistFT->Fill(my_CRTHit.z_pos,my_CRTHit.y_pos);
+    else if (thisplane==2) HitDistPipe->Fill(my_CRTHit.z_pos,my_CRTHit.y_pos);
+    else if (thisplane==3) HitDistTop->Fill(my_CRTHit.z_pos,my_CRTHit.x_pos);
   }// loop over hits
 
+
+  //get CRT tzeros
+  art::Handle< std::vector<crt::CRTTzero> > rawHandle_tz;
+  evt.getByLabel(data_labeltzero_, rawHandle_tz); 
+  
+  //check to make sure the data we asked for is valid
+  if(!rawHandle_tz.isValid()){
+    std::cout << "Run " << evt.run() << ", subrun " << evt.subRun()
+              << ", event " << evt.event() << " has zero"
+              << " CRTtzeros " << " in module " << data_labeltzero_ << std::endl;
+    std::cout << std::endl;
+    return;
+  }
+  std::vector<crt::CRTTzero> const& CRTtzCollection(*rawHandle_tz);
+  if(verbose_==1){ 
+    std::cout<<"  CRTtzCollection.size()  "<<CRTtzCollection.size()<<std::endl; 
+    //  getchar();   
+  }    //end get CRTTzeros
+
+
+  nCRTtzeros = CRTtzCollection.size();
+  if (nCRTtzeros>kMaxCRTtzs) nCRTtzeros=kMaxCRTtzs;
+  for(int j = 0; j < nCRTtzeros; j++) {
+    crt::CRTTzero my_CRTtz = CRTtzCollection[j];
+    tz_time_s[j]=(double)my_CRTtz.ts0_s;
+    tz_time0[j]=(double)my_CRTtz.ts0_ns - (double)evt_timeGPS_nsec + (double)fTimeZeroOffset;
+    tz_time1[j]=(double)my_CRTtz.ts1_ns + (double)fHardDelay_; 
+    tz_hits0[j]=my_CRTtz.nhits[0];
+    tz_hits1[j]=my_CRTtz.nhits[1];
+    tz_hits2[j]=my_CRTtz.nhits[2];
+    tz_hits3[j]=my_CRTtz.nhits[3];
+    tz_pes0[j]=my_CRTtz.pes[0];
+    tz_pes1[j]=my_CRTtz.pes[1];
+    tz_pes2[j]=my_CRTtz.pes[2];
+    tz_pes3[j]=my_CRTtz.pes[3];
+  }
 
 
   //get CRTTracks
@@ -488,7 +721,7 @@ void TrackDump::analyze(art::Event const & evt)
     ct_z2[j]=my_CRTTrack.z2_pos;
 
     //fill histograms
-    hplavspla->Fill(my_CRTTrack.plane1,my_CRTTrack.plane2);
+    hplavspla->Fill((my_CRTTrack.plane1)%10,(my_CRTTrack.plane2)%10);
     hTlength->Fill(my_CRTTrack.length);
     double time_diff = my_CRTTrack.ts0_ns_h1-my_CRTTrack.ts0_ns_h2;
     double time_diffABS = fabs(time_diff);
@@ -535,6 +768,24 @@ void TrackDump::beginJob()
   fTree->Branch("hit_strip2",hit_strip2,"hit_strip2[nCRThits]/I");
   fTree->Branch("hit_pe1",hit_pe1,"hit_pe1[nCRThits]/D");
   fTree->Branch("hit_pe2",hit_pe2,"hit_pe2[nCRThits]/D");
+  fTree->Branch("hit_sipm1a",hit_sipm1a,"hit_sipm1a[nCRThits]/D");
+  fTree->Branch("hit_sipm1b",hit_sipm1b,"hit_sipm1b[nCRThits]/D");
+  fTree->Branch("hit_sipm2a",hit_sipm2a,"hit_sipm2a[nCRThits]/D");
+  fTree->Branch("hit_sipm2b",hit_sipm2b,"hit_sipm2b[nCRThits]/D");
+  fTree->Branch("hit_mcflag",hit_mcflag,"hit_mcflag[nCRThits]/I");
+  // CRT tzeros
+  fTree->Branch("nCRTtzeros",&nCRTtzeros,"nCRTtzeros/I");
+  fTree->Branch("tz_time_s",tz_time_s,"tz_time_s[nCRTtzeros]/D");
+  fTree->Branch("tz_time0",tz_time0,"tz_time0[nCRTtzeros]/D");
+  fTree->Branch("tz_time1",tz_time1,"tz_time1[nCRTtzeros]/D");
+  fTree->Branch("tz_hits0",tz_hits0,"tz_hits0[nCRTtzeros]/I");
+  fTree->Branch("tz_hits1",tz_hits1,"tz_hits1[nCRTtzeros]/I");
+  fTree->Branch("tz_hits2",tz_hits2,"tz_hits2[nCRTtzeros]/I");
+  fTree->Branch("tz_hits3",tz_hits3,"tz_hits3[nCRTtzeros]/I");
+  fTree->Branch("tz_pes0",tz_pes0,"tz_pes0[nCRTtzeros]/D");
+  fTree->Branch("tz_pes1",tz_pes1,"tz_pes1[nCRTtzeros]/D");
+  fTree->Branch("tz_pes2",tz_pes2,"tz_pes2[nCRTtzeros]/D");
+  fTree->Branch("tz_pes3",tz_pes3,"tz_pes3[nCRTtzeros]/D");
   // CRT tracks
   fTree->Branch("nCRTtracks",&nCRTtracks,"nCRTtracks/I");
   fTree->Branch("ct_theta",ct_theta,"ct_theta[nCRTtracks]/D");
@@ -567,8 +818,25 @@ void TrackDump::beginJob()
   fTree->Branch("trktheta",trktheta,"trktheta[nTPCtracks]/D");
   fTree->Branch("trkphi",trkphi,"trkphi[nTPCtracks]/D");
   fTree->Branch("trklen",trklen,"trklen[nTPCtracks]/D");
+  fTree->Branch("tzeroACPT",tzeroACPT,"tzeroACPT[nTPCtracks]/D");
+  fTree->Branch("tzeroCRT",tzeroCRT,"tzeroCRT[nTPCtracks]/D");
+  fTree->Branch("planeCRT",planeCRT,"planeCRT[nTPCtracks]/I");
+  fTree->Branch("feb1CRT",feb1CRT,"feb1CRT[nTPCtracks]/I");
+  fTree->Branch("feb2CRT",feb2CRT,"feb2CRT[nTPCtracks]/I");
+  fTree->Branch("pes1CRT",pes1CRT,"pes1CRT[nTPCtracks]/D");
+  fTree->Branch("pes2CRT",pes2CRT,"pes2CRT[nTPCtracks]/D");
+  fTree->Branch("xCRT",xCRT,"xCRT[nTPCtracks]/D");
+  fTree->Branch("yCRT",yCRT,"yCRT[nTPCtracks]/D");
+  fTree->Branch("zCRT",zCRT,"zCRT[nTPCtracks]/D");
+  fTree->Branch("angCRT",angCRT,"angCRT[nTPCtracks]/D");
   }
-
+  if (fSavePMTFlashInfo) {
+    fTree->Branch("nPMTflash",&nPMTflash,"nPMTflash/I");
+    fTree->Branch("fl_time",fl_time,"fl_time[nPMTflash]/D");
+    fTree->Branch("fl_pe",fl_pe,"fl_pe[nPMTflash]/D");
+    fTree->Branch("fl_y",fl_y,"fl_y[nPMTflash]/D");
+    fTree->Branch("fl_z",fl_z,"fl_z[nPMTflash]/D");
+  }
 
   hplavspla = tfs->make<TH2F>("hplavspla","PlanevsPlane",4,0,4,4,0,4);
   hplavspla->GetXaxis()->SetTitle("Plane (0=Bottom, 1=FT, 2=Pipe, 3=Top)");
@@ -680,6 +948,7 @@ void TrackDump::ResetVars()
     hit_strip2[i] = -1;
     hit_pe1[i] = -999;
     hit_pe2[i] = -999;
+    hit_mcflag[i] = -1;
   }
 
 
@@ -717,6 +986,18 @@ void TrackDump::ResetVars()
     trktheta[i]=-9999.;
     trkphi[i]=-9999.;
     trklen[i]=-9999.;
+    tzeroACPT[i]=-9999.;
+    tzeroCRT[i]=-9999.;
+  //  double dcaCRT[kMaxTPCtracks];
+    planeCRT[i]=-1;
+    feb1CRT[i]=-1;
+    feb2CRT[i]=-1;
+    pes1CRT[i]=-9999.;
+    pes2CRT[i]=-9999.;
+    xCRT[i]=-9999.;
+    yCRT[i]=-9999.;
+    zCRT[i]=-9999.;
+    angCRT[i]=-9999.;
   }
 }
 

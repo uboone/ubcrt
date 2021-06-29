@@ -107,6 +107,10 @@ CRTTzeroProducer::CRTTzeroProducer(fhicl::ParameterSet const & p)
 void CRTTzeroProducer::produce(art::Event & evt)
 {
   // Implementation of required member function here.
+
+  //Products 
+  std::unique_ptr<std::vector<crt::CRTTzero> > CRTTzeroCol(new std::vector<crt::CRTTzero>);
+  std::unique_ptr<art::Assns<crt::CRTTzero, crt::CRTHit>> outputHits(new art::Assns<crt::CRTTzero, crt::CRTHit>);
   
   art::Handle< std::vector<crt::CRTHit> > rawHandle;
   evt.getByLabel(data_label_, rawHandle);   
@@ -116,18 +120,17 @@ void CRTTzeroProducer::produce(art::Event & evt)
               << ", event " << evt.event() << " has zero"
               << " CRTHits " << " in module " << data_label_ << std::endl;
     std::cout << std::endl;
+
+    if(store_tzero_ == 1) {
+      evt.put(std::move(CRTTzeroCol));
+      evt.put(std::move(outputHits));
+    }
     return;
   }
   
   //get better access to the data               
   std::vector<crt::CRTHit> const& CRTHitCollection(*rawHandle);
 
-  //CRTTzero collection on this event                                                              
-  std::unique_ptr<std::vector<crt::CRTTzero> > CRTTzeroCol(new std::vector<crt::CRTTzero>);
-  
-
-  // Output collections  
-  std::unique_ptr<art::Assns<crt::CRTTzero, crt::CRTHit>> outputHits(new art::Assns<crt::CRTTzero, crt::CRTHit>);
   //  auto outputHits    = std::make_unique<art::Assns<crt::CRTTzero, crt::CRTHit>>();
   // need later version of art (later than v2_05_01) to use PtrMaker.
   // do it the old-fashioned way instead
@@ -139,11 +142,14 @@ void CRTTzeroProducer::produce(art::Event & evt)
  
 
   int N_CRTHits = CRTHitCollection.size();
-  //  std::cout << "number of crt hits " << N_CRTHits << std::endl;
-  int iflag[1000] = {};
-
+  std::vector<int> iflag(N_CRTHits, 0);
   uint planeA, planeB;
 
+  if (verbose_)
+    {
+      std::cout<<"Number of hits "<< N_CRTHits <<"\n";
+      //  if (N_CRTHits > 1000) std::cout<<"This is going to segfault cause I'm getting out of the array range \n"<< N_CRTHits <<"\n";
+    }
 
   for(int  i = 0; i < N_CRTHits; i++) {//A 
         
@@ -167,7 +173,7 @@ void CRTTzeroProducer::produce(art::Event & evt)
       // 
       CRTcanTzero.ts0_s=CRTHiteventA.ts0_s;
       CRTcanTzero.ts0_s_err=0;
-      planeA = CRTHiteventA.plane;
+      planeA = CRTHiteventA.plane%10;
       CRTcanTzero.nhits[planeA]=1;      
       int icount=1;
       CRTcanTzero.pes[planeA]=CRTHiteventA.peshit;
@@ -181,7 +187,7 @@ void CRTTzeroProducer::produce(art::Event & evt)
 	  if( (time_s_A == time_s_B) && (abs(time_diff)<max_time_difference_)  ){//D
 	    art::Ptr<crt::CRTHit> hptr = hitPtrMaker(j);
 	    CRTHitCol.push_back(hptr);
-	    planeB = CRTHiteventB.plane; 
+	    planeB = CRTHiteventB.plane%10; 
 	    CRTcanTzero.nhits[planeB]+=1;
 	    CRTcanTzero.pes[planeB]+=CRTHiteventB.peshit;
 	    iflag[j]=1;

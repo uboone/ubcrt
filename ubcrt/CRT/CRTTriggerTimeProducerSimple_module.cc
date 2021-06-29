@@ -1,5 +1,5 @@
 /**
- *  @file   larpandora/LArPandoraEventBuilding/CRTTriggerProducer_module.cc
+ *  @file   larpandora/LArPandoraEventBuilding/CRTTriggerProducerSimple_module.cc
  *
  *  @brief  module for lar pandora external event building
  */
@@ -16,7 +16,10 @@
 #include "canvas/Persistency/Common/FindOneP.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
-#include "art_root_io/TFileService.h"
+//#include "art_root_io/TFileService.h"
+#include "art/Framework/Services/Optional/TFileService.h" 
+#include "art/Framework/Services/Optional/TFileDirectory.h"
+#include "art/Framework/Services/Registry/ServiceHandle.h"
 
 #include "larpandora/LArPandoraInterface/LArPandoraHelper.h"
 #include "larpandora/LArPandoraEventBuilding/Slice.h"
@@ -46,6 +49,7 @@
 #include "Pandora/PdgTable.h"
 
 #include "TTree.h"
+#include "TH1D.h"
 #include "TBenchmark.h"
 #include "TRandom.h"
 #include "TSystem.h"
@@ -56,15 +60,15 @@
 namespace lar_pandora
 {
 
-class CRTTriggerProducer : public art::EDProducer
+class CRTTriggerProducerSimple : public art::EDProducer
 {
 public:
-    explicit CRTTriggerProducer(fhicl::ParameterSet const & pset);
+    explicit CRTTriggerProducerSimple(fhicl::ParameterSet const & pset);
     
-    CRTTriggerProducer(CRTTriggerProducer const &) = delete;
-    CRTTriggerProducer(CRTTriggerProducer &&) = delete;
-    CRTTriggerProducer & operator = (CRTTriggerProducer const &) = delete;
-    CRTTriggerProducer & operator = (CRTTriggerProducer &&) = delete;
+    CRTTriggerProducerSimple(CRTTriggerProducerSimple const &) = delete;
+    CRTTriggerProducerSimple(CRTTriggerProducerSimple &&) = delete;
+    CRTTriggerProducerSimple & operator = (CRTTriggerProducerSimple const &) = delete;
+    CRTTriggerProducerSimple & operator = (CRTTriggerProducerSimple &&) = delete;
 
     void produce(art::Event &evt) override;
     
@@ -104,7 +108,7 @@ private:
     int crtt0_plane = -1;
     
     TTree * my_event_trigger;
-    
+  TH1D* hQuick;
     int flash_tot = 0;
     int flash_counter = 0;
     int t0_counter = 0;
@@ -120,21 +124,18 @@ private:
     
     int verbose_;
     int saveTTree_ = 0;
-    int run_MC = 0;
     int store_t0_ = 1;
     //double flash_crt_window = 1.0;
 
     std::string                         m_inputProducerLabel;  ///< Label for the Pandora instance that produced the collections we want to consolidated
     std::string                         data_label_DAQHeader_;
-    std::string                         data_label_flash_beam_;
     std::string                         data_label_flash_cosmic_;
     std::string                         data_label_crthit_;
-    std::string                         data_label_crtT0asso_;
-    std::string                         trackProducerLabel;
-    // pandora functions
+  double fTimeZeroOffset;
+
 };
 
-DEFINE_ART_MODULE(CRTTriggerProducer)
+DEFINE_ART_MODULE(CRTTriggerProducerSimple)
 
 } // namespace lar_pandora
 
@@ -146,7 +147,7 @@ DEFINE_ART_MODULE(CRTTriggerProducer)
 namespace lar_pandora
 {
 
-CRTTriggerProducer::CRTTriggerProducer(fhicl::ParameterSet const &pset) :
+CRTTriggerProducerSimple::CRTTriggerProducerSimple(fhicl::ParameterSet const &pset) :
   EDProducer(pset)
 {
     //control variables
@@ -154,12 +155,9 @@ CRTTriggerProducer::CRTTriggerProducer(fhicl::ParameterSet const &pset) :
     saveTTree_ = pset.get<int>("saveTTree");
     //datalabels
     data_label_DAQHeader_ = pset.get<std::string>("data_label_DAQHeader");
-    data_label_flash_beam_ = pset.get<std::string>("data_label_flash_beam");
     data_label_flash_cosmic_ = pset.get<std::string>("data_label_flash_cosmic");
     data_label_crthit_ = pset.get<std::string>("data_label_crthit");
-    data_label_crtT0asso_ = pset.get<std::string>("data_label_crtT0asso");
-    
-    trackProducerLabel = pset.get<std::string>("TrackProducerLabel");
+    fTimeZeroOffset = pset.get<double>("TimeZeroOffset",69000.);
     // crt variables
     store_t0_ = pset.get<int>("store_t0",0);
 
@@ -170,103 +168,82 @@ CRTTriggerProducer::CRTTriggerProducer(fhicl::ParameterSet const &pset) :
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-void CRTTriggerProducer::produce(art::Event &evt)
+void CRTTriggerProducerSimple::produce(art::Event &evt)
 {
+  // produce anab::t0 object to tag event
+  std::unique_ptr<std::vector<anab::T0> > T0_collection(new std::vector<anab::T0>);
   reset_tree_event();
-  std::cout << "Prozessing event nr: " << event_counter << std::endl;
+  if(verbose_!=0) std::cout << "Prozessing event nr: " << event_counter << std::endl;
   if(verbose_!=0) std::cout << "Run " << evt.run() << ", subrun " << evt.subRun() << std::endl;
   frunNum    = evt.run();
   fsubRunNum = evt.subRun();
   fEvtNum = evt.event();
   event_counter++;
+
   
+  if (data_label_DAQHeader_ != "") { 
   art::Handle< raw::DAQHeaderTimeUBooNE > rawHandle_DAQHeader;
   evt.getByLabel(data_label_DAQHeader_, rawHandle_DAQHeader);
+  if(!rawHandle_DAQHeader.isValid()) {  
+    evt.put(std::move(T0_collection));
+    std::cerr << "\033[93m[ERROR]\033[00m ... could not locate DAQ header in CRTTriggerProducerSimple Module." << std::endl;  
+    return;
+  }
   raw::DAQHeaderTimeUBooNE const& my_DAQHeader(*rawHandle_DAQHeader);
   art::Timestamp evtTimeGPS = my_DAQHeader.gps_time();  
   fTriTim_sec = evtTimeGPS.timeHigh();
   fTriTim_nsec = evtTimeGPS.timeLow();
-  
+  }
   art::Timestamp evtTime = evt.time();
   fTimeHigh = evtTime.timeHigh();
   fTimeLow = evtTime.timeLow();
   
-  art::Handle< std::vector<recob::OpFlash> > rawHandle_OpFlashBeam;
-  evt.getByLabel(data_label_flash_beam_, rawHandle_OpFlashBeam);
-  std::vector<recob::OpFlash> const& OpFlashCollectionBeam(*rawHandle_OpFlashBeam);
-  if(verbose_!=0) std::cout << "There are: " << OpFlashCollectionBeam.size() << " in the beamflash collection" << std::endl;
-  
   art::Handle< std::vector<recob::OpFlash> > rawHandle_OpFlashCosmic;
-  evt.getByLabel(data_label_flash_cosmic_, rawHandle_OpFlashCosmic);
+  evt.getByLabel(data_label_flash_cosmic_, rawHandle_OpFlashCosmic);  
+  
+
   std::vector<recob::OpFlash> const& OpFlashCollectionCosmic(*rawHandle_OpFlashCosmic);
   if(verbose_!=0) std::cout << "There are: " << OpFlashCollectionCosmic.size() << " in the cosmic flash collection" << std::endl;
 
-  flash_tot = OpFlashCollectionCosmic.size() + OpFlashCollectionBeam.size();
-  
-  art::Handle<std::vector<recob::Track> > rawHandle_TPCtrack;
-  evt.getByLabel(trackProducerLabel, rawHandle_TPCtrack);
-  
-  std::vector<recob::Track> const& TrackCollection(*rawHandle_TPCtrack); 
-  
-  art::FindMany<crt::CRTHit> trk_crt_assn_v(rawHandle_TPCtrack, evt, data_label_crtT0asso_);
-  art::FindMany<anab::T0> trk_T0_assn_v(rawHandle_TPCtrack, evt, data_label_crtT0asso_);
-  
-  
-  //std::cout<<"T:  TT, flashes: "<<fTriTim_nsec<<","<<OpFlashCollectionCosmic.size()<<"\n";
+  art::Handle< std::vector<crt::CRTHit> > rawHandle_hit;
+  evt.getByLabel(data_label_crthit_, rawHandle_hit); 
 
-  for(std::vector<int>::size_type i = 0; i != TrackCollection.size(); i++) {    //start loop over tpc tracks
-    reset_tree();
-    const std::vector<const crt::CRTHit*>& CRTHit_v = trk_crt_assn_v.at(i);
-    for(std::vector<int>::size_type j = 0; j != CRTHit_v.size(); j++) {//CRThitloop
-      nr_crthit++;
-      crthit_ts0 = CRTHit_v.at(j)->ts0_ns;
-      crthit_ts1 = CRTHit_v.at(j)->ts1_ns;
-      adc_length = CRTHit_v.at(j)->pesmap.begin()->second.size();
-      crt_adc = CRTHit_v.at(j)->peshit;
-      t0_counter++;
-    } //end crthit loop
-    const std::vector<const anab::T0*>& T0_v = trk_T0_assn_v.at(i);
-    for(std::vector<int>::size_type j = 0; j != T0_v.size(); j++) {//CRTt0 loop
-      crtt0_time = T0_v.at(j)->Time();
-      crtt0_trig = T0_v.at(j)->TriggerType();
-      crtt0_DCA = T0_v.at(j)->TriggerConfidence();
-      crtt0_plane = T0_v.at(j)->TriggerBits();
-      /*
-      for(std::vector<int>::size_type k = 0; k != OpFlashCollectionBeam.size(); k++) {//B
-        recob::OpFlash my_flash = OpFlashCollectionBeam.at(k);
-        if( abs( my_flash.Time() - crtt0_time)<5.0){
-          fAbsTimFla = my_flash.Time();
-          flash_PE = my_flash.TotalPE();
-          flash_y = my_flash.YCenter();
-          flash_z = my_flash.ZCenter();
-          flash_inTime = 1;
-          if(adc_length == 32){
-            double time_diff = fAbsTimFla*1000 - (crthit_ts0 - fTriTim_nsec);
-            flash_crthit_diff.push_back(time_diff);
-            flash_counter++;
-          }
-        }
-      } //B
-      */
+  std::vector<crt::CRTHit> const& CRTHit_v(*rawHandle_hit);
+
+
+  // Needs cleaning
+  std::vector<anab::T0>  T0_v;
+
+  flash_tot = OpFlashCollectionCosmic.size();
+
+  //std::cout<<"S: Offset, TT, t0, crt, flashes:"<<fTimeZeroOffset<<","<<fTriTim_nsec<<","<<T0_v.size() <<","<<CRTHit_v.size()<<","<<OpFlashCollectionCosmic.size()<<"\n";
+
+  for (size_t j = 0; j< CRTHit_v.size(); ++j)
+    {
+      // here I'm calculating a first estimate of the crt hit timing
+      // this entails a fix offset and one coming from the gps
+      crthit_ts0 = (double)CRTHit_v.at(j).ts0_ns; 
+      double crthittime = crthit_ts0 + fTimeZeroOffset - fTriTim_nsec; 
+      
       for(std::vector<int>::size_type k = 0; k != OpFlashCollectionCosmic.size(); k++) {//B
-        recob::OpFlash my_flash = OpFlashCollectionCosmic.at(k);
-        if( abs( my_flash.Time() - crtt0_time)<5.0){
-          fAbsTimFla = my_flash.Time();
-          flash_PE = my_flash.TotalPE();
-          flash_y = my_flash.YCenter();
-          flash_z = my_flash.ZCenter();
-          flash_inTime = 0;
-          if(adc_length == 32){
-            double time_diff = fAbsTimFla*1000 - (crthit_ts0 - fTriTim_nsec);
-            flash_crthit_diff.push_back(time_diff);
-            flash_counter++;
-          }
-          
-        }
-      } //B
-    //if(saveTTree_ == 1) my_event_->Fill();
+	recob::OpFlash my_flash = OpFlashCollectionCosmic.at(k);
+	if( abs( my_flash.Time() - crthittime*0.001)<5.0){
+	  fAbsTimFla = my_flash.Time();
+	  flash_PE = my_flash.TotalPE();
+	  flash_y = my_flash.YCenter();
+	  flash_z = my_flash.ZCenter();
+	  flash_inTime = 0;
+	  if(adc_length == 32){
+	    double time_diff = fAbsTimFla*1000 - (crthit_ts0 - fTriTim_nsec);
+	    flash_crthit_diff.push_back(time_diff);
+	    hQuick->Fill(time_diff);
+	    flash_counter++;
+	  }// Check if this is data... smart!          
+	}// if the CRT and flash time is small, calculate!
+      } // loop on cosmics flashes
     } //end crtt0 loop
-  }//end loop over tpc tracks
+
+  std::cout<<"flash_crthit_diff.size "<<flash_crthit_diff.size()<<"\n";
   // calculation using mean, cut everything outside 1 std
   if(flash_crthit_diff.size()>1){
     double mean_corr = 0;
@@ -311,65 +288,48 @@ void CRTTriggerProducer::produce(art::Event &evt)
   my_event_trigger->Fill();
   
   // rerun over all t0 etc... now with the correction
-  for(std::vector<int>::size_type i = 0; i != TrackCollection.size(); i++) {    //start loop over tpc tracks
-    reset_tree();
-    const std::vector<const crt::CRTHit*>& CRTHit_v = trk_crt_assn_v.at(i);
-    for(std::vector<int>::size_type j = 0; j != CRTHit_v.size(); j++) {//CRThitloop
-      nr_crthit++;
-      crthit_ts0 = CRTHit_v.at(j)->ts0_ns;
-      crthit_ts1 = CRTHit_v.at(j)->ts1_ns;
-      adc_length = CRTHit_v.at(j)->pesmap.begin()->second.size();
-      crt_adc = CRTHit_v.at(j)->peshit;
-      t0_counter++;
-    } //end crthit loop
-    const std::vector<const anab::T0*>& T0_v = trk_T0_assn_v.at(i);
-    for(std::vector<int>::size_type j = 0; j != T0_v.size(); j++) {//CRTt0 loop
-      crtt0_time = T0_v.at(j)->Time();
-      crtt0_trig = T0_v.at(j)->TriggerType();
-      crtt0_DCA = T0_v.at(j)->TriggerConfidence();
-      crtt0_plane = T0_v.at(j)->TriggerBits();
-      /*
-      for(std::vector<int>::size_type k = 0; k != OpFlashCollectionBeam.size(); k++) {//B
-        recob::OpFlash my_flash = OpFlashCollectionBeam.at(k);
-        if( abs( my_flash.Time() - crtt0_time)<5.0){
-          fAbsTimFla = my_flash.Time();
-          flash_PE = my_flash.TotalPE();
-          flash_y = my_flash.YCenter();
-          flash_z = my_flash.ZCenter();
-          flash_inTime = 1;
-        }
-      } //B
-      */
-      for(std::vector<int>::size_type k = 0; k != OpFlashCollectionCosmic.size(); k++) {//B
-        recob::OpFlash my_flash = OpFlashCollectionCosmic.at(k);
-        if( abs( my_flash.Time() - crtt0_time)<5.0){
-          fAbsTimFla = my_flash.Time();
-          flash_PE = my_flash.TotalPE();
-          flash_y = my_flash.YCenter();
-          flash_z = my_flash.ZCenter();
-          flash_inTime = 0;
-          //double time_diff = fAbsTimFla*1000 - (crthit_ts0 - fTriTim_nsec);
-          //flash_crthit_diff.push_back(time_diff);
-          flash_counter++;
-          
-        }
-      } //B
+  reset_tree();
+
+  for(std::vector<int>::size_type j = 0; j != CRTHit_v.size(); j++) {//CRThitloop
+    nr_crthit++;
+    crthit_ts0 = CRTHit_v.at(j).ts0_ns;
+    crthit_ts1 = CRTHit_v.at(j).ts1_ns;
+    adc_length = CRTHit_v.at(j).pesmap.begin()->second.size();
+    crt_adc = CRTHit_v.at(j).peshit;
+    t0_counter++;
+  } //end crthit loop
+  // const std::vector<const anab::T0*>& T0_v = trk_T0_assn_v.at(i);
+  for(std::vector<int>::size_type j = 0; j != T0_v.size(); j++) {//CRTt0 loop
+    crtt0_time  = T0_v.at(j).Time();
+    crtt0_trig  = T0_v.at(j).TriggerType();
+    crtt0_DCA   = T0_v.at(j).TriggerConfidence();
+    crtt0_plane = T0_v.at(j).TriggerBits();
+    
+    for(std::vector<int>::size_type k = 0; k != OpFlashCollectionCosmic.size(); k++) {//B
+      recob::OpFlash my_flash = OpFlashCollectionCosmic.at(k);
+      if( abs( my_flash.Time() - crtt0_time)<5.0){
+	fAbsTimFla = my_flash.Time();
+	flash_PE = my_flash.TotalPE();
+	flash_y = my_flash.YCenter();
+	flash_z = my_flash.ZCenter();
+	flash_inTime = 0;
+	flash_counter++;
+      }
+    } //B
     if(saveTTree_ == 1) my_event_->Fill();
-    } //end crtt0 loop
-  }//end loop over tpc tracks
+  } //end crtt0 loop
   
   
-  
-  // produce anab::t0 object to tag event
-  std::unique_ptr<std::vector<anab::T0> > T0_collection(new std::vector<anab::T0>);
+
+
   
   if(store_t0_ == 1){
     anab::T0 my_t0;
-    my_t0.fTime = crthit_corr_med;  // double, corrected time used median
-    my_t0.fTriggerType = t0_counter;    //unsigned int # of associated CRT hits to tracks
-    my_t0.fTriggerBits = flash_counter;    //int # of matched flashes used...
-    my_t0.fID = flash_tot;             //int # of flashes 
-    my_t0.fTriggerConfidence = crthit_correction; //double, corrected time used mean with outlayer cut
+    my_t0.fTime              = crthit_corr_med;  // double, corrected time used median
+    my_t0.fTriggerType       = t0_counter;       // unsigned int # of associated CRT hits to tracks
+    my_t0.fTriggerBits       = flash_counter;    // int # of matched flashes used...
+    my_t0.fID                = flash_tot;        // int # of flashes 
+    my_t0.fTriggerConfidence = crthit_correction;// double, corrected time used mean with outlayer cut
     T0_collection->emplace_back(my_t0);
     evt.put(std::move(T0_collection));
   }
@@ -378,14 +338,15 @@ void CRTTriggerProducer::produce(art::Event &evt)
 
 
 //------------------------------------------------------------------------------------------------------
-void CRTTriggerProducer::initialize_tmyevent()
+void CRTTriggerProducerSimple::initialize_tmyevent()
 {
   // Implementation of optional member function here.
   std::cout << "Initialize variables and histograms for root tree output" << std::endl;
   // tree stuff for tracks: ////////////////////////////////////////////////////////////////////////////////// 
+  hQuick = tfs->make<TH1D>("hQuick","hQuick",2000,-2000,2000);
+  // event infos                                
   my_event_ = tfs->make<TTree>("my_event","my_event");
   // event infos
-  my_event_->Branch("run_MC", &run_MC, "run_MC/I");
   my_event_->Branch("event_counter", &event_counter, "event_counter/I");
   my_event_->Branch("frunNum", &frunNum, "Run Number/i");
   my_event_->Branch("fsubRunNum", &fsubRunNum, "SubRun Number/i");
@@ -396,7 +357,7 @@ void CRTTriggerProducer::initialize_tmyevent()
   
   my_event_->Branch("evt_time_sec", &fTimeHigh, "evt_time_sec/i");
   my_event_->Branch("evt_time_nsec", &fTimeLow, "evt_time_nsec/i");
-  // Beam flash info
+  //Flash info
   my_event_->Branch("flash_time", &fAbsTimFla, "flash time us/D");
   my_event_->Branch("flash_PE", &flash_PE, "flash_PE ns/D");
   my_event_->Branch("flash_y", &flash_y, "flash_y cm/D");
@@ -439,7 +400,7 @@ void CRTTriggerProducer::initialize_tmyevent()
 }
 
 
-void CRTTriggerProducer::reset_tree()
+void CRTTriggerProducerSimple::reset_tree()
 {
   fAbsTimFla = -1;
   flash_PE = -1;
@@ -456,7 +417,7 @@ void CRTTriggerProducer::reset_tree()
   crtt0_DCA = -1;
   crtt0_plane = -1;
 }
-void CRTTriggerProducer::reset_tree_event()
+void CRTTriggerProducerSimple::reset_tree_event()
 {  
   flash_crthit_diff.clear();
   flash_tot = -1;
@@ -467,33 +428,27 @@ void CRTTriggerProducer::reset_tree_event()
   crthit_corr_med = -1;
 }  
   
-void CRTTriggerProducer::beginJob()
+void CRTTriggerProducerSimple::beginJob()
 {
   // Implementation of optional member function here.
   std::cout << "Starting CRT trigger producer module" << std::endl;
   initialize_tmyevent();
   std::cout << "-------Using the following fcl parameters:-------" << std::endl;
   std::cout << "Pandora label:\t\t" << m_inputProducerLabel << std::endl;
-  std::cout << "CRT T0 asso label:\t" << data_label_crtT0asso_ << std::endl;
-  std::cout << "Beam flash label:\t" << data_label_flash_beam_ << std::endl;
   std::cout << "CRT hit label:\t\t" << data_label_crthit_ << std::endl;
   std::cout << "saveTTree:\t\t" << saveTTree_ << std::endl;
-  std::cout << "run_MC:\t\t\t" << run_MC << std::endl;
   std::cout << "verbose:\t\t\t" << verbose_ << std::endl;
   std::cout << "store_t0:\t\t\t" << store_t0_ << std::endl;
   std::cout << "------------end fcl parameters-------------------" << std::endl;
 
 }
-void CRTTriggerProducer::endJob()
+void CRTTriggerProducerSimple::endJob()
 {
   std::cout << "Ending CRT trigger producer module" << std::endl;
   std::cout << "-------Using the following fcl parameters:-------" << std::endl;
   std::cout << "Pandora label:\t\t" << m_inputProducerLabel << std::endl;
-  std::cout << "CRT T0 asso label:\t" << data_label_crtT0asso_ << std::endl;
-  std::cout << "Beam flash label:\t" << data_label_flash_beam_ << std::endl;
   std::cout << "CRT hit label:\t\t" << data_label_crthit_ << std::endl;
   std::cout << "saveTTree:\t\t" << saveTTree_ << std::endl;
-  std::cout << "run_MC:\t\t\t" << run_MC << std::endl;
   std::cout << "verbose:\t\t\t" << verbose_ << std::endl;
   std::cout << "store_t0:\t\t\t" << store_t0_ << std::endl;
   std::cout << "------------end fcl parameters-------------------" << std::endl;

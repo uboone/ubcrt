@@ -2,7 +2,6 @@
 #  about the FHiCL language, please look at
 #  cdcvs.fnal.gov/redmine/documents/327 , the "FHiCL Quick Start Guide"
 
-
 #include "services_microboone.fcl"
 #include "spacecharge_microboone.fcl"
 #include "microboone_crtreco.fcl"
@@ -28,7 +27,7 @@ physics:
       data_labelhit: "crthitcorr"
       data_label_flash_: "simpleFlashCosmic"
       data_label_DAQHeader_: "daq"
-      data_label_t0CRT: "crttrackmatch"
+      data_label_t0CRT: "trackmatch"
       data_label_t0ACPT: "pandoraCosmicT0Reco"
       HardDelay: 40000            #default is 40000
       TimeZeroOffset: 0 
@@ -41,6 +40,7 @@ physics:
 
   producers:
   {
+      crtsimhitcorr: @local::crtsimhitcorr
       crthitcorr: @local::crtdatahitcorr
       crttzero: @local::crttzero
       crttrack: @local::crttrack
@@ -48,7 +48,7 @@ physics:
    }
    
    a1: [  crt ]
-   p1: [ crthitcorr, crttzero, crttrack, trackmatch ]
+   p1: [ crtsimhitcorr, crthitcorr, crttzero, crttrack, trackmatch ]
    e1: [ out1, rootout ]
    trigger_paths: [p1]
    end_paths: [ a1 ]
@@ -84,12 +84,22 @@ services.DetectorClocksService.InheritClockConfig: false
 physics.producers.crttzero.data_label: "crthitcorr"
 physics.producers.crttrack.data_label: "crthitcorr"
 #
-
-physics.producers.crthitcorr.CrtHitsIn_Label1: "merger"
+# this hit modifier acts only on data hits, and make the alignment corrections to the position
+#   and cam apply a higher threshold if requested 
+physics.producers.crthitcorr.CrtHitsIn_Label1: "crtsimhitcorr"
 physics.producers.crthitcorr.CorrectAlignment: true
 physics.producers.crthitcorr.StripThreshold: 0.0
 physics.producers.crthitcorr.SiPMThreshold: 0.0
 physics.producers.crthitcorr.HitThreshold: 0.0
+#
+# this filter only acts on the simulated CRT hits, which need a higher threshold
+
+physics.producers.crtsimhitcorr.HitThreshold: 0.0
+physics.producers.crtsimhitcorr.StripThreshold: 5.0
+physics.producers.crtsimhitcorr.SiPMThreshold: 0.0
+physics.producers.crtsimhitcorr.PEscaleFactor: -1.0 #-1.0 means skip this (or use 1.0)
+physics.producers.crtsimhitcorr.CrtHitsIn_Label: "mixer"
+physics.producers.crtsimhitcorr.RemoveBottomHits: true
 #
 
 physics.producers.trackmatch.MatchCutTop: 40
@@ -104,3 +114,4 @@ services.SpaceCharge.EnableCalEfieldSCE: true
 services.SpaceCharge.EnableCalSpatialSCE: true
 services.SpaceCharge.RepresentationType: "Voxelized_TH3"
 services.SpaceCharge.CalibrationInputFilename: "SpaceCharge/SCEoffsets_dataDriven_combined_bkwd_Jan18.root"
+
