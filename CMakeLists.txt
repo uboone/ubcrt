@@ -14,7 +14,7 @@
 
 cmake_minimum_required (VERSION 3.12...3.18 FATAL_ERROR)
 
-project(ubcrt LANGUAGES CXX)
+project(ubcrt VERSION 1.18.04 LANGUAGES CXX)
 
 # cetbuildtools contains our cmake modules
 find_package(cetbuildtools REQUIRED)
