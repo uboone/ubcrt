@@ -12,9 +12,9 @@
 #  make package (builds distribution tarfile)
 # ======================================================================
 
-cmake_minimum_required (VERSION 3.12...3.18 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.19 FATAL_ERROR)
 
-project(ubcrt VERSION 1.18.04 LANGUAGES CXX)
+project(ubcrt LANGUAGES CXX)
 
 # cetbuildtools contains our cmake modules
 find_package(cetbuildtools REQUIRED)
