@@ -6,7 +6,6 @@ art_make( LIBRARY_NAME bernfebdaq_BernZMQBinarySource
 	  	 SOURCE_LIBRARIES
 				bernfebdaq_BernZMQBinarySource
 		 		bernfebdaq-core_Overlays
-#				artdaq_ArtModules
 				art_Framework_Core
 				art_Framework_IO_Sources
 				art_Framework_Principal
