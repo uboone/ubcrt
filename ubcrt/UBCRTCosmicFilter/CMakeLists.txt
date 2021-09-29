@@ -5,6 +5,7 @@ endif()
 art_make( BASENAME_ONLY
           DICT_LIBRARIES
                         ${ART_UTILITIES}
+                        messagefacility::MF_MessageLogger
           MODULE_LIBRARIES
                         larpandora_LArPandoraInterface
                         lardataobj_RecoBase
@@ -20,7 +21,7 @@ art_make( BASENAME_ONLY
                         ${ROOT_GEOM}
                         ${ROOT_XMLIO}
                         ${ROOT_GDML}
-                        ${ROOT_BASIC_LIB_LIST}
+
 
         )
 

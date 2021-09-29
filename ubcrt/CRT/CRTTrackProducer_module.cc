@@ -46,6 +46,7 @@
 #include <utility>
 #include <cmath> 
 #include <memory>
+#include <numeric>
 
 namespace bernfebdaq {
   class CRTTrackProducer;
@@ -484,5 +485,3 @@ crt::CRTTrack shcut(CRTavehit ppA,CRTavehit ppB,uint32_t time0s,uint16_t terr)
 
 
 DEFINE_ART_MODULE(bernfebdaq::CRTTrackProducer)
-
-
