@@ -14,7 +14,7 @@
 
 cmake_minimum_required(VERSION 3.19 FATAL_ERROR)
 
-project(ubcrt VERSION 09.31.00 LANGUAGES CXX)
+project(ubcrt VERSION 09.32.00 LANGUAGES CXX)
 
 # cetbuildtools contains our cmake modules
 find_package(cetbuildtools REQUIRED)
@@ -39,7 +39,7 @@ find_ups_product( lardataobj )
 find_ups_product( lardataalg )
 find_ups_product( larpandora )
 find_ups_product( pandora )
-find_ups_boost( v1_53_0 )
+find_ups_boost( )
 find_ups_product( canvas )
 find_ups_product( ubobj )
 find_ups_product( lardata )
