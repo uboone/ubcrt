@@ -12,9 +12,9 @@
 #  make package (builds distribution tarfile)
 # ======================================================================
 
-cmake_minimum_required (VERSION 3.12...3.18 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.19 FATAL_ERROR)
 
-project(ubcrt LANGUAGES CXX)
+project(ubcrt VERSION 09.32.00 LANGUAGES CXX)
 
 # cetbuildtools contains our cmake modules
 find_package(cetbuildtools REQUIRED)
@@ -39,16 +39,17 @@ find_ups_product( lardataobj )
 find_ups_product( lardataalg )
 find_ups_product( larpandora )
 find_ups_product( pandora )
-find_ups_product( cetbuildtools v3_10_00 )
 find_ups_boost( v1_53_0 )
 find_ups_product( canvas )
 find_ups_product( ubevt )
-find_ups_product( ubobj v1_00_00 )
-find_ups_product( lardata v1_00_00 )
-find_ups_product( artdaq_core v1_00_00 )
-find_ups_product( ifdh_art v1_00_00 )
-find_ups_product( gallery v1_00_00 )
-find_ups_product( art v1_00_00 )
+find_ups_boost( )
+find_ups_product( canvas )
+find_ups_product( ubobj )
+find_ups_product( lardata )
+find_ups_product( artdaq_core )
+find_ups_product( ifdh_art )
+find_ups_product( gallery )
+find_ups_product( art )
 find_ups_product(art_root_io)
 find_ups_product( larcore )
 find_ups_product( nutools )
@@ -58,9 +59,6 @@ find_ups_product( nurandom )
 include(ArtDictionary)
 include(ArtMake)
 include(BuildPlugins)
-
-# artdaq_core Utility library
-cet_find_library( ARTDAQ-CORE_UTILITIES NAMES artdaq-core_Utilities PATHS ENV ARTDAQ_CORE_LIB )
 
 # ADD SOURCE CODE SUBDIRECTORIES HERE
 add_subdirectory(ubcrt)

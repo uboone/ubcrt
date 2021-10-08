@@ -3,7 +3,6 @@ art_make( LIBRARY_NAME crt_CRTRawBinarySource
                                 ${FHICLCPP}
                                 art_Persistency_Provenance                              
                  SOURCE_LIBRARIES
-#                               artdaq_ArtModules
                                 art_Framework_Core
                                 art_Framework_IO_Sources
                                 art_Framework_Principal
