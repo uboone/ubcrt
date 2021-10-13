@@ -133,7 +133,7 @@ simple_plugin( CRTDetSim module
         ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR_SERVICE}
         ${MF_MESSAGELOGGER}
 
-        ${CLHEP}
+        CLHEP::CLHEP
         cetlib cetlib_except
 )
 
@@ -153,7 +153,7 @@ simple_plugin(CRTCalibration "module"
         ${MF_MESSAGELOGGER}
 
 
-        ${CLHEP}
+        CLHEP::CLHEP
         cetlib cetlib_except
     BASENAME_ONLY
           bernfebdaq-core_Overlays
@@ -181,7 +181,7 @@ simple_plugin(CRTSimHitProducer "module"
         ${ART_ROOT_IO_TFILESERVICE_SERVICE}
         ${MF_MESSAGELOGGER}
 
-        ${CLHEP}
+        CLHEP::CLHEP
         cetlib cetlib_except
 )
 
@@ -204,7 +204,7 @@ simple_plugin(CRTSimHitCorr "module"
         art_root_io_TFileService_service
         ${MF_MESSAGELOGGER}        
         ${ROOT_BASIC_LIB_LIST}
-        ${CLHEP}
+        CLHEP::CLHEP
         cetlib cetlib_except
     BASENAME_ONLY
 )
@@ -229,7 +229,7 @@ simple_plugin(CRTDataHitCorr "module"
         art_root_io_TFileService_service
         ${MF_MESSAGELOGGER}        
         ${ROOT_BASIC_LIB_LIST}
-        ${CLHEP}
+        CLHEP::CLHEP
         cetlib cetlib_except
     BASENAME_ONLY
 )

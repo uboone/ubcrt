@@ -17,7 +17,7 @@ art_make( BASENAME_ONLY
                         art_Persistency_Provenance
                         ${MF_MESSAGELOGGER}
                         nusimdata_SimulationBase
-                        ${CLHEP}
+                        CLHEP::CLHEP
                         ${ROOT_GEOM}
                         ${ROOT_XMLIO}
                         ${ROOT_GDML}
