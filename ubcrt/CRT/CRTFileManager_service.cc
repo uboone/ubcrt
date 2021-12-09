@@ -16,7 +16,7 @@
 #include "art/Framework/Services/Registry/ServiceMacros.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "boost/date_time/c_local_time_adjustor.hpp"
-#include "IFDH_service.h"
+#include "ifdh_art/IFDHService/IFDH_service.h"
 
 
 namespace {
