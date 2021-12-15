@@ -99,7 +99,7 @@ simple_plugin( CRTFileManager service
         art::Persistency_Common canvas::canvas
         art::Persistency_Provenance canvas::canvas
         art::Utilities canvas::canvas
-        ifdh
+        ifdh::ifdh
         art::Framework_Services_Registry
         messagefacility::MF_MessageLogger
         
