@@ -1,24 +1,24 @@
 art_make( LIBRARY_NAME crt_CRTRawBinarySource
                  LIB_LIBRARIES
-                                ${FHICLCPP}
-                                art_Persistency_Provenance                              
+                                fhiclcpp::fhiclcpp
+                                art::Persistency_Provenance                              
                  SOURCE_LIBRARIES
                                 art_Framework_Core
                                 art_Framework_IO_Sources
-                                art_Framework_Principal
-                                art_Persistency_Provenance
-                                canvas
+                                art::Framework_Principal
+                                art::Persistency_Provenance
+                                canvas::canvas
                                 ${CANVAS_LIB_LIST}
-                                MF_MessageLogger
+                                messagefacility::MF_MessageLogger
                                 ${ROOT_CINTEX}
-                                ${ROOT_RIO}
-                                ${ROOT_CORE}
-                                ${ROOT_NET}
-                                ${ROOT_REFLEX}
-                                cetlib
-                                ${CETLIB_EXCEPT}
+                                ROOT::RIO
+                                ROOT::Core
+                                ROOT::Net
+                                
+                                cetlib::cetlib
+                                cetlib_except::cetlib_except
                                 ${BOOST_LIB}
-                                ${FHICLCPP}
+                                fhiclcpp::fhiclcpp
                  BASENAME_ONLY
                )
 
