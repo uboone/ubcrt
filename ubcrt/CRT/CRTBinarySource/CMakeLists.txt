@@ -17,7 +17,6 @@ art_make( LIBRARY_NAME crt_CRTRawBinarySource
                                 
                                 cetlib::cetlib
                                 cetlib_except::cetlib_except
-                                ${BOOST_LIB}
                                 fhiclcpp::fhiclcpp
                  BASENAME_ONLY
                )

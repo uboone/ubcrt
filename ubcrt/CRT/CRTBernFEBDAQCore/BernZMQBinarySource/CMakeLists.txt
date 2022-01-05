@@ -20,7 +20,6 @@ art_make( LIBRARY_NAME bernfebdaq_BernZMQBinarySource
 				
 				cetlib::cetlib
 				cetlib_except::cetlib_except
-				${BOOST_LIB}
 				fhiclcpp::fhiclcpp
 	         BASENAME_ONLY
 	       )
