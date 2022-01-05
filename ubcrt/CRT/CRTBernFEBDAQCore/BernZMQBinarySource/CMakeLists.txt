@@ -13,7 +13,6 @@ art_make( LIBRARY_NAME bernfebdaq_BernZMQBinarySource
 				canvas::canvas
 				${CANVAS_LIB_LIST}
 				messagefacility::MF_MessageLogger
-				${ROOT_CINTEX}
 				ROOT::RIO
 				ROOT::Core
 				ROOT::Net

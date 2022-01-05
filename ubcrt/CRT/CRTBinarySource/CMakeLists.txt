@@ -10,7 +10,6 @@ art_make( LIBRARY_NAME crt_CRTRawBinarySource
                                 canvas::canvas
                                 ${CANVAS_LIB_LIST}
                                 messagefacility::MF_MessageLogger
-                                ${ROOT_CINTEX}
                                 ROOT::RIO
                                 ROOT::Core
                                 ROOT::Net

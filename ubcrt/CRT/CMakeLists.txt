@@ -203,7 +203,6 @@ simple_plugin(CRTSimHitCorr "module"
         art::Framework_Services_Optional_RandomNumberGenerator_service
         art_root_io_TFileService_service
         messagefacility::MF_MessageLogger        
-        ${ROOT_BASIC_LIB_LIST}
         CLHEP::CLHEP
         cetlib::cetlib cetlib_except
     BASENAME_ONLY
@@ -228,7 +227,6 @@ simple_plugin(CRTDataHitCorr "module"
         art::Framework_Services_Optional_RandomNumberGenerator_service
         art_root_io_TFileService_service
         messagefacility::MF_MessageLogger        
-        ${ROOT_BASIC_LIB_LIST}
         CLHEP::CLHEP
         cetlib::cetlib cetlib_except
     BASENAME_ONLY
@@ -296,7 +294,8 @@ simple_plugin(CRTDataQuality "module"
           art_root_io_tfile_support ROOT::Core
           art::Framework_Services_Registry
 	  art_root_io_TFileService_service
-          ${ROOT_BASIC_LIB_LIST} )
+          ROOT::Tree
+          )
 
 simple_plugin(CRTHitPositionPerModule "module"
              CRT
@@ -354,7 +353,7 @@ simple_plugin(T0recoCRTTrack "module"
           art_root_io_tfile_support ROOT::Core
           art::Framework_Services_Registry
 	  art_root_io_TFileService_service
-          ${ROOT_BASIC_LIB_LIST} )
+          )
 
 simple_plugin(T0recoCRTTrackAnal "module"
             CRT
@@ -362,7 +361,7 @@ simple_plugin(T0recoCRTTrackAnal "module"
           art_root_io_tfile_support ROOT::Core
           art::Framework_Services_Registry
 	  art_root_io_TFileService_service
-          ${ROOT_BASIC_LIB_LIST} )
+          )
 
 simple_plugin(T0recoCRTHit "module"
             CRT
@@ -370,7 +369,7 @@ simple_plugin(T0recoCRTHit "module"
           art_root_io_tfile_support ROOT::Core
           art::Framework_Services_Registry
 	  art_root_io_TFileService_service
-          ${ROOT_BASIC_LIB_LIST} )
+          )
 
 simple_plugin(T0recoCRTAnal "module"
             CRT
@@ -401,7 +400,7 @@ simple_plugin(T0recoCRTHitAnal "module"
           art_root_io_tfile_support ROOT::Core
           art::Framework_Services_Registry
 	  art_root_io_TFileService_service
-          ${ROOT_BASIC_LIB_LIST} )
+          )
 
 
 simple_plugin(T0recoCRTHitAna2 "module"
@@ -410,7 +409,7 @@ simple_plugin(T0recoCRTHitAna2 "module"
           art_root_io_tfile_support ROOT::Core
           art::Framework_Services_Registry
 	  art_root_io_TFileService_service
-          ${ROOT_BASIC_LIB_LIST} )
+          )
 
 simple_plugin(CRTTriggerTimeProducerSimple "module"
             CRT
@@ -418,8 +417,8 @@ simple_plugin(CRTTriggerTimeProducerSimple "module"
           art_root_io_tfile_support ROOT::Core
           art::Framework_Services_Registry
 	  art_root_io_TFileService_service
-          ${ROOT_BASIC_LIB_LIST} )
-
+          ROOT::Tree
+          )
 
 simple_plugin( CRTMerger "module"
   CRT
