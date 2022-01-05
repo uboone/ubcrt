@@ -190,22 +190,22 @@ simple_plugin(CRTSimHitCorr "module"
         larcore_Geometry_Geometry_service
 	  CRT
 	  CRTData
-	          ${ART_FRAMEWORK_CORE}
-        	  ${ART_FRAMEWORK_IO_SOURCES}
-        	  ${ART_FRAMEWORK_PRINCIPAL}
-        art_Persistency_Common canvas
-        art_Persistency_Provenance canvas
-        art_Utilities canvas
+	          art::Framework_Core
+        	  art::Framework_IO_Sources
+        	  art::Framework_Principal
+        art::Persistency_Common canvas
+        art::Persistency_Provenance canvas
+        art::Utilities canvas
         lardata_DetectorInfoServices_DetectorClocksServiceStandard_service
-        nurandom_RandomUtils_NuRandomService_service
-        art_root_io_tfile_support ${ROOT_CORE}
-        ${ART_FRAMEWORK_SERVICES_REGISTRY}
-        ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR_SERVICE}
+        nurandom::RandomUtils_NuRandomService_service
+        art_root_io_tfile_support ROOT::Core
+        art::Framework_Services_Registry
+        art::Framework_Services_Optional_RandomNumberGenerator_service
         art_root_io_TFileService_service
-        ${MF_MESSAGELOGGER}        
+        messagefacility::MF_MessageLogger        
         ${ROOT_BASIC_LIB_LIST}
         CLHEP::CLHEP
-        cetlib cetlib_except
+        cetlib::cetlib cetlib_except
     BASENAME_ONLY
 )
 
@@ -215,22 +215,22 @@ simple_plugin(CRTDataHitCorr "module"
         larcore_Geometry_Geometry_service
 	  CRT
 	  CRTData
-	          ${ART_FRAMEWORK_CORE}
-        	  ${ART_FRAMEWORK_IO_SOURCES}
-        	  ${ART_FRAMEWORK_PRINCIPAL}
-        art_Persistency_Common canvas
-        art_Persistency_Provenance canvas
-        art_Utilities canvas
+	          art::Framework_Core
+        	  art::Framework_IO_Sources
+        	  art::Framework_Principal
+        art::Persistency_Common canvas
+        art::Persistency_Provenance canvas
+        art::Utilities canvas
         lardata_DetectorInfoServices_DetectorClocksServiceStandard_service
-        nurandom_RandomUtils_NuRandomService_service
- 	art_root_io_tfile_support ${ROOT_CORE}
-        ${ART_FRAMEWORK_SERVICES_REGISTRY}
-        ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR_SERVICE}
+        nurandom::RandomUtils_NuRandomService_service
+ 	art_root_io_tfile_support ROOT::Core
+        art::Framework_Services_Registry
+        art::Framework_Services_Optional_RandomNumberGenerator_service
         art_root_io_TFileService_service
-        ${MF_MESSAGELOGGER}        
+        messagefacility::MF_MessageLogger        
         ${ROOT_BASIC_LIB_LIST}
         CLHEP::CLHEP
-        cetlib cetlib_except
+        cetlib::cetlib cetlib_except
     BASENAME_ONLY
 )
 
@@ -293,8 +293,8 @@ simple_plugin(CRTDataQuality "module"
             CRT
 	  bernfebdaq-core_Overlays
 	  lardataobj_RecoBase
-          art_root_io_tfile_support ${ROOT_CORE}
-          art_Framework_Services_Registry
+          art_root_io_tfile_support ROOT::Core
+          art::Framework_Services_Registry
 	  art_root_io_TFileService_service
           ${ROOT_BASIC_LIB_LIST} )
 
@@ -351,24 +351,24 @@ simple_plugin(T0recoCRT "module"
 simple_plugin(T0recoCRTTrack "module"
             CRT
           bernfebdaq-core_Overlays
-          art_root_io_tfile_support ${ROOT_CORE}
-          art_Framework_Services_Registry
+          art_root_io_tfile_support ROOT::Core
+          art::Framework_Services_Registry
 	  art_root_io_TFileService_service
           ${ROOT_BASIC_LIB_LIST} )
 
 simple_plugin(T0recoCRTTrackAnal "module"
             CRT
           bernfebdaq-core_Overlays
-          art_root_io_tfile_support ${ROOT_CORE}
-          art_Framework_Services_Registry
+          art_root_io_tfile_support ROOT::Core
+          art::Framework_Services_Registry
 	  art_root_io_TFileService_service
           ${ROOT_BASIC_LIB_LIST} )
 
 simple_plugin(T0recoCRTHit "module"
             CRT
           bernfebdaq-core_Overlays
-          art_root_io_tfile_support ${ROOT_CORE}
-          art_Framework_Services_Registry
+          art_root_io_tfile_support ROOT::Core
+          art::Framework_Services_Registry
 	  art_root_io_TFileService_service
           ${ROOT_BASIC_LIB_LIST} )
 
@@ -398,8 +398,8 @@ simple_plugin(CRTTriggerTimeProducer "module"
 simple_plugin(T0recoCRTHitAnal "module"
             CRT
           bernfebdaq-core_Overlays
-          art_root_io_tfile_support ${ROOT_CORE}
-          art_Framework_Services_Registry
+          art_root_io_tfile_support ROOT::Core
+          art::Framework_Services_Registry
 	  art_root_io_TFileService_service
           ${ROOT_BASIC_LIB_LIST} )
 
@@ -407,16 +407,16 @@ simple_plugin(T0recoCRTHitAnal "module"
 simple_plugin(T0recoCRTHitAna2 "module"
             CRT
           bernfebdaq-core_Overlays
-          art_root_io_tfile_support ${ROOT_CORE}
-          art_Framework_Services_Registry
+          art_root_io_tfile_support ROOT::Core
+          art::Framework_Services_Registry
 	  art_root_io_TFileService_service
           ${ROOT_BASIC_LIB_LIST} )
 
 simple_plugin(CRTTriggerTimeProducerSimple "module"
             CRT
           bernfebdaq-core_Overlays
-          art_root_io_tfile_support ${ROOT_CORE}
-          art_Framework_Services_Registry
+          art_root_io_tfile_support ROOT::Core
+          art::Framework_Services_Registry
 	  art_root_io_TFileService_service
           ${ROOT_BASIC_LIB_LIST} )
 
@@ -430,7 +430,6 @@ simple_plugin( CRTMerger "module"
 
   art::Utilities
   art::Framework_Services_Registry
-  ${ART_FRAMEWORK_SERVICES_SYSTEM_FILECATALOGMETADATA_SERVICE}
   ##${ARTDAQ_CORE}
   fhiclcpp::fhiclcpp
   messagefacility::MF_MessageLogger

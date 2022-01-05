@@ -6,8 +6,8 @@ art_make( LIBRARY_NAME bernfebdaq_BernZMQBinarySource
 	  	 SOURCE_LIBRARIES
 				bernfebdaq_BernZMQBinarySource
 		 		bernfebdaq-core_Overlays
-				art_Framework_Core
-				art_Framework_IO_Sources
+				art::Framework_Core
+				art::Framework_IO_Sources
 				art::Framework_Principal
 				art::Persistency_Provenance
 				canvas::canvas
