@@ -109,7 +109,7 @@ simple_plugin( CRTFileManager service
         art::Framework_Core
         art::Framework_IO_Sources
         art::Framework_Principal
-        gallery
+        gallery::gallery
         art::Persistency_Common
         art::Persistency_Provenance
         art::Utilities
@@ -449,9 +449,8 @@ simple_plugin( CRTMerger "module"
   ##${ARTDAQ_CORE}
   fhiclcpp::fhiclcpp
   messagefacility::MF_MessageLogger
-  ${GALLERY}
   ubobj_CRT
-  gallery
+  gallery::gallery
   cetlib::cetlib
   cetlib_except::cetlib_except
 )
