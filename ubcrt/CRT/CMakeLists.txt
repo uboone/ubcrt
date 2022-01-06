@@ -64,7 +64,8 @@ art_make( BASENAME_ONLY
         messagefacility::MF_MessageLogger
         fhiclcpp::fhiclcpp
         ROOT::Geom
-        cetlib::cetlib cetlib_except
+        cetlib::cetlib
+        cetlib_except::cetlib_except
 )
 
 art_make_library(
@@ -81,7 +82,8 @@ art_make_library(
         fhiclcpp::fhiclcpp
 
         ROOT::Geom
-        cetlib::cetlib cetlib_except
+        cetlib::cetlib
+        cetlib_except::cetlib_except
 )
 
 simple_plugin( CRTGeometryHelper service
@@ -97,7 +99,8 @@ simple_plugin( CRTGeometryHelper service
         messagefacility::MF_MessageLogger
 
 
-        cetlib::cetlib cetlib_except
+        cetlib::cetlib
+        cetlib_except::cetlib_except
 )
 
 simple_plugin( CRTFileManager service
@@ -113,7 +116,8 @@ simple_plugin( CRTFileManager service
         messagefacility::MF_MessageLogger
         
 
-        cetlib::cetlib cetlib_except
+        cetlib::cetlib
+        cetlib_except::cetlib_except
         Boost::date_time
     BASENAME_ONLY
 )
@@ -134,7 +138,8 @@ simple_plugin( CRTDetSim module
         messagefacility::MF_MessageLogger
 
         CLHEP::CLHEP
-        cetlib::cetlib cetlib_except
+        cetlib::cetlib
+        cetlib_except::cetlib_except
 )
 
 simple_plugin(CRTCalibration "module"
@@ -154,7 +159,8 @@ simple_plugin(CRTCalibration "module"
 
 
         CLHEP::CLHEP
-        cetlib::cetlib cetlib_except
+        cetlib::cetlib
+        cetlib_except::cetlib_except
     BASENAME_ONLY
           bernfebdaq-core_Overlays
           art::Framework_Services_Registry
@@ -182,7 +188,8 @@ simple_plugin(CRTSimHitProducer "module"
         messagefacility::MF_MessageLogger
 
         CLHEP::CLHEP
-        cetlib::cetlib cetlib_except
+        cetlib::cetlib
+        cetlib_except::cetlib_except
 )
 
 simple_plugin(CRTSimHitCorr "module"
@@ -204,7 +211,8 @@ simple_plugin(CRTSimHitCorr "module"
         art_root_io_TFileService_service
         messagefacility::MF_MessageLogger        
         CLHEP::CLHEP
-        cetlib::cetlib cetlib_except
+        cetlib::cetlib
+        cetlib_except::cetlib_except
     BASENAME_ONLY
 )
 
@@ -228,7 +236,8 @@ simple_plugin(CRTDataHitCorr "module"
         art_root_io_TFileService_service
         messagefacility::MF_MessageLogger        
         CLHEP::CLHEP
-        cetlib::cetlib cetlib_except
+        cetlib::cetlib
+        cetlib_except::cetlib_except
     BASENAME_ONLY
 )
 
@@ -435,7 +444,8 @@ simple_plugin( CRTMerger "module"
   ${GALLERY}
   ubobj_CRT
   gallery
-  cetlib::cetlib cetlib_except
+  cetlib::cetlib
+  cetlib_except::cetlib_except
 )
 
 simple_plugin( CRTFlashAna "module"
@@ -453,7 +463,8 @@ simple_plugin( CRTFlashAna "module"
   art::Utilities canvas::canvas
   messagefacility::MF_MessageLogger
   
-  cetlib::cetlib cetlib_except
+  cetlib::cetlib
+  cetlib_except::cetlib_except
 
 )
 
