@@ -55,9 +55,10 @@ art_make( BASENAME_ONLY
         art::Framework_Core
         art::Framework_IO_Sources
         art::Framework_Principal
-        art::Persistency_Common canvas::canvas
-        art::Persistency_Provenance canvas::canvas
-        art::Utilities canvas::canvas
+        art::Persistency_Common
+        art::Persistency_Provenance
+        art::Utilities
+        canvas::canvas
         lardataobj_RecoBase
         lardataobj_AnalysisBase
         art::Framework_Services_Registry
@@ -92,9 +93,10 @@ simple_plugin( CRTGeometryHelper service
         art::Framework_Core
         art::Framework_IO_Sources
         art::Framework_Principal
-        art::Persistency_Common canvas::canvas
-        art::Persistency_Provenance canvas::canvas
-        art::Utilities canvas::canvas
+        art::Persistency_Common
+        art::Persistency_Provenance
+        art::Utilities
+        canvas::canvas
         art::Framework_Services_Registry
         messagefacility::MF_MessageLogger
 
@@ -108,9 +110,10 @@ simple_plugin( CRTFileManager service
         art::Framework_IO_Sources
         art::Framework_Principal
         gallery
-        art::Persistency_Common canvas::canvas
-        art::Persistency_Provenance canvas::canvas
-        art::Utilities canvas::canvas
+        art::Persistency_Common
+        art::Persistency_Provenance
+        art::Utilities
+        canvas::canvas
         ifdh::ifdh
         art::Framework_Services_Registry
         messagefacility::MF_MessageLogger
@@ -128,9 +131,10 @@ simple_plugin( CRTDetSim module
         art::Framework_Core
         art::Framework_IO_Sources
         art::Framework_Principal
-        art::Persistency_Common canvas::canvas
-        art::Persistency_Provenance canvas::canvas
-        art::Utilities canvas::canvas
+        art::Persistency_Common
+        art::Persistency_Provenance
+        art::Utilities
+        canvas::canvas
         lardata_DetectorInfoServices_DetectorClocksServiceStandard_service
         nurandom::RandomUtils_NuRandomService_service
         art::Framework_Services_Registry
@@ -148,9 +152,10 @@ simple_plugin(CRTCalibration "module"
         art::Framework_Core
         art::Framework_IO_Sources
         art::Framework_Principal
-        art::Persistency_Common canvas::canvas
-        art::Persistency_Provenance canvas::canvas
-        art::Utilities canvas::canvas
+        art::Persistency_Common
+        art::Persistency_Provenance
+        art::Utilities
+        canvas::canvas
         lardata_DetectorInfoServices_DetectorClocksServiceStandard_service
       nurandom::RandomUtils_NuRandomService_service
         art::Framework_Services_Registry
@@ -177,9 +182,10 @@ simple_plugin(CRTSimHitProducer "module"
                   art::Framework_Core
                   art::Framework_IO_Sources
                   art::Framework_Principal
-        art::Persistency_Common canvas::canvas
-        art::Persistency_Provenance canvas::canvas
-        art::Utilities canvas::canvas
+        art::Persistency_Common
+        art::Persistency_Provenance
+        art::Utilities
+        canvas::canvas
         lardata_DetectorInfoServices_DetectorClocksServiceStandard_service
         nurandom::RandomUtils_NuRandomService_service
         art::Framework_Services_Registry
@@ -200,9 +206,10 @@ simple_plugin(CRTSimHitCorr "module"
 	          art::Framework_Core
         	  art::Framework_IO_Sources
         	  art::Framework_Principal
-        art::Persistency_Common canvas
-        art::Persistency_Provenance canvas
-        art::Utilities canvas
+        art::Persistency_Common
+        art::Persistency_Provenance
+        art::Utilities
+        canvas::canvas
         lardata_DetectorInfoServices_DetectorClocksServiceStandard_service
         nurandom::RandomUtils_NuRandomService_service
         art_root_io_tfile_support ROOT::Core
@@ -225,9 +232,10 @@ simple_plugin(CRTDataHitCorr "module"
 	          art::Framework_Core
         	  art::Framework_IO_Sources
         	  art::Framework_Principal
-        art::Persistency_Common canvas
-        art::Persistency_Provenance canvas
-        art::Utilities canvas
+        art::Persistency_Common
+        art::Persistency_Provenance
+        art::Utilities
+        canvas::canvas
         lardata_DetectorInfoServices_DetectorClocksServiceStandard_service
         nurandom::RandomUtils_NuRandomService_service
  	art_root_io_tfile_support ROOT::Core
@@ -458,9 +466,10 @@ simple_plugin( CRTFlashAna "module"
   art::Framework_Services_Registry
   art_root_io::TFileService_service
   fhiclcpp::fhiclcpp
-  art::Persistency_Common canvas::canvas
-  art::Persistency_Provenance canvas::canvas
-  art::Utilities canvas::canvas
+  art::Persistency_Common
+  art::Persistency_Provenance
+  art::Utilities
+  canvas::canvas
   messagefacility::MF_MessageLogger
   
   cetlib::cetlib

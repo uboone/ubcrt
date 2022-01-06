@@ -8,7 +8,6 @@ art_make( LIBRARY_NAME crt_CRTRawBinarySource
                                 art::Framework_Principal
                                 art::Persistency_Provenance
                                 canvas::canvas
-                                ${CANVAS_LIB_LIST}
                                 messagefacility::MF_MessageLogger
                                 ROOT::RIO
                                 ROOT::Core
