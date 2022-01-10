@@ -30,17 +30,18 @@ table_fragment_end
 
 product                 version
 ubobj                   v09_39_00
+ubevt                   v09_40_00
 lardata                 v09_07_00
 larpandora              v09_12_00
 gallery                 v1_18_04
 cetbuildtools	        v8_18_09	-	only_for_build
 end_product_list
 
-qualifier      ubobj          lardata        larpandora      gallery        
-c7:debug       c7:debug       c7:debug       c7:debug        c7:debug       
-c7:prof        c7:prof        c7:prof        c7:prof         c7:prof       
-e20:debug      e20:debug      e20:debug      e20:debug       e20:debug
-e20:prof       e20:prof       e20:prof       e20:prof        e20:prof
+qualifier      ubobj          ubevt          lardata        larpandora     gallery        
+c7:debug       c7:debug       c7:debug       c7:debug       c7:debug       c7:debug 
+c7:prof        c7:prof        c7:prof        c7:prof        c7:prof        c7:prof
+e20:debug      e20:debug      e20:debug      e20:debug      e20:debug      e20:debug
+e20:prof       e20:prof       e20:prof       e20:prof       e20:prof       e20:prof
 end_qualifier_list
 
 # Preserve tabs and formatting in emacs and vi / vim:
