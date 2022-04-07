@@ -161,11 +161,10 @@ simple_plugin(CRTCalibration "module"
         art::Framework_Services_Registry
         art::Framework_Services_Optional_RandomNumberGenerator_service
         messagefacility::MF_MessageLogger
-
-
         CLHEP::CLHEP
         cetlib::cetlib
         cetlib_except::cetlib_except
+        ROOT::Tree
     BASENAME_ONLY
           bernfebdaq-core_Overlays
           art::Framework_Services_Registry
