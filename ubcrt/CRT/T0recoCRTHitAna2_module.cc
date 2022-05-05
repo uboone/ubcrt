@@ -16,6 +16,7 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 #include "art/Framework/Services/Registry/ServiceHandle.h"
+#include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom<>()
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardataobj/RecoBase/Track.h"
 #include "lardataobj/RecoBase/OpFlash.h"

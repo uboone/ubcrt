@@ -22,6 +22,7 @@
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/AnalysisBase/T0.h"
 #include "lardataobj/AnalysisBase/CosmicTag.h"
+#include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom<>()
 #include "lardata/Utilities/AssociationUtil.h"
 
 #include <artdaq-core/Data/Fragment.hh>

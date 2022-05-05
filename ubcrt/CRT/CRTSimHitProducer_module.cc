@@ -42,6 +42,7 @@
 #include "lardataobj/Simulation/SimChannel.h"
 #include "lardataobj/Simulation/AuxDetSimChannel.h"
 #include "larcore/Geometry/Geometry.h"
+#include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom<>()
 #include "larcore/Geometry/AuxDetGeometry.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "lardata/Utilities/AssociationUtil.h"

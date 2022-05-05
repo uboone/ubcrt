@@ -32,6 +32,7 @@
 #include "lardataobj/RawData/RawDigit.h"
 #include "lardataobj/Simulation/AuxDetSimChannel.h"
 #include "larcore/Geometry/Geometry.h"
+#include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom<>()
 #include "larcore/Geometry/AuxDetGeometry.h"
 #include "larcorealg/CoreUtils/NumericUtils.h" // util::absDiff()
 #include "lardataalg/DetectorInfo/ElecClock.h"
