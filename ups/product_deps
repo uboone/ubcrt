@@ -29,10 +29,10 @@ table_fragment_end
 # Add the dependent product and version
 
 product                 version
-ubobj                   v09_50_00
-ubevt                   v09_50_00
-lardata                 v09_08_03
-larpandora              v09_12_15
+ubobj                   v09_52_00
+ubevt                   v09_52_00
+lardata                 v09_08_04
+larpandora              v09_13_00
 gallery                 v1_18_04
 cetbuildtools	        v8_18_09	-	only_for_build
 end_product_list
