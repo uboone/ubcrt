@@ -31,8 +31,8 @@ table_fragment_end
 product                 version
 ubobj                   v08_00_00_61
 ubevt                   v08_00_00_62
-lardata                 v08_02_00_10
-larpandora              v08_03_00_16
+lardata                 v08_02_00_11
+larpandora              v08_03_00_17
 gallery                 v1_11_02
 cetbuildtools	        v7_13_02	-	only_for_build
 end_product_list
