@@ -29,8 +29,8 @@ table_fragment_end
 # Add the dependent product and version
 
 product                 version
-ubobj                   v09_61_00
-ubevt                   v09_61_00
+ubobj                   v09_62_00
+ubevt                   v09_62_00
 lardata                 v09_10_01
 larpandora              v09_14_01
 gallery                 v1_18_05
