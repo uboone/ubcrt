@@ -276,13 +276,12 @@ namespace crt{
 	sscanf(name.c_str(),"volAuxDet_Module_%d_strip_%d",&module,&strip);
 	if (fverbose) std::cout << " channel " << adsc.AuxDetID() << " strip " << strip << 
 			" module " << module << " name " << name << std::endl;
-	double world[3] = {x, y, z};
-	double svHitPosLocal[3];
-	adsGeo.WorldToLocal(world, svHitPosLocal);	
+        geo::Point_t const world{x, y, z};
+        auto const svHitPosLocal = adsGeo.toLocalCoords(world);
 
         // Distance to the readout end 
 	double distToReadout=0;
-	if (fModelLongAtten) distToReadout= abs(-adsGeo.HalfHeight() - svHitPosLocal[1]);
+        if (fModelLongAtten) distToReadout= abs(-adsGeo.HalfHeight() - svHitPosLocal.Y());
 
 	// The expected number of PE, using a quadratic model for the distance
 	// dependence, and scaling linearly with deposited energy.
@@ -292,8 +291,8 @@ namespace crt{
 	if (fverbose) std::cout << " eDep " << eDep << " eDep/fQ0=" << eDep/fQ0 << " npe exp =" << npeExpected << std::endl;
 
 	// Put PE on channels weighted by distance
-	double d0 = abs(-adsGeo.HalfWidth1() - svHitPosLocal[0]);  // L
-	double d1 = abs( adsGeo.HalfWidth1() - svHitPosLocal[0]);  // R
+        double d0 = abs(-adsGeo.HalfWidth1() - svHitPosLocal.X());  // L
+        double d1 = abs( adsGeo.HalfWidth1() - svHitPosLocal.X());  // R
 	short q0,q1;
 	double npeExp0=0;
 	double npeExp1=0;
@@ -342,7 +341,7 @@ namespace crt{
         uint32_t channel1ID = adsc.AuxDetID()*2+1;
 	
       // Apply ADC threshold and strip-level coincidence (both fibers fire)
-	if (util::absDiff(t0, t1) < fStripCoincidenceWindow) {
+        if (lar::util::absDiff(t0, t1) < fStripCoincidenceWindow) {
 	  if ( (q0 > fQThreshold && q1 > fQThreshold) || ((fSumThresh) && (q0+q1)>fQThreshold)) {
 	    crtHits->push_back(CRTSimData(channel0ID, t0, ppsTicks, q0, trackID));
 	    crtHits->push_back(CRTSimData(channel1ID, t1, ppsTicks, q1, trackID));

@@ -500,24 +500,22 @@ namespace crt{
 	double halfLength = 0.5*(stripGeoL.Length());
 
 
-	double l1[3] = {-halfWidth+strHit.x+strHit.ex, halfHeight, halfLength};
-	double w1[3] = {0,0,0};
-	stripGeoL.LocalToWorld(l1, w1);
-	double l2[3] = {-halfWidth+strHit.x-strHit.ex, -halfHeight, -halfLength};
-	double w2[3] = {0,0,0};
-	stripGeoL.LocalToWorld(l2, w2);
+        geo::AuxDetSensitiveGeo::LocalPoint_t const l1{-halfWidth+strHit.x+strHit.ex, halfHeight, halfLength};
+        geo::AuxDetSensitiveGeo::LocalPoint_t const l2{-halfWidth+strHit.x-strHit.ex, -halfHeight, -halfLength};
+        auto const w1 = stripGeoL.toWorldCoords(l1);
+        auto const w2 = stripGeoL.toWorldCoords(l2);
 
 	// if (fVerbose) {
-	//   std::cout << " l1 " << l1[0] << " " << l1[1] << " " << l1[2] << std::endl;
-	//   std::cout << " w1 " << w1[0] << " " << w1[1] << " " << w1[2] << std::endl;
-	//   std::cout << " l2 " << l2[0] << " " << l2[1] << " " << l2[2] << std::endl;
-	//   std::cout << " w2 " << w2[0] << " " << w2[1] << " " << w2[2] << std::endl;
+        //   std::cout << " l1 " << l1.X() << " " << l1.Y() << " " << l1.Z() << std::endl;
+        //   std::cout << " w1 " << w1.X() << " " << w1.Y() << " " << w1.Z() << std::endl;
+        //   std::cout << " l2 " << l2.X() << " " << l2.Y() << " " << l2.Z() << std::endl;
+        //   std::cout << " w2 " << w2.X() << " " << w2.Y() << " " << w2.Z() << std::endl;
 	// }
 
     // Use this to get the limits in the two variable directions
-    std::vector<double> limits = {std::min(w1[0],w2[0]), std::max(w1[0],w2[0]), 
-                                  std::min(w1[1],w2[1]), std::max(w1[1],w2[1]), 
-                                  std::min(w1[2],w2[2]), std::max(w1[2],w2[2])};
+    std::vector<double> limits = {std::min(w1.X(),w2.X()), std::max(w1.X(),w2.X()),
+                                  std::min(w1.Y(),w2.Y()), std::max(w1.Y(),w2.Y()),
+                                  std::min(w1.Z(),w2.Z()), std::max(w1.Z(),w2.Z())};
     // if (fVerbose) std::cout << strHit.module << " limits " << limits[0] << " " << limits[1] << " " << limits[2] << " "
     // 			     << limits[3] << " " << limits[4] << " " << limits[5] << " " << std::endl;
 

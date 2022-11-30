@@ -57,7 +57,7 @@ namespace crt {
   }
 
   uint32_t CRTChannelMapAlg::PositionToAuxDetChannel(
-    double const worldLoc[3],
+    geo::Point_t const& worldLoc,
     std::vector<geo::AuxDetGeo> const& auxDets,
     size_t& ad,
     size_t& sv) const
@@ -73,9 +73,6 @@ namespace crt {
     uint32_t channel = UINT_MAX;
     ad = 0;
     sv = this->NearestSensitiveAuxDet(worldLoc, auxDets, ad);
-    double svOrigin[3] = {0, 0, 0};
-    double localOrigin[3] = {0, 0, 0};
-    auxDets[ad].SensitiveVolume(sv).LocalToWorld(localOrigin, svOrigin);
     auto gnItr = fADGeoToName.find(ad);
     if (gnItr != fADGeoToName.end())
     {
@@ -91,14 +88,14 @@ namespace crt {
     if (channel == UINT_MAX) 
     {
       throw cet::exception("CRTChannelMapAlg") << "position ("
-      << worldLoc[0] << "," << worldLoc[1] << "," << worldLoc[2]
+      << worldLoc.X() << "," << worldLoc.Y() << "," << worldLoc.Z()
       << ") does not correspond to any AuxDet";
     }
     return channel;
   }
 
-  const TVector3 CRTChannelMapAlg::AuxDetChannelToPosition(
-    uint32_t const& channel,
+  geo::Point_t CRTChannelMapAlg::AuxDetChannelToPosition(
+    uint32_t const channel,
     std::string const& auxDetName,
     std::vector<geo::AuxDetGeo> const& auxDets) const
   {
@@ -109,9 +106,6 @@ namespace crt {
     * \throws cet::exception if the name is not registered in Initialize()
     * or if the channel number does not correspond to a detector.
     **/
-    double x = 0;
-    double y = 0;
-    double z = 0;
     size_t ad = UINT_MAX;
     if (fNameToADGeo.count(auxDetName) > 0) 
     {
@@ -129,20 +123,13 @@ namespace crt {
       << "No entry in channel and sensitive volume"
       << " map for AuxDet index " << ad << " bail";
     }
-    double svOrigin[3] = {0, 0, 0};
-    double localOrigin[3] = {0, 0, 0};
     for (auto csv : csvItr->second) 
     {
       if (csv.first == channel) 
       {
-        auxDets[ad].SensitiveVolume(csv.second).LocalToWorld(localOrigin,
-                    svOrigin);
-        x = svOrigin[0];
-        y = svOrigin[1];
-        z = svOrigin[2];
-        break;
+        return auxDets[ad].SensitiveVolume(csv.second).GetCenter();
       }
     }
-    return TVector3(x, y, z);
+    return {};
   }
 }

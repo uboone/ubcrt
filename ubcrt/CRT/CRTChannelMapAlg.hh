@@ -37,13 +37,6 @@
 #include <iostream>
 #include <vector>
 
-class TVector3;
-
-namespace fhicl{
-  class ParameterSet;
-}
-
-
 namespace crt {
 
   class CRTGeoObjectSorter;
@@ -66,13 +59,13 @@ namespace crt {
     void Uninitialize() {}
     
     /// Given a position, return the channel number aux det number and sens det number.
-    uint32_t PositionToAuxDetChannel(double const  worldLoc[3],
+    uint32_t PositionToAuxDetChannel(geo::Point_t const& worldLoc,
                                      std::vector<geo::AuxDetGeo> const& auxDets,
                                      size_t& ad,
                                      size_t& sv) const;
 
     /// Given an aux det, returns the center of the detector
-    const TVector3 AuxDetChannelToPosition(uint32_t const& channel,
+    geo::Point_t AuxDetChannelToPosition(uint32_t channel,
                                            std::string const& auxDetName,
                                            std::vector<geo::AuxDetGeo> const& auxDets) const;
   };
