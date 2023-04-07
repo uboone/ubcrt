@@ -227,8 +227,9 @@ namespace crt{
   }; // class CRTSimHitCorr
     
 
-    CRTSimHitCorr::CRTSimHitCorr(fhicl::ParameterSet const & p) : EDProducer{p},     
-      fEngine(art::ServiceHandle<rndm::NuRandomService>{}->createEngine(*this, "HepJamesRandom", "crt", p, "Seed"))
+    CRTSimHitCorr::CRTSimHitCorr(fhicl::ParameterSet const & p) :
+      EDProducer{p},
+      fEngine(art::ServiceHandle<rndm::NuRandomService>{}->registerAndSeedEngine(createEngine(0, "HepJamesRandom", "crt"), "HepJamesRandom", "crt", p, "Seed"))
       // Initialize member data here, if know don't want to reconfigure on the fly
     {
       // Call appropriate produces<>() functions here.
@@ -790,6 +791,3 @@ namespace crt{
   
   DEFINE_ART_MODULE(CRTSimHitCorr)
 }// namespace crt
-
-
-     
