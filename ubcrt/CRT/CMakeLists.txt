@@ -1,480 +1,349 @@
-if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-cet_add_compiler_flags(CXX -Wno-dynamic-exception-spec -Wno-return-type-c-linkage -Wno-undefined-var-template )
-endif()
+cet_make_library(
+  SOURCE
+  CRTAuxFunctions.cc
+  CRTChannelMapAlg.cc
+  CRTGeoObjectSorter.cc
+  LIBRARIES
+  PUBLIC
+  larcorealg::Geometry
+  messagefacility::MF_MessageLogger
+  artdaq_core::artdaq-core_Data
+)
 
-# canvas_utlities
-include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
-include_directories( $ENV{NUTOOLS_INC} )
-include_directories( $ENV{IFDHC_FQ_DIR}/inc )
+cet_build_plugin(
+  CRTAnalyser art::EDAnalyzer
+  LIBRARIES
+  PRIVATE
+  art_root_io::TFileService_service
+  artdaq_core::artdaq-core_Data
+  ROOT::Hist
+  ROOT::Tree
+)
+
+cet_build_plugin(
+  CRTCalibration art::EDAnalyzer
+  LIBRARIES
+  PRIVATE
+  art_root_io::TFileService_service
+  artdaq_core::artdaq-core_Data
+  ROOT::Hist
+  ROOT::Tree
+)
+
+#cet_build_plugin(
+#  CRTDaqSim art::EDProducer
+#  LIBRARIES
+#  PRIVATE
+#)
+
+cet_build_plugin(
+  CRTDataHitCorr art::EDProducer
+  LIBRARIES
+  PRIVATE
+  lardata::Utilities
+  larcore::Geometry_Geometry_service
+  lardataobj::AnalysisBase
+  art_root_io::TFileService_service
+)
+
+cet_build_plugin(
+  CRTDataQuality art::EDAnalyzer
+  LIBRARIES
+  PRIVATE
+  lardata::Utilities
+  lardataobj::RecoBase
+  art_root_io::TFileService_service
+  artdaq_core::artdaq-core_Data
+  ROOT::Tree
+)
+
+cet_build_plugin(
+  CRTDetSim art::EDProducer
+  LIBRARIES
+  PRIVATE
+  lardata::DetectorClocksService
+  larcore::Geometry_Geometry_service
+  nurandom::RandomUtils_NuRandomService_service
+)
+
+cet_build_plugin(
+  CRTFlashAna art::EDAnalyzer
+  LIBRARIES
+  PRIVATE
+  ubobj::Trigger
+  lardataobj::RawData
+  lardataobj::RecoBase
+  art_root_io::TFileService_service
+  ROOT::Hist
+)
+
+cet_build_plugin(
+  CRTHitPositionPerModule art::EDAnalyzer
+  LIBRARIES
+  PRIVATE
+  lardata::Utilities
+  lardataobj::RecoBase
+  art_root_io::TFileService_service
+  artdaq_core::artdaq-core_Data
+)
+
+cet_build_plugin(
+  CRTHitProducer art::EDProducer
+  LIBRARIES
+  PRIVATE
+  ubcrt::CRT
+  ubcrt::CRT_CRTBernFEBDAQCore_Overlays
+  art_root_io::TFileService_service
+  ROOT::Tree
+)
+
+cet_build_plugin(
+  CRTMerger art::EDProducer
+  LIBRARIES
+  PRIVATE
+  ubcrt::CRT_CRTFileManager_service
+  gallery::gallery
+)
+
+cet_build_plugin(
+  CRTSimHitCorr art::EDProducer
+  LIBRARIES
+  PRIVATE
+  larevt::CalibrationDBI_Providers
+  lardata::Utilities
+  larcore::Geometry_Geometry_service
+  lardataobj::Simulation
+  art_root_io::TFileService_service
+  nurandom::RandomUtils_NuRandomService_service
+)
+
+cet_build_plugin(
+  CRTSimHitProducer art::EDProducer
+  LIBRARIES
+  PRIVATE
+  lardata::Utilities
+  larcore::Geometry_Geometry_service
+  lardataobj::Simulation
+  art_root_io::TFileService_service
+)
+
+cet_build_plugin(
+  CRTTiming art::EDAnalyzer
+  LIBRARIES
+  PRIVATE
+  ubcrt::CRT
+  art_root_io::TFileService_service
+)
+
+cet_build_plugin(
+  CRTTrackProducer art::EDProducer
+  LIBRARIES
+  PRIVATE
+  art_root_io::TFileService_service
+  artdaq_core::artdaq-core_Data
+)
+
+#cet_build_plugin(
+#  CRTTriggerFilter 
+#  LIBRARIES
+#  PRIVATE
+#)
+
+cet_build_plugin(
+  CRTTriggerTimeProducerSimple art::EDProducer
+  LIBRARIES
+  PRIVATE
+  ubcrt::CRT
+  larpandora::LArPandoraInterface
+  larcore::ServiceUtil
+  art_root_io::TFileService_service
+  ROOT::Tree
+)
+
+cet_build_plugin(
+  CRTTriggerTimeProducer art::EDProducer
+  LIBRARIES
+  PRIVATE
+  ubcrt::CRT
+  larpandora::LArPandoraInterface
+  art_root_io::TFileService_service
+  ROOT::Tree
+)
+
+cet_build_plugin(
+  CRTTzeroProducer art::EDProducer
+  LIBRARIES
+  PRIVATE
+  lardata::Utilities
+  art_root_io::TFileService_service
+  artdaq_core::artdaq-core_Data
+)
+
+cet_build_plugin(
+  CRTeffStd art::EDAnalyzer
+  LIBRARIES
+  PRIVATE
+  ubcrt::CRT
+  lardata::Utilities
+  lardataobj::RecoBase
+  art_root_io::TFileService_service
+  nusimdata::SimulationBase
+)
+
+cet_build_plugin(
+  FlashExt art::EDAnalyzer
+  LIBRARIES
+  PRIVATE
+  lardata::Utilities
+  lardataobj::RecoBase
+  art_root_io::TFileService_service
+  artdaq_core::artdaq-core_Data
+  ROOT::Tree
+)
+
+cet_build_plugin(
+  MergeTest art::EDAnalyzer
+  LIBRARIES
+  PRIVATE
+  lardata::Utilities
+  lardataobj::RecoBase
+  art_root_io::TFileService_service
+  artdaq_core::artdaq-core_Data
+)
+
+cet_build_plugin(
+  T0recoCRTAnal art::EDAnalyzer
+  LIBRARIES
+  PRIVATE
+  ubcrt::CRT
+  lardata::Utilities
+  lardataobj::RecoBase
+  nusimdata::SimulationBase
+  art_root_io::TFileService_service
+)
+
+cet_build_plugin(
+  T0recoCRTHitAna2 art::EDAnalyzer
+  LIBRARIES
+  PRIVATE
+  larevt::SpaceCharge
+  lardata::DetectorClocksService
+  larcore::ServiceUtil
+  lardataobj::RecoBase
+  art_root_io::TFileService_service
+  artdaq_core::artdaq-core_Data
+)
+
+cet_build_plugin(
+  T0recoCRTHitAnal art::EDAnalyzer
+  LIBRARIES
+  PRIVATE
+  ubcrt::CRT
+  lardata::DetectorPropertiesService
+  lardataobj::RecoBase
+  nusimdata::SimulationBase
+  art_root_io::TFileService_service
+)
+
+cet_build_plugin(
+  T0recoCRTHit art::EDProducer
+  LIBRARIES
+  PRIVATE
+  larevt::SpaceCharge
+  lardata::DetectorPropertiesService
+  larcore::ServiceUtil
+  lardataobj::RecoBase
+  lardataobj::AnalysisBase
+  art_root_io::TFileService_service
+  artdaq_core::artdaq-core_Data
+)
+
+cet_build_plugin(
+  T0recoCRTTrackAnal art::EDAnalyzer
+  LIBRARIES
+  PRIVATE
+  ubcrt::CRT
+  lardata::Utilities
+  lardataobj::RecoBase
+  nusimdata::SimulationBase
+  art_root_io::TFileService_service
+)
+
+cet_build_plugin(
+  T0recoCRTTrack art::EDProducer
+  LIBRARIES
+  PRIVATE
+  ubcrt::CRT
+  lardata::Utilities
+  lardataobj::RecoBase
+  lardataobj::AnalysisBase
+  nusimdata::SimulationBase
+  art_root_io::TFileService_service
+)
+
+#cet_build_plugin(
+#  T0recoCRT art::EDProducer
+#  LIBRARIES
+#  PRIVATE
+#)
+
+cet_build_plugin(
+  TimeExtraction art::EDAnalyzer
+  LIBRARIES
+  PRIVATE
+  artdaq_core::artdaq-core_Data
+  art_root_io::TFileService_service
+)
+
+cet_build_plugin(
+  TrackDump art::EDAnalyzer
+  LIBRARIES
+  PRIVATE
+  larevt::SpaceCharge
+  lardata::Utilities
+  larcore::ServiceUtil
+  lardataobj::RecoBase
+  art_root_io::TFileService_service
+  artdaq_core::artdaq-core_Data
+  ROOT::Tree
+)
+
+cet_build_plugin(
+  CRTFileManager art::service
+  LIBRARIES
+  PUBLIC
+  ifdh_art::IFDH_service
+  gallery::gallery
+)
+
+cet_build_plugin(
+  CRTGeometryHelper art::service
+  LIBRARIES
+  PUBLIC
+  ubcrt::CRT
+  larcore::Geometry_Geometry_service
+)
+
+cet_build_plugin(
+  CRTRawtoCRTHit art::source
+  LIBRARIES
+  PRIVATE
+  ubcrt::CRT
+  art_root_io::TFileService_service
+  ROOT::Tree
+)
+
+cet_build_plugin(
+  CRTRawtoCRTHitGPScorr art::source
+  LIBRARIES
+  PRIVATE
+  ubcrt::CRT
+  art_root_io::TFileService_service
+  ROOT::Tree
+)
 
 add_subdirectory(CRTBernFEBDAQCore)
 #add_subdirectory(CRTBinarySource)
-
-art_make( BASENAME_ONLY
-    EXCLUDE
-        CRTTriggerTimeProducer_module.cc
-        CRTTriggerTimeProducerSimple_module.cc
-        CRTChannelMapAlg.cc 
-        CRTGeometryHelper_service.cc
-        CRTFileManager_service.cc
-        CRTDetSim_module.cc
-        CRTDaqSim_module.cc
-        CRTHitProducer_module.cc
-        CRTSimHitProducer_module.cc
-        CRTSimHitCorr_module.cc
-        CRTDataHitCorr_module.cc
-        CRTCalibration_module.cc
-        CRTTrackProducer_module.cc
-        CRTTzeroProducer_module.cc
-	FlashExt_module.cc	
-	CRTAuxFunctions.cc
-  	CRTMerger_module.cc
-	CRTFlashAna_module.cc
-	TimeExtraction_module.cc
-	TrackDump_module.cc
-	CRTDataQuality_module.cc
-        CRTHitPositionPerModule_module.cc
-	MergeTest_module.cc
-	CRTRawtoCRTHit_source.cc
-	CRTRawtoCRTHitGPScorr_source.cc
-	CRTAnalyser_module.cc	
-	CRTeffStd_module.cc			
-	CRTTiming_module.cc
-        T0recoCRT_module.cc
-	T0recoCRTTrack_module.cc                     
-        T0recoCRTHit_module.cc                     
-        T0recoCRTAnal_module.cc 
-	T0recoCRTTrackAnal_module.cc
-        T0recoCRTHitAnal_module.cc 
-	T0recoCRTHitAna2_module.cc 
-    LIBRARY_NAME  
-        CRTData
-    LIB_LIBRARIES
-        larcorealg_Geometry
-        larcore_Geometry_Geometry_service
-        art::Framework_Core
-        art::Framework_IO_Sources
-        art::Framework_Principal
-        art::Persistency_Common
-        art::Persistency_Provenance
-        art::Utilities
-        canvas::canvas
-        lardataobj_RecoBase
-        lardataobj_AnalysisBase
-        art::Framework_Services_Registry
-        messagefacility::MF_MessageLogger
-        fhiclcpp::fhiclcpp
-        ROOT::Geom
-        cetlib::cetlib
-        cetlib_except::cetlib_except
-)
-
-art_make_library(
-    LIBRARY_NAME
-        CRT
-    SOURCE
-        CRTChannelMapAlg.cc
-        CRTAuxFunctions.cc
-    LIBRARIES
-        #larcorealg_Geometry
-        CRTData
-        messagefacility::MF_MessageLogger
-
-        fhiclcpp::fhiclcpp
-
-        ROOT::Geom
-        cetlib::cetlib
-        cetlib_except::cetlib_except
-)
-
-simple_plugin( CRTGeometryHelper service
-        larcorealg_Geometry
-        CRT
-        art::Framework_Core
-        art::Framework_IO_Sources
-        art::Framework_Principal
-        art::Persistency_Common
-        art::Persistency_Provenance
-        art::Utilities
-        canvas::canvas
-        art::Framework_Services_Registry
-        messagefacility::MF_MessageLogger
-
-
-        cetlib::cetlib
-        cetlib_except::cetlib_except
-)
-
-simple_plugin( CRTFileManager service
-        art::Framework_Core
-        art::Framework_IO_Sources
-        art::Framework_Principal
-        gallery::gallery
-        art::Persistency_Common
-        art::Persistency_Provenance
-        art::Utilities
-        canvas::canvas
-        ifdh::ifdh
-        art::Framework_Services_Registry
-        messagefacility::MF_MessageLogger
-        
-
-        cetlib::cetlib
-        cetlib_except::cetlib_except
-        Boost::date_time
-    BASENAME_ONLY
-)
-
-simple_plugin( CRTDetSim module
-        ubobj_CRT
-        CRTData
-        art::Framework_Core
-        art::Framework_IO_Sources
-        art::Framework_Principal
-        art::Persistency_Common
-        art::Persistency_Provenance
-        art::Utilities
-        canvas::canvas
-        lardata_DetectorInfoServices_DetectorClocksServiceStandard_service
-        nurandom::RandomUtils_NuRandomService_service
-        art::Framework_Services_Registry
-        art::Framework_Services_Optional_RandomNumberGenerator_service
-        messagefacility::MF_MessageLogger
-
-        CLHEP::CLHEP
-        cetlib::cetlib
-        cetlib_except::cetlib_except
-)
-
-simple_plugin(CRTCalibration "module"
-        CRT
-        CRTData
-        art::Framework_Core
-        art::Framework_IO_Sources
-        art::Framework_Principal
-        art::Persistency_Common
-        art::Persistency_Provenance
-        art::Utilities
-        canvas::canvas
-        lardata_DetectorInfoServices_DetectorClocksServiceStandard_service
-      nurandom::RandomUtils_NuRandomService_service
-        art::Framework_Services_Registry
-        art::Framework_Services_Optional_RandomNumberGenerator_service
-        messagefacility::MF_MessageLogger
-        CLHEP::CLHEP
-        cetlib::cetlib
-        cetlib_except::cetlib_except
-        ROOT::Tree
-    BASENAME_ONLY
-          bernfebdaq-core_Overlays
-          art::Framework_Services_Registry
-          art_root_io::TFileService_service
-           )
-
-
-simple_plugin(CRTSimHitProducer "module"
-          larcorealg_Geometry
-        larcore_Geometry_Geometry_service
-          lardataalg_DetectorInfo
-          CRT
-          CRTData
-                  art::Framework_Core
-                  art::Framework_IO_Sources
-                  art::Framework_Principal
-        art::Persistency_Common
-        art::Persistency_Provenance
-        art::Utilities
-        canvas::canvas
-        lardata_DetectorInfoServices_DetectorClocksServiceStandard_service
-        nurandom::RandomUtils_NuRandomService_service
-        art::Framework_Services_Registry
-        art::Framework_Services_Optional_RandomNumberGenerator_service
-        art_root_io::TFileService_service
-        messagefacility::MF_MessageLogger
-
-        CLHEP::CLHEP
-        cetlib::cetlib
-        cetlib_except::cetlib_except
-)
-
-simple_plugin(CRTSimHitCorr "module"
-          larcorealg_Geometry
-        larcore_Geometry_Geometry_service
-	  CRT
-	  CRTData
-	          art::Framework_Core
-        	  art::Framework_IO_Sources
-        	  art::Framework_Principal
-        art::Persistency_Common
-        art::Persistency_Provenance
-        art::Utilities
-        canvas::canvas
-        lardata_DetectorInfoServices_DetectorClocksServiceStandard_service
-        nurandom::RandomUtils_NuRandomService_service
-        art_root_io_tfile_support ROOT::Core
-        art::Framework_Services_Registry
-        art::Framework_Services_Optional_RandomNumberGenerator_service
-        art_root_io_TFileService_service
-        messagefacility::MF_MessageLogger        
-        CLHEP::CLHEP
-        cetlib::cetlib
-        cetlib_except::cetlib_except
-    BASENAME_ONLY
-)
-
-
-simple_plugin(CRTDataHitCorr "module"
-          larcorealg_Geometry
-        larcore_Geometry_Geometry_service
-	  CRT
-	  CRTData
-	          art::Framework_Core
-        	  art::Framework_IO_Sources
-        	  art::Framework_Principal
-        art::Persistency_Common
-        art::Persistency_Provenance
-        art::Utilities
-        canvas::canvas
-        lardata_DetectorInfoServices_DetectorClocksServiceStandard_service
-        nurandom::RandomUtils_NuRandomService_service
- 	art_root_io_tfile_support ROOT::Core
-        art::Framework_Services_Registry
-        art::Framework_Services_Optional_RandomNumberGenerator_service
-        art_root_io_TFileService_service
-        messagefacility::MF_MessageLogger        
-        CLHEP::CLHEP
-        cetlib::cetlib
-        cetlib_except::cetlib_except
-    BASENAME_ONLY
-)
-
-simple_plugin(CRTHitProducer "module"
-            CRT
-              bernfebdaq-core_Overlays
-          art::Framework_Services_Registry
-          art_root_io::TFileService_service
-          ROOT::Tree
-          cetlib::cetlib
-)
-
-simple_plugin(CRTTrackProducer "module"
-            CRT
-              bernfebdaq-core_Overlays
-          art::Framework_Services_Registry
-          art_root_io::TFileService_service
-          cetlib::cetlib
-)
-simple_plugin(CRTTzeroProducer "module"
-            CRT
-              bernfebdaq-core_Overlays
-          art::Framework_Services_Registry
-          art_root_io::TFileService_service
-          cetlib::cetlib
-)
-
-simple_plugin(FlashExt "module"
-            CRT
-              bernfebdaq-core_Overlays
-          art::Framework_Services_Registry
-          art_root_io::TFileService_service
-          ROOT::Tree
-           )
-
-simple_plugin(TimeExtraction "module"
-            CRT
-          bernfebdaq-core_Overlays
-          art::Framework_Services_Registry
-          art_root_io::TFileService_service
-           )
-
-simple_plugin(MergeTest "module"
-            CRT
-          bernfebdaq-core_Overlays
-          art::Framework_Services_Registry
-          art_root_io::TFileService_service
-           )
-
-simple_plugin(TrackDump "module"
-            CRT
-          bernfebdaq-core_Overlays
-          lardataobj_RecoBase
-          art::Framework_Services_Registry
-          art_root_io::TFileService_service
-          ROOT::Tree
-           )
-
-simple_plugin(CRTDataQuality "module"
-            CRT
-	  bernfebdaq-core_Overlays
-	  lardataobj_RecoBase
-          art_root_io_tfile_support ROOT::Core
-          art::Framework_Services_Registry
-	  art_root_io_TFileService_service
-          ROOT::Tree
-          )
-
-simple_plugin(CRTHitPositionPerModule "module"
-             CRT
-           bernfebdaq-core_Overlays
-           lardataobj_RecoBase
-           art::Framework_Services_Registry
-           art_root_io::TFileService_service
-            )
-
-
-
-simple_plugin(CRTRawtoCRTHit "source"
-            CRT
-          bernfebdaq-core_Overlays
-          art::Framework_Services_Registry
-          art_root_io::TFileService_service
-          ROOT::Tree
-           )
-
-simple_plugin(CRTRawtoCRTHitGPScorr "source"
-            CRT
-          bernfebdaq-core_Overlays
-          art::Framework_Services_Registry
-          art_root_io::TFileService_service
-          ROOT::Tree
-           )
-
-simple_plugin(CRTAnalyser "module"
-            CRT
-          bernfebdaq-core_Overlays
-          art::Framework_Services_Registry
-          art_root_io::TFileService_service
-          ROOT::Tree
-           )
-
-simple_plugin(CRTeffStd "module"
-            CRT
-          bernfebdaq-core_Overlays
-          art::Framework_Services_Registry
-          art_root_io::TFileService_service
-          nusimdata::SimulationBase
-           )
-
-simple_plugin(T0recoCRT "module"
-            CRT
-          bernfebdaq-core_Overlays
-          art::Framework_Services_Registry
-          art_root_io::TFileService_service
-          nusimdata::SimulationBase
-           )
-
-simple_plugin(T0recoCRTTrack "module"
-            CRT
-          bernfebdaq-core_Overlays
-          art_root_io_tfile_support ROOT::Core
-          art::Framework_Services_Registry
-	  art_root_io_TFileService_service
-          )
-
-simple_plugin(T0recoCRTTrackAnal "module"
-            CRT
-          bernfebdaq-core_Overlays
-          art_root_io_tfile_support ROOT::Core
-          art::Framework_Services_Registry
-	  art_root_io_TFileService_service
-          )
-
-simple_plugin(T0recoCRTHit "module"
-            CRT
-          bernfebdaq-core_Overlays
-          art_root_io_tfile_support ROOT::Core
-          art::Framework_Services_Registry
-	  art_root_io_TFileService_service
-          )
-
-simple_plugin(T0recoCRTAnal "module"
-            CRT
-          bernfebdaq-core_Overlays
-          art::Framework_Services_Registry
-          art_root_io::TFileService_service
-          nusimdata::SimulationBase
-           )
-
-simple_plugin(CRTTiming "module"
-            CRT
-          bernfebdaq-core_Overlays
-          art::Framework_Services_Registry
-          art_root_io::TFileService_service
-           )
-
-simple_plugin(CRTTriggerTimeProducer "module"
-            CRT
-          bernfebdaq-core_Overlays
-          art::Framework_Services_Registry
-          art_root_io::TFileService_service
-          ROOT::Tree
-           )
-
-simple_plugin(T0recoCRTHitAnal "module"
-            CRT
-          bernfebdaq-core_Overlays
-          art_root_io_tfile_support ROOT::Core
-          art::Framework_Services_Registry
-	  art_root_io_TFileService_service
-          )
-
-
-simple_plugin(T0recoCRTHitAna2 "module"
-            CRT
-          bernfebdaq-core_Overlays
-          art_root_io_tfile_support ROOT::Core
-          art::Framework_Services_Registry
-	  art_root_io_TFileService_service
-          )
-
-simple_plugin(CRTTriggerTimeProducerSimple "module"
-            CRT
-          bernfebdaq-core_Overlays
-          art_root_io_tfile_support ROOT::Core
-          art::Framework_Services_Registry
-	  art_root_io_TFileService_service
-          ROOT::Tree
-          )
-
-simple_plugin( CRTMerger "module"
-  CRT
-  bernfebdaq-core_Overlays
-  lardataobj_RecoBase
-  CRTFileManager_service
-  cetlib::cetlib
-
-  art::Utilities
-  art::Framework_Services_Registry
-  ##${ARTDAQ_CORE}
-  fhiclcpp::fhiclcpp
-  messagefacility::MF_MessageLogger
-  ubobj_CRT
-  gallery::gallery
-  cetlib::cetlib
-  cetlib_except::cetlib_except
-)
-
-simple_plugin( CRTFlashAna "module"
-  CRT
-  lardataobj_RecoBase
-  ubobj_RawData
-  ubobj_Trigger
-  ubobj_CRT
-  art::Utilities
-  art::Framework_Services_Registry
-  art_root_io::TFileService_service
-  fhiclcpp::fhiclcpp
-  art::Persistency_Common
-  art::Persistency_Provenance
-  art::Utilities
-  canvas::canvas
-  messagefacility::MF_MessageLogger
-  
-  cetlib::cetlib
-  cetlib_except::cetlib_except
-
-)
-
 
 install_headers()
 install_fhicl()

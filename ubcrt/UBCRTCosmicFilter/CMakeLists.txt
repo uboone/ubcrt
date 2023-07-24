@@ -22,7 +22,7 @@ art_make( BASENAME_ONLY
                         ROOT::XMLIO
                         ROOT::Gdml
                         ROOT::Tree
-        )
+        ) ### MIGRATE-ACTION-RECOMMENDED (migrate-3.21.01) - deprecated: use art_make_library(), art_dictonary(), and cet_build_plugin() with explicit source lists and plugin base types
 
 install_headers()
 install_fhicl()

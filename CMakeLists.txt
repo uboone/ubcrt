@@ -1,25 +1,15 @@
 # ======================================================================
-#  larsoft main build file
+#  ubobj main build file
 #
 #  cd .../path/to/build/directory
-#  source .../path/to/larsoft/ups/setup_for_development <-d|-p>
-#  cmake [-DCMAKE_INSTALL_PREFIX=/install/path]
-#        -DCMAKE_BUILD_TYPE=$CETPKG_TYPE
-#        $CETPKG_SOURCE
-#  make
-#  make test
-#  make install
-#  make package (builds distribution tarfile)
+#  source .../path/to/lardataobj/ups/setup_for_development <-d|-p>
+#  buildtool [-I /install/path] -bt[i] -jN
 # ======================================================================
 
-cmake_minimum_required(VERSION 3.19 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 
+find_package(cetmodules REQUIRED)
 project(ubcrt VERSION 09.76.00 LANGUAGES CXX)
-
-# cetbuildtools contains our cmake modules
-find_package(cetbuildtools REQUIRED)
-
-list(APPEND CMAKE_MODULE_PATH $ENV{CANVAS_ROOT_IO_DIR}/Modules)
 
 include(CetCMakeEnv)
 cet_cmake_env()
@@ -30,36 +20,18 @@ cet_set_compiler_flags(DIAGS CAUTIOUS
   EXTRA_FLAGS -pedantic -Wno-unused-local-typedefs
 )
 
-cet_report_compiler_flags()
 
-# these are minimum required versions, not the actual product versions
-find_ups_product( larcorealg )
-find_ups_product( larcoreobj )
-find_ups_product( lardataobj )
-find_ups_product( lardataalg )
-find_ups_product( larpandora )
-find_ups_product( larevt )
-find_ups_product( pandora )
-find_ups_boost( )
-find_ups_root( )
-find_ups_product( canvas )
-find_ups_product( ubobj )
-find_ups_product( ubevt )
-find_ups_product( lardata )
-find_ups_product( artdaq_core )
-find_ups_product(TRACE)
-find_ups_product( ifdh_art )
-find_ups_product( gallery )
-find_ups_product( art )
-find_ups_product(art_root_io)
-find_ups_product( larcore )
-find_ups_product( nutools )
-find_ups_product( nurandom )
-find_ups_product( nusimdata )
+cet_report_compiler_flags(REPORT_THRESHOLD VERBOSE)
+
+find_package( larpandora REQUIRED EXPORT )
+find_package( artdaq_core REQUIRED EXPORT )
+find_package( ifdh_art REQUIRED EXPORT )
+find_package( gallery REQUIRED EXPORT )
+find_package( nurandom REQUIRED EXPORT )
 
 # macros for dictionary and simple_plugin
 include(ArtDictionary)
-include(ArtMake)
+include(CetMakeLibrary)
 include(BuildPlugins)
 
 # ADD SOURCE CODE SUBDIRECTORIES HERE
@@ -69,7 +41,6 @@ add_subdirectory(ubcrt)
 add_subdirectory(test)
 
 # ups - table and config files
-add_subdirectory(ups)
 
 # packaging utility
-include(UseCPack)
+cet_cmake_config() ### MIGRATE-ADDED (migrate-3.21.01) - required cmd
