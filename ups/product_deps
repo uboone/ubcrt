@@ -32,7 +32,7 @@ product                 version
 ubobj                   v09_78_01
 ubevt                   v09_78_01
 lardata                 v09_15_02
-larpandora              v09_21_06
+larpandora              v09_21_07
 gallery                 v1_20_02
 cetbuildtools	        v8_20_00	-	only_for_build
 end_product_list
