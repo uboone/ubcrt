@@ -92,7 +92,7 @@ public:
   void increment(uint32_t missed, uint32_t overwritten, uint32_t dropped, uint32_t events=1, uint32_t d=0)
   { inc_MissedEvents(missed); inc_OverwrittenEvents(overwritten); inc_DroppedEvents(dropped); inc_Events(events); inc_Datagrams(d); }
 
-  const char* c_str() const { std::ostringstream ss; ss << *this; return ss.str().c_str(); }
+  std::string str() const { std::ostringstream ss; ss << *this; return ss.str(); }
 
 private:
 
@@ -150,7 +150,7 @@ struct bernfebdaq::BernZMQEvent{
   uint16_t const* ADC()         const { return adc; }
   uint16_t const& ADC(size_t c) const { return adc[c]; }
 
-  const char* c_str() const { std::ostringstream ss; ss << *this; return ss.str().c_str(); }
+  std::string str() const { std::ostringstream ss; ss << *this; return ss.str(); }
   std::string hdr_str() const;
   //std::string db_entry() const;
 };
@@ -175,7 +175,9 @@ class bernfebdaq::BernZMQFragment {
 
   bool Verify() const;
 
-  const char* c_str() const { std::ostringstream ss; ss << *this; return ss.str().c_str(); }
+  // c14 error report:
+  // returning address of local temporary object [-Werror,-Wreturn-stack-address]
+  std::string str() const { std::ostringstream ss; ss << *this; return ss.str(); }
 
 private:
 
