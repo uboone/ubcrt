@@ -175,8 +175,6 @@ class bernfebdaq::BernZMQFragment {
 
   bool Verify() const;
 
-  // c14 error report:
-  // returning address of local temporary object [-Werror,-Wreturn-stack-address]
   std::string str() const { std::ostringstream ss; ss << *this; return ss.str(); }
 
 private:

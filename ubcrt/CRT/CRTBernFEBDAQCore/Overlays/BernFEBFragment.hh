@@ -124,12 +124,13 @@ private:
 
 struct bernfebdaq::BernFEBTimeStamp{
 
+  struct TimeStruct {
+    uint32_t rawtime : 30;
+    uint32_t overflow : 1;
+    uint32_t reference : 1;
+  };
   union{
-    struct{
-      uint32_t rawtime : 30;
-      uint32_t overflow : 1;
-      uint32_t reference : 1;
-    } ts;
+    TimeStruct ts;
     uint32_t rawts;
   } __attribute__ ((packed));
 
@@ -151,11 +152,12 @@ struct bernfebdaq::BernFEBTimeStamp{
 
 struct bernfebdaq::BernFEBEvent{    
 
-  union{
-    struct{
-      uint32_t overwritten : 16;
-      uint32_t missed      : 16;
-    } flags;
+  struct FlagStruct {
+    uint32_t overwritten : 16;
+    uint32_t missed      : 16;
+  };
+  union {
+    FlagStruct flags;
     uint32_t flags_word;
   } __attribute__ ((packed));
 
