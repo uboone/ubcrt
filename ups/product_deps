@@ -251,8 +251,8 @@ product		version		qual	flags		<table_format=2>
 gallery		v1_20_02	-
 lardata		v09_15_02	-
 larpandora	v09_21_07	-
-ubevt		v09_78_01	-
-ubobj		v09_78_01	-
+ubevt		v09_78_03cm1	-
+ubobj		v09_78_03cm1	-
 cetmodules	v3_21_01	-	only_for_build
 end_product_list
 ####################################
