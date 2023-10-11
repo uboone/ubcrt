@@ -1,26 +1,18 @@
-art_make( LIBRARY_NAME bernfebdaq_BernZMQBinarySource
-	  	 LIB_LIBRARIES
-				bernfebdaq-core_Overlays
-				fhiclcpp::fhiclcpp
-				art::Persistency_Provenance				
-	  	 SOURCE_LIBRARIES
-				bernfebdaq_BernZMQBinarySource
-		 		bernfebdaq-core_Overlays
-				art::Framework_Core
-				art::Framework_IO_Sources
-				art::Framework_Principal
-				art::Persistency_Provenance
-				canvas::canvas
-				messagefacility::MF_MessageLogger
-				ROOT::RIO
-				ROOT::Core
-				ROOT::Net
-				
-				cetlib::cetlib
-				cetlib_except::cetlib_except
-				fhiclcpp::fhiclcpp
-	         BASENAME_ONLY
-	       )
+cet_make_library(
+  SOURCE
+  BernZMQBinaryInputStreamReader.cc
+  LIBRARIES
+  PUBLIC
+  ubcrt::CRT_CRTBernFEBDAQCore_Overlays
+  canvas::canvas
+)
+
+cet_build_plugin(
+  BernZMQBinaryInput art::source
+  LIBRARIES
+  PRIVATE
+  ubcrt::CRT_CRTBernFEBDAQCore_BernZMQBinarySource
+)
 
 install_headers()
 install_source()
