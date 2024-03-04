@@ -267,12 +267,20 @@ void bernfebdaq::BernZMQBinaryInputStreamReader::FillFragments(std::vector<BernZ
       ++i_ev;
     }
 
+#if 0
     std::unique_ptr<artdaq::Fragment> myfragptr =
       artdaq::Fragment::FragmentBytes(metadata.n_events()*sizeof(BernZMQEvent),
 				      metadata.time_start_seconds(),metadata.feb_id(),
 				      bernfebdaq::detail::FragmentType::BernZMQ, metadata,
 				      metadata.time_start_seconds());
     artdaq::Fragment myfrag(*myfragptr);
+#else
+    size_t words = metadata.n_events()*sizeof(BernZMQEvent) / sizeof(artdaq::RawDataType) + (metadata.n_events()*sizeof(BernZMQEvent) % sizeof(artdaq::RawDataType) == 0 ? 0 : 1);
+    artdaq::Fragment myfrag(words,
+                                      metadata.time_start_seconds(),metadata.feb_id(),
+                                      bernfebdaq::detail::FragmentType::BernZMQ, metadata,
+                                      metadata.time_start_seconds());
+#endif
 
     if(fVerbosity>0)
       std::cout << " There are " << fragMap.count(frag_time) << " fragment collections at " << frag_time << std::endl;
