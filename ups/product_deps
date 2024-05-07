@@ -248,9 +248,9 @@ fwdir	product_dir	scripts
 #
 ####################################
 product		version		qual	flags		<table_format=2>
-gallery		v1_20_02	-
-lardata		v09_15_05	-
-larpandora	v09_21_10	-
+gallery		v1_22_05	-
+lardata		v10_00_00rc1	-
+larpandora	v10_00_00rc1	-
 ubevt		v09_79_00	-
 ubobj		v09_79_00	-
 cetmodules	v3_21_01	-	only_for_build
