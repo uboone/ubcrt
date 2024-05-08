@@ -213,19 +213,12 @@ namespace crt{
     evt.getByLabel(fG4ModuleLabel, channels);
 
     //access geometry
-    geo::GeometryCore const* fGeometryService;            
-    fGeometryService = lar::providerFrom<geo::Geometry>();
-
-
-  ///< pointer to Geometry provider   
-    //    art::ServiceHandle<geo::AuxDetGeometry> geoService;
-    //    const geo::AuxDetGeometry* geometry = &*geoService;
-    // const geo::AuxDetGeometryCore* geoServiceProvider = geometry->GetProviderPtr();
+    geo::AuxDetGeometryCore const* fAuxDetGeoCore =
+      art::ServiceHandle<geo::AuxDetGeometry>()->GetProviderPtr();
 
     // Loop through truth AD channels
     for (auto& adsc : *channels) {
-      //      const geo::AuxDetGeo& adGeo = geoServiceProvider->AuxDet(adsc.AuxDetID());
-      const geo::AuxDetGeo& adGeo = fGeometryService->AuxDet(adsc.AuxDetID());
+      const geo::AuxDetGeo& adGeo = fAuxDetGeoCore->AuxDet(adsc.AuxDetID());
       const geo::AuxDetSensitiveGeo& adsGeo = adGeo.SensitiveVolume(adsc.AuxDetSensitiveID());
  
     // Return the vector of IDEs
@@ -270,7 +263,7 @@ namespace crt{
 	  }
 	}
 
-	//	const geo::AuxDetGeo& adGeo = fGeometryService->AuxDet(adsc.AuxDetID());
+        //	const geo::AuxDetGeo& adGeo = fAuxDetGeoCore->AuxDet(adsc.AuxDetID());
 	std::string name = adGeo.TotalVolume()->GetName();
 	int module,strip;
 	sscanf(name.c_str(),"volAuxDet_Module_%d_strip_%d",&module,&strip);
