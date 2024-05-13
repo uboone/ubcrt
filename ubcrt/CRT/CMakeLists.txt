@@ -19,7 +19,7 @@ cet_build_plugin(
 cet_build_plugin(
   CRTGeoObjectSorter art::tool
   LIBRARIES
-  PRIVATE
+  PUBLIC
   ubcrt::CRT
   larcorealg::Geometry
 )
