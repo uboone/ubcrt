@@ -25,45 +25,23 @@
 #define CRTGeoObjectSorter_hh_
 
 #include "larcorealg/Geometry/AuxDetGeoObjectSorter.h"
+#include "fhiclcpp/fwd.h"
+
+#include <cstdint>
 #include <vector>
 
 namespace crt {
 
   class CRTGeoObjectSorter : public geo::AuxDetGeoObjectSorter {
-    
-    /// Convenience typedef for templating on  geometry type
-    typedef std::vector<geo::AuxDetGeo> AuxDetList;
-    typedef std::vector<geo::AuxDetSensitiveGeo> SensDetList;
-
-    /// Number of modules in a geometry
-    uint32_t fNModules;
-    /// Number of Strips per module
-    uint32_t fNStripsPerModule;
-
-    /// Helper struct for callbacks during STL sorting
-    template<class DetType>
-    struct SortFunctor{
-      SortFunctor(const CRTGeoObjectSorter& c);
-      bool operator()(DetType const& d1, DetType const& d2);
-      const CRTGeoObjectSorter& host;
-    };
+    std::uint32_t fNModules;
+    std::uint32_t fNStripsPerModule;
 
   public:
-    /// fNmodules getter
-    inline uint32_t GetNModules() const {return this->fNModules;}
-
-    /// fNStripsPerModule getter
-    inline uint32_t GetNStripsPerModule() const {return this->fNStripsPerModule;}
-
-    /// Artistic c'tor
     CRTGeoObjectSorter(fhicl::ParameterSet const& p);
 
-    /// Default sorter
-    void SortAuxDets (AuxDetList& adgeo) const;
-
-    /// Blanked because there is 1 SV per AD
-    void SortAuxDetSensitive(SensDetList& adsgeo) const {}
-
+    bool compareAuxDets(geo::AuxDetGeo const& ad1, geo::AuxDetGeo const& ad2) const override;
+    bool compareAuxDetSensitives(geo::AuxDetSensitiveGeo const& ads1,
+                                 geo::AuxDetSensitiveGeo const& ads2) const override;
   };
 }
 
