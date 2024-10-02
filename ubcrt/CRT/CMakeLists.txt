@@ -1,13 +1,27 @@
 cet_make_library(
   SOURCE
   CRTAuxFunctions.cc
-  CRTChannelMapAlg.cc
   CRTGeoObjectSorter.cc
   LIBRARIES
   PUBLIC
   larcorealg::Geometry
   messagefacility::MF_MessageLogger
   artdaq_core::artdaq-core_Data
+)
+
+cet_build_plugin(
+  CRTAuxDetInitializer art::tool
+  LIBRARIES
+  PRIVATE
+  larcorealg::Geometry
+)
+
+cet_build_plugin(
+  CRTGeoObjectSorter art::tool
+  LIBRARIES
+  PUBLIC
+  ubcrt::CRT
+  larcorealg::Geometry
 )
 
 cet_build_plugin(
@@ -155,7 +169,7 @@ cet_build_plugin(
 )
 
 #cet_build_plugin(
-#  CRTTriggerFilter 
+#  CRTTriggerFilter
 #  LIBRARIES
 #  PRIVATE
 #)
@@ -340,14 +354,6 @@ cet_build_plugin(
   ubobj::CRT
   ifdh_art::IFDH_service
   gallery::gallery
-)
-
-cet_build_plugin(
-  CRTGeometryHelper art::service
-  LIBRARIES
-  PUBLIC
-  ubcrt::CRT
-  larcore::Geometry_Geometry_service
 )
 
 cet_build_plugin(

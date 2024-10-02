@@ -180,9 +180,7 @@ namespace crt{
    
     // Other variables shared between different methods.
     geo::GeometryCore const* fGeometryService;                 ///< pointer to Geometry provider
-    art::ServiceHandle<geo::AuxDetGeometry> fAuxDetGeoService;
-    const geo::AuxDetGeometry* fAuxDetGeo;
-    const geo::AuxDetGeometryCore* fAuxDetGeoCore;
+    geo::AuxDetGeometryCore const* fAuxDetGeoCore;
 
   }; // class CRTSimHitProducer
     
@@ -194,8 +192,7 @@ namespace crt{
     
     // Get a pointer to the geometry service provider
     fGeometryService = lar::providerFrom<geo::Geometry>();
-    fAuxDetGeo = &(*fAuxDetGeoService);
-    fAuxDetGeoCore = fAuxDetGeo->GetProviderPtr();
+    fAuxDetGeoCore = art::ServiceHandle<geo::AuxDetGeometry>()->GetProviderPtr();
 
     reconfigure(p);
 
@@ -239,7 +236,7 @@ namespace crt{
     // Detector properties
     auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService>()->DataFor(event);
     double readoutWindow  = (double)detProp.ReadOutWindowSize();
-    double driftTimeTicks = 2.0*(2.*fGeometryService->DetHalfWidth()+3.)/detProp.DriftVelocity();
+    double driftTimeTicks = 2.0*(2.*fGeometryService->TPC().HalfWidth()+3.)/detProp.DriftVelocity();
 
     // Place to store CRThits as they are created
     std::unique_ptr<std::vector<crt::CRTHit>> CRTHitcol( new std::vector<crt::CRTHit>);
@@ -269,8 +266,8 @@ namespace crt{
       }
       uint32_t channel = thisSiPM1->fChannel/2;
       // channel here is really the AuxDetID
-      std::string name = fGeometryService->AuxDet(channel).TotalVolume()->GetName();
-      const geo::AuxDetSensitiveGeo stripGeo = (fGeometryService->AuxDet(channel)).SensitiveVolume(0);
+      std::string name = fAuxDetGeoCore->AuxDet(channel).TotalVolume()->GetName();
+      const geo::AuxDetSensitiveGeo stripGeo = (fAuxDetGeoCore->AuxDet(channel)).SensitiveVolume(0);
       int strip=0; int module=0;
       sscanf(name.c_str(),"volAuxDet_Module_%d_strip_%d",&module,&strip);
       if (fVerbose) std::cout << " channel " << channel << " strip " << strip << 
@@ -484,12 +481,12 @@ namespace crt{
 
     
 	// uncommenting this causes it to seg fault, not sure why.
-	// const geo::AuxDetGeo stripGeoL = fGeometryService->AuxDet(strHit.channel);
+        // const geo::AuxDetGeo stripGeoL = fAuxDetGeoCore->AuxDet(strHit.channel);
 	// double mycenter[3];     stripGeoL.GetCenter(mycenter);
 	// if (fVerbose) std::cout << "center " << mycenter[0] << " " << mycenter[1] << " " << 
 	// 		    mycenter[2]<< std::endl;
 
-	const geo::AuxDetSensitiveGeo stripGeoL = (fGeometryService->AuxDet(strHit.channel)).SensitiveVolume(0);
+        const geo::AuxDetSensitiveGeo stripGeoL = (fAuxDetGeoCore->AuxDet(strHit.channel)).SensitiveVolume(0);
 	// double mycenter[3];     stripGeoL.GetCenter(mycenter);
 	// if (fVerbose) std::cout << "center " << mycenter[0] << " " << mycenter[1] << " " << 
 	// 		    mycenter[2]<< std::endl;

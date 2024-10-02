@@ -24,6 +24,7 @@ cet_set_compiler_flags(DIAGS CAUTIOUS
 cet_report_compiler_flags(REPORT_THRESHOLD VERBOSE)
 
 find_package( ubevt REQUIRED EXPORT )
+find_package( larcorealg REQUIRED )
 find_package( larpandora REQUIRED EXPORT )
 find_package( artdaq_core REQUIRED EXPORT )
 find_package( ifdh_art REQUIRED EXPORT )
