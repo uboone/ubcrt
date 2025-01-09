@@ -467,8 +467,23 @@ gallery::Event& crt::CRTFileManager::openFile(std::string file_name)
 					   << file_name << "\n";
   }
 
-  // Use first location only.
+  // Filter locations.
+  // If there is a "production" location, use that.
+  // Otherwise, use the first location.
+  // After filtering, vector xrootd_urls should contain one element with only the preferred url.
 
+  int np = 0;
+  if(xrootd_urls.size() > 1) {
+    for(size_t i=0; i<xrootd_urls.size(); ++i) {
+      if(xrootd_urls[i].find("/production/") < std::string::npos) {
+        np = i;
+        break;
+      }
+    }
+  }
+
+  if(np > 0)
+    xrootd_urls[0] = xrootd_urls[np];
   if(xrootd_urls.size() > 1)
     xrootd_urls.erase(xrootd_urls.begin()+1, xrootd_urls.end());
   std::cout<<"xrootd URL: " << xrootd_urls[0] << std::endl;
