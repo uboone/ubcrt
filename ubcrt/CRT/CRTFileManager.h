@@ -13,22 +13,36 @@
 //
 //           1.  Locating swizzled CRT files that match an art event time stamp.
 //
-//           2.  Opening swizzled CRT files (using xrootd), and positioning them
-//               at the correct position for matching.
+//           2.  Opening swizzled CRT files (locally or using xrootd), and
+//               positioning them at the correct position for matching.
 //
 //           Swizzled CRT files are maintained as open files accross multiple
 //           art modules and art events.
 //
 // FCL paramters:
 //
-// Debug      - Debug flag.
-// MaxFiles   - Maximum number of open gallery files to cache.
+// debug      - Debug flag.
+// maxFiles   - Maximum number of open gallery files to cache.
 // ubversion_CRTHits - Swizzled CRT version.
 // ubversion_CRTHits_top - Swizzled CRT version for top panel CRT hits (stream 1).
 //                         Optional, default same as ubversion_CRTHits.
 // CRTMetadataDir - Directory containing extracted CRT metadata.  If defined,
 //                  CRT metadata will be looked up in this directory instead
 //                  of being queried from SAM.
+// Schema     - SAM schema used for reading CRT files ("root", "file", or "https").
+//              If this parameter is missing, this service will use the schema
+//              specified by environment variable CRT_SCHEMA (if defined).
+//              Otherwise, this service will attempt to make an intelligent choice
+//              for a default schema, based on the following information:
+//              1.  Xrootd_version.
+//              2.  Availability of valid proxy.
+//              3.  Availability of /pnfs filesystem.
+//              In general, default schema "root" is the most preferred schema,
+//              if xrootd version is new enough, or if a valid proxy is available,
+//              Next preferred schema is "file," if /pnfs filesystem is mounted.
+//              The last resort schema is "https."
+//              If schema "https" is chosen, by choice or by default, then CRT
+//              files are copied to this node, which can require a lot of disk space.
 // 
 //
 ////////////////////////////////////////////////////////////////////////
@@ -68,9 +82,10 @@ public:
     std::vector<std::string> fSwizzled;    // Names of CRT swizzled files.
   };
 
+  // Constructor, destructor.
+
   explicit CRTFileManager(fhicl::ParameterSet const & p, art::ActivityRegistry & areg);
-  // The compiler-generated destructor is fine for non-base
-  // classes without bare pointers or other resource use.
+  ~CRTFileManager();
 
   // Prefetch extracted CRT metadata into metadata cache.
 
@@ -111,10 +126,11 @@ private:
   std::string fCRTVersion;   // Swizzled CRT version (ub_project.version).
   std::string fCRTVersionTop;// Swizzled CRT version for top CRT panels (ub_project.version).
   std::string fCRTMetadataDir; // Directoroy containing extracted CRT metadata.
+  std::string fSchema;       // SAM schema for accessing CRT files.
 
   // This data structure contains information that is known from sam metadata about
   // CRT binary and swizzled files.
-  // The map key is the name of a CRT swizzled file.
+  // The map key is the name of a CRT binary file.
   // The map value contains information about the corresponding CRT binary file.
 
   mutable std::map<std::string, CRTFileInfo> fCRTFiles;

@@ -2,7 +2,7 @@ BEGIN_PROLOG
   
 microboone_crt_file_manager: {
   debug:       false
-  maxFiles:    15
+  maxFiles:    6
   CRTHitLabel: "crthit"
   ubversion_CRTHits:  "NoVersion"
   CRTMetadataDir: "/cvmfs/uboone.opensciencegrid.org/crt_metadata"
