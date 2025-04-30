@@ -12,8 +12,11 @@
 #include <sstream>
 #include <ctime>
 #include <fstream>
+#include <cstdlib>
+#include <cstdio>
 #include <dirent.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include "CRTFileManager.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art/Framework/Services/Registry/ActivityRegistry.h"
@@ -43,10 +46,71 @@ crt::CRTFileManager::CRTFileManager(fhicl::ParameterSet const & p, art::Activity
   fCRTHitLabel(p.get<std::string>("CRTHitLabel")),
   fCRTVersion(p.get<std::string>("ubversion_CRTHits")),
   fCRTVersionTop(p.get<std::string>("ubversion_CRTHits_top", fCRTVersion)),
-  fCRTMetadataDir(p.get<std::string>("CRTMetadataDir", std::string()))
+  fCRTMetadataDir(p.get<std::string>("CRTMetadataDir", std::string())),
+  fSchema(p.get<std::string>("Schema", std::string()))
 {
   setenv("TZ", "CST6CDT", 1);  // Fermilab time zone.
   tzset();
+
+  // Maybe choose schema based on environment variable CRT_SCHEMA.
+
+  if(fSchema == std::string() && getenv("CRT_SCHEMA") != 0 && *getenv("CRT_SCHEMA") != 0) {
+    fSchema = std::string(getenv("CRT_SCHEMA"));
+  }
+
+  // Maybe use default schema based on following criteria.
+  // 1. Xrootd version.
+  // 2. Availability of valid proxy.
+  // 3. Availability of /pnfs mount.
+  //
+  // Generallly, schema "root" is most preferred, then "file," then "https."
+
+  if(fSchema == std::string()) {
+    std::cout << "SAM schema was not specified as a fcl parameter.\n"
+              << "We will choose a default schema."
+              << std::endl;
+
+    // Check xrootd version.
+
+    std::string xrootd_version("v0");
+    const char* s = getenv("XROOTD_VERSION");
+    if(s != 0 && *s != 0)
+      xrootd_version = std::string(s);
+    std::cout << "Xrootd version = " << xrootd_version << std::endl;
+    if(xrootd_version >= "v5_5")
+      fSchema = "root";
+    else {
+
+      // Xrootd version is too low for tokens.
+      // We can still use schema "root" if we have a valid proxy.
+
+      int rc = system("voms-proxy-info -exists");
+      if(rc == 0) {
+        std::cout << "We have a valid proxy." << std::endl;
+        fSchema = "root";
+      }
+      else {
+
+        // No proxy, check availability of /pnfs, which allows to use schema "file."
+
+        struct stat info;
+        int ok = stat("/pnfs", &info);
+        if(ok == 0 && (info.st_mode & S_IFDIR) != 0) {
+          std::cout << "Filesystem /pnfs is mounted." << std::endl;
+          fSchema = "file";
+        }
+        else {
+
+          // No xrootd, proxy, or pnfs.
+          // Use last resort schema https.
+          
+          std::cout << "No /pnfs mount." << std::endl;
+          fSchema = "https";
+        }
+      }
+    }
+    std::cout << "Using default schema = " << fSchema << std::endl;
+  }
 
   // Message.
 
@@ -55,7 +119,29 @@ crt::CRTFileManager::CRTFileManager(fhicl::ParameterSet const & p, art::Activity
 	    << "  CRT Hit Label = " << fCRTHitLabel  << "\n"
 	    << "  CRT Version = " << fCRTVersion << "\n"
 	    << "  CRT Top Version = " << fCRTVersionTop << "\n"
-	    << "  CRT metadata directory = " << fCRTMetadataDir << std::endl;
+	    << "  CRT metadata directory = " << fCRTMetadataDir << "\n"
+            << "  SAM schema = " << fSchema << std::endl;
+}
+
+
+// Destructor.
+
+crt::CRTFileManager::~CRTFileManager()
+{
+  // Delete local copies of fetched files, if any.
+
+  for(auto const& crt_event : fCRTEvents) {
+    std::string class_name(crt_event.second->getTFile()->ClassName());
+    if(class_name == std::string("TFile") ) {
+      std::string local_filename(crt_event.second->getTFile()->GetName());
+      if(fSchema != std::string("file") && local_filename.substr(0, 5) != std::string("/pnfs")) {
+        std::cout << "Deleting local file " << local_filename << std::endl;
+        remove(local_filename.c_str());
+      }
+    }
+  }
+
+
 }
 
 
@@ -445,23 +531,33 @@ gallery::Event& crt::CRTFileManager::openFile(std::string file_name)
 
   if(fCRTEvents.size() >= fMaxFiles) {
     std::cout << "Closing file " << fCRTEvents.front().first << std::endl;
+
+    // Delete local copy, if any.
+
+    std::string class_name(fCRTEvents.front().second->getTFile()->ClassName());
+    if(class_name == std::string("TFile") ) {
+      std::string local_filename(fCRTEvents.front().second->getTFile()->GetName());
+      if(fSchema != std::string("file") && local_filename.substr(0, 5) != std::string("/pnfs")) {
+        std::cout << "Deleting local file " << local_filename << std::endl;
+        remove(local_filename.c_str());
+      }
+    }
     fCRTEvents.pop_front();
   }
 
-  // Get xrootd url of file.
+  // Get url of file.
 
   art::ServiceHandle<ifdh_ns::IFDH> ifdh;
-  std::string schema = "root";
-  std::vector< std::string > xrootd_urls;
+  std::vector< std::string > urls;
   bool locate_ok = false;
   try {
-    xrootd_urls = ifdh->locateFile(file_name, schema);
+    urls = ifdh->locateFile(file_name, fSchema);
     locate_ok = true;
   }
   catch(...) {
     locate_ok = false;
   }
-  if(!locate_ok || xrootd_urls.size() == 0) {
+  if(!locate_ok || urls.size() == 0) {
     std::cout << "No locations found for root file " << file_name << std::endl;
     throw cet::exception("CRTFileManager") << "Could not locate CRT file: " 
 					   << file_name << "\n";
@@ -470,12 +566,12 @@ gallery::Event& crt::CRTFileManager::openFile(std::string file_name)
   // Filter locations.
   // If there is a "production" location, use that.
   // Otherwise, use the first location.
-  // After filtering, vector xrootd_urls should contain one element with only the preferred url.
+  // After filtering, vector urls should contain one element with only the preferred url.
 
   int np = 0;
-  if(xrootd_urls.size() > 1) {
-    for(size_t i=0; i<xrootd_urls.size(); ++i) {
-      if(xrootd_urls[i].find("/production/") < std::string::npos) {
+  if(urls.size() > 1) {
+    for(size_t i=0; i<urls.size(); ++i) {
+      if(urls[i].find("/production/") < std::string::npos) {
         np = i;
         break;
       }
@@ -483,17 +579,56 @@ gallery::Event& crt::CRTFileManager::openFile(std::string file_name)
   }
 
   if(np > 0)
-    xrootd_urls[0] = xrootd_urls[np];
-  if(xrootd_urls.size() > 1)
-    xrootd_urls.erase(xrootd_urls.begin()+1, xrootd_urls.end());
-  std::cout<<"xrootd URL: " << xrootd_urls[0] << std::endl;
-  
-  // gallery, when fed the list of the xrootd URL, internally calls TFile::Open()
+    urls[0] = urls[np];
+  if(urls.size() > 1)
+    urls.erase(urls.begin()+1, urls.end());
+  std::cout<<"URL: " << urls[0] << std::endl;
+
+  // Maybe copy url to local file.
+  //
+  // Calling fetchInput usually won't do anything if the url is an xrootd url.
+  //
+  // If ifdh decides it needs to copy the url, it uses the following destination
+  // directories, in priority order.
+  //
+  // 1.  $IFDH_DATA_DIR
+  // 2.  $_CONDOR_SCRATCH_DIR
+  // 3.  $TMPDIR
+  // 4.  /var/tmp (last resort).
+  //
+  // Don't ever let ifdh copy to /var/tmp, because that will likely crash the machine.
+  //
+
+  if(getenv("IFDH_DATA_DIR") == 0 &&
+     getenv("_CONDOR_SCRATCH_DIR") == 0 &&
+     getenv("TMPDIR") == 0) {
+    std::cout << "Setting ifdh destination to current directory." << std::endl;
+    putenv(const_cast<char*>("TMPDIR=."));
+  }
+
+  std::vector<std::string> local_filenames;
+
+  // If the url is a file:// url, don't use ifdh fetch, but just strip off the initial "file://".
+
+  if(urls[0].substr(0, 7) == std::string("file://"))
+    local_filenames.push_back(urls[0].substr(7));
+  else
+    local_filenames.push_back(ifdh->fetchInput(urls[0]));
+  std::cout << "Local filename = " << local_filenames[0] << std::endl;
+
+  // gallery, when fed the list of the xrootd URLs, internally calls TFile::Open()
   // to open the file-list
   // In interactive mode, you have to get your proxy authenticated by issuing:
   // voms-proxy-init -noregen -rfc -voms fermilab:/fermilab/uboone/Role=Analysis
   // when you would like to launch a 'lar -c ... ... ...'
   // In batch mode, this step is automatically done
+  //
+  // Update 04/2025:
+  //
+  // Proxies are being disabled.  Ifdh may require a token for authentication.
+  // A valid bearer token should always be available in batch jobs.
+  // Tokens can be gotten interactively by this command:
+  // htgettoken -a htvaultprod.fnal.gov -i <experiment>
     
   // Make several attempts to open file.
 
@@ -513,7 +648,7 @@ gallery::Event& crt::CRTFileManager::openFile(std::string file_name)
 
     try {
       std::cout << "Open file." << std::endl;
-      crt_event = std::unique_ptr<gallery::Event>(new gallery::Event(xrootd_urls));
+      crt_event = std::unique_ptr<gallery::Event>(new gallery::Event(local_filenames));
       open_ok = true;
     }
     catch(...) {
@@ -528,13 +663,13 @@ gallery::Event& crt::CRTFileManager::openFile(std::string file_name)
   }
 
   if(open_ok) {
-    std::cout<< "Opened the CRT root file from xrootd URL" << std::endl;
+    std::cout<< "Opened the CRT root file from URL" << std::endl;
     fCRTEvents.emplace_back(file_name, std::move(crt_event));
     std::cout << "New [collection of] CRTEvent[s]. Its size is  "
 	      << fCRTEvents.back().second->numberOfEventsInFile() << "." << std::endl;
   }
   else {
-    std::cout << "Failed to open CRT root file xrootd URL." << std::endl;
+    std::cout << "Failed to open CRT root file URL." << std::endl;
     //throw cet::exception("CRTFileManager") << "Could not open CRT file: " 
     //				   << file_name << "\n";
 
