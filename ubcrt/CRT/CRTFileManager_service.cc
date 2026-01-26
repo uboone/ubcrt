@@ -130,12 +130,14 @@ crt::CRTFileManager::~CRTFileManager()
   // Delete local copies of fetched files, if any.
 
   for(auto const& crt_event : fCRTEvents) {
-    std::string class_name(crt_event.second->getTFile()->ClassName());
-    if(class_name == std::string("TFile") ) {
-      std::string local_filename(crt_event.second->getTFile()->GetName());
-      if(fSchema != std::string("file") && local_filename.substr(0, 5) != std::string("/pnfs")) {
-        std::cout << "Deleting local file " << local_filename << std::endl;
-        remove(local_filename.c_str());
+    if(crt_event.second->getTFile() != 0) {
+      std::string class_name(crt_event.second->getTFile()->ClassName());
+      if(class_name == std::string("TFile") ) {
+        std::string local_filename(crt_event.second->getTFile()->GetName());
+        if(fSchema != std::string("file") && local_filename.substr(0, 5) != std::string("/pnfs")) {
+          std::cout << "Deleting local file " << local_filename << std::endl;
+          remove(local_filename.c_str());
+        }
       }
     }
   }
@@ -533,12 +535,14 @@ gallery::Event& crt::CRTFileManager::openFile(std::string file_name)
 
     // Delete local copy, if any.
 
-    std::string class_name(fCRTEvents.front().second->getTFile()->ClassName());
-    if(class_name == std::string("TFile") ) {
-      std::string local_filename(fCRTEvents.front().second->getTFile()->GetName());
-      if(fSchema != std::string("file") && local_filename.substr(0, 5) != std::string("/pnfs")) {
-        std::cout << "Deleting local file " << local_filename << std::endl;
-        remove(local_filename.c_str());
+    if(fCRTEvents.front().second->getTFile() != 0) {
+      std::string class_name(fCRTEvents.front().second->getTFile()->ClassName());
+      if(class_name == std::string("TFile") ) {
+        std::string local_filename(fCRTEvents.front().second->getTFile()->GetName());
+        if(fSchema != std::string("file") && local_filename.substr(0, 5) != std::string("/pnfs")) {
+          std::cout << "Deleting local file " << local_filename << std::endl;
+          remove(local_filename.c_str());
+        }
       }
     }
     fCRTEvents.pop_front();
