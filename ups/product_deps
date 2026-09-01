@@ -87,7 +87,7 @@
 #>  define_pythonpath
 ####################################
 parent		ubcrt
-defaultqual	e20
+defaultqual	e26
 ####################################
 
 ####################################
@@ -250,7 +250,7 @@ fwdir	product_dir	scripts
 product		version		qual	flags		<table_format=2>
 gallery		v1_22_06	-
 lardata		v10_00_19	-
-larpandora	v10_05_00	-
+larpandora	v10_05_01	-
 ubevt		v10_23_00	-
 ubobj		v10_23_00	-
 cetmodules	v3_24_01	-	only_for_build
@@ -311,12 +311,10 @@ end_product_list
 qualifier	ubobj		ubevt		lardata		larpandora	gallery
 c14:debug       c14:debug       c14:debug       c14:debug       c14:debug       c14:debug
 c14:prof        c14:prof        c14:prof        c14:prof        c14:prof        c14:prof
-c7:debug	c7:debug	c7:debug	c7:debug	c7:debug	c7:debug
-c7:prof		c7:prof		c7:prof		c7:prof		c7:prof		c7:prof
 e26:debug       e26:debug       e26:debug       e26:debug       e26:debug       e26:debug
 e26:prof        e26:prof        e26:prof        e26:prof        e26:prof        e26:prof
-e20:debug	e20:debug	e20:debug	e20:debug	e20:debug	e20:debug
-e20:prof	e20:prof	e20:prof	e20:prof	e20:prof	e20:prof
+e28:debug       e28:debug       e28:debug       e28:debug       e28:debug       e28:debug
+e28:prof        e28:prof        e28:prof        e28:prof        e28:prof        e28:prof
 end_qualifier_list
 ####################################
 
